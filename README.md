@@ -1,31 +1,47 @@
-# 🚗 ACW-App v4.6.5 — Direct Login (Blue Glass Edition)
+# 🚗 ACW-App v4.6.9 — Stable Blue Glass Edition
 
 **Author:** Johan A. Giraldo (JAG15)  
 **Company:** Allston Car Wash © 2025  
-**Version:** v4.6.5 — Direct Login (Blue Glass Edition)
+**Version:** v4.6.9 — Stable Blue Glass Edition
 
-A lightweight **Progressive Web App (PWA)** built for the Allston Car Wash team.
-Includes login, schedule display, team overview, and live Google Apps Script integration.
-
----
-
-### 🔧 Features
-- Direct login (no splash)
-- “Remember email” and quick re-login
-- Diagnostic error codes (#100, #101, #202, #303, #999)
-- Blue Glass floating design (responsive)
-- Schedule viewer + team overview modal
-- PWA ready (works on iPhone, iPad, Android)
-- Powered by **JAG15**
+A lightweight, mobile-friendly Progressive Web App (PWA) for the **Allston Car Wash** team.
+Built with HTML, CSS, and JavaScript — connected live to a Google Apps Script backend.
 
 ---
 
-### 🌐 Deployment
-| Platform | URL Example |
-|-----------|--------------|
-| **Vercel** | https://acw-app-pro.vercel.app |
-| **GitHub Pages** | https://jag15.github.io/acw-app-pro |
+## ⚙️ Features
+
+✅ Direct Login (no splash)  
+✅ Secure employee authentication via Google Sheets  
+✅ Auto-detects current week from “Weekly Schedule”  
+✅ Fetches schedule dynamically for each employee  
+✅ Displays total hours per week  
+✅ Supports English + Spanish interface  
+✅ Works on iPhone, iPad, and Android (installable PWA)  
+✅ “Powered by JAG15”
 
 ---
 
-**Powered by JAG15 | Allston Car Wash © 2025**
+## 🧠 Backend Connection
+
+| Component | Type | Status |
+|------------|------|--------|
+| **Backend** | Google Apps Script | ✅ v4.6.9 Blue Glass Ready |
+| **Frontend** | Vercel Deployment | ✅ https://acw-app-pro.vercel.app |
+| **Sheet ID** | Weekly Schedule | `1HjPzkLLts7NlCou_94QSqwXezizc8MGQfob24RTdE9A` |
+| **Employees Tab** | Name, Password, Email, Role | Required |
+
+---
+
+## 🌐 API Endpoints
+
+| Action | URL Example |
+|--------|--------------|
+| `ping` | `...?action=ping` |
+| `login` | `...?action=login&email=john@email.com&password=1234` |
+| `getSmartSchedule` | `...?action=getSmartSchedule&short=jgiraldo` |
+
+All requests return JSON responses such as:
+
+```json
+{ "ok": true, "name": "Johan Giraldo", "week": "10/20 - 10/26/25", "total": 45.5 }
