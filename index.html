@@ -1,52 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ACW Blue Glass – Debug Mode</title>
-  <style>
-    <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(registrations) {
-    for(let reg of registrations) {
-      reg.unregister().then(() => console.log('🧹 Service Worker unregistered'));
-    }
-  });
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Allston Car Wash – Blue Glass Login</title>
+<meta name="theme-color" content="#001a33">
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  background: radial-gradient(1000px 800px at 30% 20%, #0c2b55 0%, #081a33 40%, #071425 70%, #050e1b 100%) fixed;
+  color: #eef5ff;
+  text-align: center;
+  margin: 0;
+  padding: 60px 20px;
 }
-</script>
-    body {
-      background: radial-gradient(circle at 50% 20%, #001a33, #000814);
-      color: #eaf3ff;
-      text-align: center;
-      font-family: "SF Pro Display", sans-serif;
-      margin: 0;
-      padding-top: 80px;
-    }
-    .msg {
-      margin: 20px auto;
-      padding: 20px;
-      background: rgba(255,255,255,0.08);
-      border-radius: 10px;
-      width: 80%;
-      max-width: 400px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 0 30px rgba(0,100,255,0.4);
-    }
-  </style>
+.container {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 360px;
+  margin: 0 auto;
+  box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+}
+input, button {
+  width: 100%;
+  margin: 8px 0;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+}
+button {
+  background: linear-gradient(90deg,#006eff,#003b9c);
+  color: white;
+  cursor: pointer;
+}
+.diag {
+  font-size: 14px;
+  color: #ffcc66;
+  margin-top: 10px;
+}
+footer {
+  margin-top: 40px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+</style>
 </head>
 <body>
-  <h1>🔧 ACW-App Blue Glass Debug</h1>
-  <div id="output" class="msg">Loading scripts…</div>
+<div class="container">
+  <h2>ALLSTON CAR WASH</h2>
+  <input id="email" type="email" placeholder="you@email.com">
+  <input id="password" type="password" placeholder="••••••••">
+  <button onclick="loginUser()">Sign In</button>
+  <p id="diag" class="diag"></p>
+</div>
+<footer>v4.6.7 Blue Glass — Powered by JAG15 ©2025</footer>
 
-  <script src="/config.js?v=1" onload="logMsg('✅ config.js loaded')" onerror="logMsg('❌ config.js failed')"></script>
-  <script src="/app.js?v=1" onload="logMsg('✅ app.js loaded')" onerror="logMsg('❌ app.js failed')"></script>
+<script>
+// === Config integrado ===
+const CONFIG = {
+  BASE_URL: "https://script.google.com/macros/s/AKfycbzI9UgpoA11o662UJ7zlVCCJjBcsb8mMB0GyGS4t8Ab0ttf53S9J78ksu1kX94ULP6r/exec"
+};
 
-  <script>
-    function logMsg(txt){
-      const out=document.getElementById("output");
-      out.innerHTML += "<br>"+txt;
-      console.log(txt);
-    }
-  </script>
+// === Login directo ===
+async function loginUser(){
+  const email = document.getElementById('email').value.trim();
+  const pass  = document.getElementById('password').value.trim();
+  const diag  = document.getElementById('diag');
+  diag.textContent = "⏳ Connecting...";
+
+  if(!email || !pass){
+    diag.textContent = "⚠️ Please enter email and password.";
+    return;
+  }
+
+  try {
+    const url = `${CONFIG.BASE_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(pass)}`;
+    const res = await fetch(url, {mode:'no-cors'});
+    const text = await res.text();
+    diag.textContent = text.includes("ok") ? "✅ Connected!" : "⚠️ Connection error.";
+    console.log("Response:", text);
+  } catch(err){
+    diag.textContent = "❌ Network error.";
+    console.error(err);
+  }
+}
+</script>
 </body>
 </html>
