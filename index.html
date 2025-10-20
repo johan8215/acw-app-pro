@@ -3,51 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Allston Car Wash – ACW Blue Glass</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css">
-  <meta name="theme-color" content="#001a33">
+  <title>ACW Blue Glass – Debug Mode</title>
+  <style>
+    body {
+      background: radial-gradient(circle at 50% 20%, #001a33, #000814);
+      color: #eaf3ff;
+      text-align: center;
+      font-family: "SF Pro Display", sans-serif;
+      margin: 0;
+      padding-top: 80px;
+    }
+    .msg {
+      margin: 20px auto;
+      padding: 20px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 10px;
+      width: 80%;
+      max-width: 400px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 30px rgba(0,100,255,0.4);
+    }
+  </style>
 </head>
 <body>
+  <h1>🔧 ACW-App Blue Glass Debug</h1>
+  <div id="output" class="msg">Loading scripts…</div>
 
-  <!-- 🔐 Login -->
-  <div id="login" class="container glass">
-    <h1 class="brand">ALLSTON CAR WASH</h1>
+  <script src="config.js?test=1" onload="logMsg('✅ config.js loaded')" onerror="logMsg('❌ config.js failed')"></script>
+  <script src="app.js?test=1" onload="logMsg('✅ app.js loaded')" onerror="logMsg('❌ app.js failed')"></script>
 
-    <label for="email">Email</label>
-    <input id="email" type="email" autocomplete="email" placeholder="you@email.com" />
-
-    <label for="password">Password</label>
-    <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
-
-    <button class="btn-primary" onclick="loginUser()">Sign In</button>
-    <p id="diag" class="diag"></p>
-  </div>
-
-  <!-- 👋 Welcome -->
-  <div id="welcome" class="container glass" style="display:none;">
-    <h2 id="welcomeName"></h2>
-    <p id="welcomeRole"></p>
-    <div id="schedule"></div>
-  </div>
-
-  <!-- ⚙️ Settings -->
-  <button class="gear-btn" onclick="openSettings()">⚙️</button>
-  <div id="settingsModal" class="modal">
-    <div class="modal-content glass">
-      <span class="close" onclick="closeSettings()">×</span>
-      <h3>⚙️ Settings</h3>
-      <button onclick="logoutUser()">Log Out</button>
-    </div>
-  </div>
-
-  <!-- 👣 Footer -->
-  <footer class="hud bottom-center">
-    Powered by <b>JAG15</b> | Allston Car Wash © 2025<br>
-    <small>v4.6.5 — Direct Login (Blue Glass Edition)</small>
-  </footer>
-
-    <script src="config.js?ver=465"></script>
-  <script src="app.js?ver=468"></script>
+  <script>
+    function logMsg(txt){
+      const out=document.getElementById("output");
+      out.innerHTML += "<br>"+txt;
+      console.log(txt);
+    }
+  </script>
 </body>
 </html>
