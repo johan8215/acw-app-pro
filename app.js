@@ -55,31 +55,37 @@ async function loginUser() {
 // LOAD SCHEDULE
 async function loadSchedule(email) {
   const box = document.getElementById("schedule");
-  box.innerHTML = "⏳ Loading schedule...";
-  const url = `${CONFIG.BASE_URL}?action=getSchedule&email=${encodeURIComponent(email)}`;
+  box.innerHTML = "<p>⏳ Loading schedule...</p>";
 
   try {
-    const res = await fetch(url, { method: "GET", mode: "cors" });
-    const txt = await res.text();
-    console.log("📦 Schedule raw:", txt);
-    const data = JSON.parse(txt);
+    // ⚙️ URL con el email del usuario logueado
+    const url = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`;
+    console.log("📡 Fetching schedule:", url);
+
+    const res = await fetch(url, { mode: "cors" });
+    const data = await res.json();
+
+    console.log("🧾 SmartSchedule response:", data);
 
     if (!data.ok) {
-      box.innerHTML = `<p style="color:#ff9999">No schedule found. (${data.error || "?"})</p>`;
+      box.innerHTML = `<p style="color:#ff9999;">No schedule found (#${data.error || 'unknown'})</p>`;
       return;
     }
 
-    let html = `<h4>📅 Week of ${data.week}</h4><table><tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
-    let total = 0;
-    (data.days || []).forEach((d) => {
-      total += d.hours || 0;
-      html += `<tr><td>${d.name}</td><td>${d.shift}</td><td>${d.hours}</td></tr>`;
+    // ✅ Mostrar los datos del horario
+    let html = `<h4>Week: ${data.week}</h4>`;
+    html += `<table class="schedule-table">
+      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
+
+    (data.days || []).forEach(d => {
+      html += `<tr><td>${d.day}</td><td>${d.shift || '-'}</td><td>${d.hours}</td></tr>`;
     });
-    html += `</table><p><b>Total Hours: ${total}</b></p>`;
+
+    html += `</table><p><b>Total Hours: ${data.total}</b></p>`;
     box.innerHTML = html;
   } catch (err) {
-    console.error("⚠️ Error loading schedule:", err);
-    box.innerHTML = `<p style="color:#ff9999;">⚠️ Connection error (schedule)</p>`;
+    console.error("❌ Schedule fetch failed:", err);
+    box.innerHTML = `<p style="color:#ff9999;">Connection error</p>`;
   }
 }
 
