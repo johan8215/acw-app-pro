@@ -1,8 +1,7 @@
-/* ===========================================================
-   ⚙️ ACW-App v4.6.7 — Blue Glass Connected
-   =========================================================== */
+// config.js
 const CONFIG = {
-  APP_VERSION: "v4.6.7 Blue Glass Edition",
-  BASE_URL: "https://script.google.com/macros/s/AKfycbzI9UgpoA11o662UJ7zlVCCJjBcsb8mMB0GyGS4t8Ab0ttf53S9J78ksu1kX94ULP6r/exec",
-  LANG_DEFAULT: "en"
+  APP_VERSION: "v4.6.9 Stable Blue Glass",
+  BASE_URL:
+    "https://script.google.com/macros/s/AKfycbwgwpnpeB9ZUxn241xITDlsTNSOdiDqNqh0fWpfX7QCiAPGjEWwTfnDD4si88fIEI7O/exec",
+  LANG_DEFAULT: "en",
 };
