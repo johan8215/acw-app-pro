@@ -1,4 +1,9 @@
-console.log("🧠 ACW Blue Glass v4.6.9 – Stable Hybrid Fix Loaded");
+// ============================================================
+// 💧 ACW Blue Glass App v4.6.9
+// Frontend – Johan A. Giraldo & Sky (Oct 2025)
+// ============================================================
+
+console.log("🧠 ACW Blue Glass 4.6.9 – Stable Hybrid Fix Loaded");
 
 // LOGIN HANDLER
 async function loginUser() {
@@ -12,6 +17,7 @@ async function loginUser() {
     return;
   }
 
+  // URL directa al backend
   const url = `${CONFIG.BASE_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(pass)}`;
   console.log("🌐 Fetching:", url);
 
@@ -20,7 +26,15 @@ async function loginUser() {
     const text = await res.text();
     console.log("🔹 Raw response:", text);
 
-    const data = JSON.parse(text);
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      diag.textContent = "⚠️ Invalid JSON from server (#901)";
+      console.error(e);
+      return;
+    }
+
     if (!data.ok) {
       diag.textContent = `❌ Login failed (${data.error || "unknown"})`;
       return;
@@ -37,7 +51,7 @@ async function loginUser() {
     await loadSchedule(email);
   } catch (err) {
     console.error("❌ Connection error:", err);
-    diag.textContent = "⚠️ Connection error (frontend)";
+    diag.textContent = "⚠️ Connection error. (Fetch)";
   }
 }
 
@@ -47,13 +61,15 @@ async function loadSchedule(email) {
   box.innerHTML = "<p>⏳ Loading schedule...</p>";
 
   try {
+    // Ahora usamos action=getSchedule, y pasamos el email correcto
     const url = `${CONFIG.BASE_URL}?action=getSchedule&email=${encodeURIComponent(email)}`;
     console.log("📡 Fetching schedule:", url);
 
     const res = await fetch(url, { mode: "cors" });
-    const data = await res.json();
+    const text = await res.text();
+    console.log("🧾 Raw schedule:", text);
 
-    console.log("🧾 SmartSchedule response:", data);
+    const data = JSON.parse(text);
 
     if (!data.ok) {
       box.innerHTML = `<p style="color:#ff9999;">No schedule found (#${data.error || "unknown"})</p>`;
