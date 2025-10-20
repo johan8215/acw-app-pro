@@ -4,12 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Allston Car Wash – ACW Blue Glass</title>
+
+  <!-- PWA -->
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css">
   <meta name="theme-color" content="#001a33">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+  <!-- 🔐 LOGIN -->
   <div id="login" class="container glass">
     <h1>ALLSTON CAR WASH</h1>
     <input id="email" type="email" placeholder="Email" autocomplete="email">
@@ -18,12 +23,14 @@
     <p id="diag" style="font-size:13px;color:#ff9999;margin-top:8px;"></p>
   </div>
 
+  <!-- 👋 WELCOME -->
   <div id="welcome" class="container glass" style="display:none;">
     <h2 id="welcomeName"></h2>
     <p id="welcomeRole"></p>
     <div id="schedule"></div>
   </div>
 
+  <!-- ⚙️ SETTINGS -->
   <button class="gear-btn" onclick="openSettings()">⚙️</button>
   <div id="settingsModal" class="modal">
     <div class="modal-content glass">
@@ -33,12 +40,25 @@
     </div>
   </div>
 
+  <!-- 👣 FOOTER -->
   <footer class="hud bottom-center">
     Powered by <b>JAG15</b> | Allston Car Wash © 2025<br>
     <small>v4.6.9 — Stable Blue Glass Edition</small>
   </footer>
 
+  <!-- 🧠 APP -->
   <script src="./config.js"></script>
   <script src="./app.js"></script>
+
+  <!-- 🧩 SERVICE WORKER -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('./service-worker.js')
+        .then(() => console.log('✅ ACW Service Worker registered'))
+        .catch(err => console.error('SW registration failed:', err));
+    }
+  </script>
+
 </body>
 </html>
