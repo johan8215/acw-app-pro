@@ -11,19 +11,15 @@
 <body>
 
   <!-- 🔐 Login -->
-  <div id="login" class="container glass">
-    <h1 class="brand">ALLSTON CAR WASH</h1>
+<div id="login" class="container">
+  <h2>ALLSTON CAR WASH</h2>
+  <input id="email" type="email" placeholder="Email" autocomplete="email">
+  <input id="password" type="password" placeholder="Password" autocomplete="current-password">
+  <button onclick="loginUser()">Sign In</button>
 
-    <label class="field-label" for="email">Email</label>
-    <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" />
-
-    <label class="field-label" for="password">Password</label>
-    <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
-
-    <button class="btn-primary" onclick="loginUser()">Sign In</button>
-
-    <p id="diag" class="diag" aria-live="polite"></p>
-  </div>
+  <!-- 👇 Aquí va el diagnóstico -->
+  <p id="diag" style="color:#ff9999;font-size:14px;margin-top:8px;"></p>
+</div>
 
   <!-- 👋 Welcome + Schedule -->
   <div id="welcome" class="container glass" style="display:none;">
