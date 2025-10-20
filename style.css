@@ -1,0 +1,105 @@
+/* ===========================================================
+   ACW-App v4.6.5 — Direct Login (Blue Glass Edition)
+   =========================================================== */
+:root{
+  --blue-0:#eaf2ff;
+  --blue-1:#bcd6ff;
+  --blue-2:#4da3ff;
+  --blue-3:#1e6fd6;
+  --blue-4:#0b3c66;
+  --bg-grad-1:#001533;
+  --bg-grad-2:#003366;
+  --ring: rgba(77,163,255,.35);
+  --card-bg: rgba(255,255,255,.06);
+  --card-bd: rgba(255,255,255,.18);
+  --text:#eaf2ff;
+  --muted:#bcd6ff;
+  --acw-red:#cc0000;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; font-family:"SF Pro Display","Segoe UI",system-ui,-apple-system,sans-serif;
+  background: radial-gradient(1200px 800px at 20% 10%, #00264d 0%, transparent 60%) ,
+              linear-gradient(135deg,var(--bg-grad-1),var(--bg-grad-2));
+  color:var(--text); display:flex; align-items:center; justify-content:center;
+  padding:28px;
+}
+
+/* Card / Glass */
+.container.glass{
+  width:min(92vw,820px);
+  margin:auto; padding:28px 28px 24px; text-align:center;
+  background:var(--card-bg);
+  border:1px solid var(--card-bd);
+  border-radius:18px;
+  backdrop-filter: blur(16px);
+  box-shadow:
+    0 18px 40px rgba(0,0,0,.45),
+    0 0 0 1px rgba(255,255,255,.04),
+    0 22px 70px var(--ring);
+}
+
+/* Headings */
+.brand{margin:0 0 14px;font-size:28px;letter-spacing:.06em;color:#fff;text-shadow:0 2px 18px rgba(77,163,255,.35)}
+.hello{margin:6px 0 16px;color:var(--muted)}
+.role{margin-left:8px;padding:2px 8px;border-radius:10px;background:rgba(77,163,255,.15);border:1px solid rgba(77,163,255,.35);color:var(--blue-1);font-size:12px}
+
+/* Inputs */
+.field-label{display:block;text-align:left;margin:10px 2px 6px;color:var(--muted);font-size:13px}
+input, textarea{
+  width:100%; padding:12px 14px; border-radius:10px; border:1px solid rgba(255,255,255,.16);
+  background:rgba(255,255,255,.05); color:#fff; outline:none; font-size:16px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02), 0 0 0 0 rgba(77,163,255,0);
+  transition: box-shadow .18s, border-color .18s, background .18s;
+}
+input::placeholder, textarea::placeholder{color:rgba(255,255,255,.45)}
+input:focus, textarea:focus{
+  border-color: rgba(77,163,255,.55);
+  box-shadow: 0 0 0 5px rgba(77,163,255,.18);
+  background:rgba(255,255,255,.07);
+}
+
+/* Buttons */
+.btn-primary{
+  width:100%; padding:12px 14px; margin-top:12px; border:none; border-radius:10px;
+  background:linear-gradient(90deg,#b30000,#ff3b3b); color:#fff; font-weight:700; cursor:pointer;
+  box-shadow:0 10px 24px rgba(179,0,0,.35); transition: transform .08s ease, filter .18s;
+}
+.btn-primary:active{transform:translateY(1px)}
+.btn-primary:hover{filter:brightness(1.05)}
+.btn-secondary{
+  padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.08); color:#fff; cursor:pointer;
+}
+
+/* Table */
+.schedule-table{width:100%; border-collapse:collapse; margin-top:14px}
+.schedule-table th,.schedule-table td{
+  border-bottom:1px solid rgba(255,255,255,.12);
+  padding:10px 8px; text-align:center;
+}
+.schedule-table th{color:var(--blue-1); text-transform:uppercase; font-size:12px}
+.schedule-table tbody tr:hover{background:rgba(77,163,255,.06)}
+.week-header{
+  background:rgba(255,255,255,.06); color:#fff; border:1px solid rgba(255,255,255,.18);
+  padding:10px; border-radius:12px; margin-top:6px; text-shadow:0 1px 12px rgba(77,163,255,.35)
+}
+.total{margin:12px 0 4px; color:var(--blue-2); font-weight:800}
+
+/* Gear + Modals */
+.gear-btn{
+  position:fixed; bottom:18px; right:18px; width:48px; height:48px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; font-size:20px; color:#fff;
+  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); cursor:pointer;
+  backdrop-filter:blur(8px);
+}
+.modal{display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); backdrop-filter:blur(6px); z-index:99; justify-content:center; align-items:center}
+.modal-content{position:relative; width:min(92vw,520px); padding:26px; border-radius:16px}
+.close{position:absolute; right:12px; top:8px; font-size:24px; cursor:pointer; color:var(--blue-1)}
+
+/* Footer + version tag */
+.hud.bottom-center{position:fixed; bottom:8px; left:50%; transform:translateX(-50%); color:var(--muted); font-size:12px; text-align:center}
+.version-badge{display:block; margin-top:4px; font-size:11px; color:var(--blue-1)}
+.diag{margin-top:10px; color:#ffb3b3; font-size:12px}

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Allston Car Wash – ACW-App</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <meta name="theme-color" content="#001a33">
+</head>
+<body>
+
+  <!-- 🔐 Login -->
+  <div id="login" class="container glass">
+    <h1 class="brand">ALLSTON CAR WASH</h1>
+
+    <label class="field-label" for="email">Email</label>
+    <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" />
+
+    <label class="field-label" for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+
+    <button class="btn-primary" onclick="loginUser()">Sign In</button>
+
+    <p id="diag" class="diag" aria-live="polite"></p>
+  </div>
+
+  <!-- 👋 Welcome + Schedule -->
+  <div id="welcome" class="container glass" style="display:none;">
+    <h1 class="brand">ALLSTON CAR WASH</h1>
+    <p class="hello">
+      <span id="welcomeName">Welcome</span>
+      <span class="role" id="welcomeRole"></span>
+    </p>
+
+    <div id="schedule"></div>
+
+    <button id="teamOverviewBtn" class="btn-secondary" style="display:none;" onclick="openTeamOverview()">Team Overview</button>
+  </div>
+
+  <!-- ⚙️ Settings -->
+  <button class="gear-btn" title="Settings" onclick="openSettings()">⚙️</button>
+  <div id="settingsModal" class="modal">
+    <div class="modal-content glass">
+      <span class="close" onclick="closeSettings()">×</span>
+      <h3>⚙️ Settings</h3>
+      <button class="btn-secondary" onclick="logoutUser()">Log Out</button>
+    </div>
+  </div>
+
+  <!-- 👥 Team Modal (demo) -->
+  <div id="teamModal" class="modal">
+    <div class="modal-content glass">
+      <span class="close" onclick="closeTeamOverview()">×</span>
+      <h3>Team Schedule Overview</h3>
+      <div id="teamTable"></div>
+    </div>
+  </div>
+
+  <!-- 👣 Footer -->
+  <footer class="hud bottom-center">
+    Powered by <b>JAG15</b> | Allston Car Wash © 2025
+    <span class="version-badge" id="versionBadge">v4.6.5 — Direct Login (Blue Glass Edition)</span>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js").catch(()=>{});
+    }
+  </script>
+</body>
+</html>
