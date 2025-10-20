@@ -58,7 +58,8 @@ async function loadSchedule(email) {
   box.innerHTML = "<p>⏳ Loading schedule...</p>";
 
   try {
-    const url = `${CONFIG.BASE_URL}?action=getSmartSchedule&short=${encodeURIComponent(email)}`;
+    // ✅ Usar 'email' en lugar de 'short'
+    const url = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`;
     console.log("📡 Fetching schedule:", url);
 
     const res = await fetch(url, { mode: "cors" });
@@ -85,6 +86,7 @@ async function loadSchedule(email) {
     console.error("❌ Schedule fetch failed:", err);
     box.innerHTML = `<p style="color:#ff9999;">Connection error</p>`;
   }
+}
 }
 // SETTINGS / LOGOUT
 function openSettings() {
