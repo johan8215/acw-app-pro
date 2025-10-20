@@ -1,4 +1,4 @@
-console.log("🧠 ACW Blue Glass 4.6.9 Fix Loaded");
+console.log("🧠 ACW Blue Glass v4.6.9 – Stable Hybrid Fix Loaded");
 
 // LOGIN HANDLER
 async function loginUser() {
@@ -16,24 +16,11 @@ async function loginUser() {
   console.log("🌐 Fetching:", url);
 
   try {
-    const res = await fetch(url, {
-      method: "GET",
-      mode: "cors",
-      headers: { "Content-Type": "application/json" },
-    });
-
+    const res = await fetch(url, { method: "GET", mode: "cors" });
     const text = await res.text();
     console.log("🔹 Raw response:", text);
 
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      diag.textContent = "⚠️ Invalid JSON (#901)";
-      console.error(e);
-      return;
-    }
-
+    const data = JSON.parse(text);
     if (!data.ok) {
       diag.textContent = `❌ Login failed (${data.error || "unknown"})`;
       return;
@@ -41,14 +28,16 @@ async function loginUser() {
 
     diag.textContent = "✅ Login successful!";
     localStorage.setItem("acw_email", email);
+
     document.getElementById("login").style.display = "none";
     document.getElementById("welcome").style.display = "block";
     document.getElementById("welcomeName").textContent = data.name || email;
     document.getElementById("welcomeRole").textContent = data.role || "Employee";
+
     await loadSchedule(email);
   } catch (err) {
     console.error("❌ Connection error:", err);
-    diag.textContent = "⚠️ Connection error. (Fetch)";
+    diag.textContent = "⚠️ Connection error (frontend)";
   }
 }
 
@@ -58,8 +47,7 @@ async function loadSchedule(email) {
   box.innerHTML = "<p>⏳ Loading schedule...</p>";
 
   try {
-    // ✅ Usar 'email' en lugar de 'short'
-    const url = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`;
+    const url = `${CONFIG.BASE_URL}?action=getSchedule&email=${encodeURIComponent(email)}`;
     console.log("📡 Fetching schedule:", url);
 
     const res = await fetch(url, { mode: "cors" });
@@ -68,7 +56,7 @@ async function loadSchedule(email) {
     console.log("🧾 SmartSchedule response:", data);
 
     if (!data.ok) {
-      box.innerHTML = `<p style="color:#ff9999;">No schedule found (#${data.error || 'unknown'})</p>`;
+      box.innerHTML = `<p style="color:#ff9999;">No schedule found (#${data.error || "unknown"})</p>`;
       return;
     }
 
@@ -77,17 +65,17 @@ async function loadSchedule(email) {
       <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
 
     (data.days || []).forEach(d => {
-      html += `<tr><td>${d.name}</td><td>${d.shift || '-'}</td><td>${d.hours}</td></tr>`;
+      html += `<tr><td>${d.name}</td><td>${d.shift || "-"}</td><td>${d.hours}</td></tr>`;
     });
 
     html += `</table><p><b>Total Hours: ${data.total}</b></p>`;
     box.innerHTML = html;
   } catch (err) {
     console.error("❌ Schedule fetch failed:", err);
-    box.innerHTML = `<p style="color:#ff9999;">Connection error</p>`;
+    box.innerHTML = `<p style="color:#ff9999;">Connection error (schedule)</p>`;
   }
 }
-}
+
 // SETTINGS / LOGOUT
 function openSettings() {
   document.getElementById("settingsModal").style.display = "flex";
