@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ACW Blue Glass – Debug Mode</title>
   <style>
+    <script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for(let reg of registrations) {
+      reg.unregister().then(() => console.log('🧹 Service Worker unregistered'));
+    }
+  });
+}
+</script>
     body {
       background: radial-gradient(circle at 50% 20%, #001a33, #000814);
       color: #eaf3ff;
