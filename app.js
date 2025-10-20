@@ -48,47 +48,50 @@ async function loginUser(){
   const email = (emailEl?.value||"").trim().toLowerCase();
   const password = (passEl?.value||"").trim();
 
-  // recuerda siempre el email (aunque falle)
+  // Guarda el email aunque falle
   localStorage.setItem("acw_email_hint", email);
 
   if(!email || !password){
-    diag.textContent = `${TXT.please} (#${ERR.MISSING_FIELDS})`;
+    diag.textContent = `⚠️ Please enter your email and password. (#100)`;
     return;
   }
 
+  const url = `${CONFIG.BASE_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+  console.log("🔍 Trying:", url);
+
   try{
-    const r = await fetch(`${CONFIG.BASE_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
-    if(!r.ok) throw new Error("http");
-    const data = await r.json();
+    const res = await fetch(url, { method:"GET" });
+    const txt = await res.text();
+    console.log("🔹 Raw response:", txt);
+
+    let data;
+    try { data = JSON.parse(txt); }
+    catch { diag.textContent = `⚠️ Invalid JSON (#901)`; return; }
 
     if(!data.ok){
       const code =
-        data.error === "email_not_found" ? ERR.EMAIL_NOT_FOUND :
-        data.error === "access_denied"   ? ERR.ACCESS_DENIED   : ERR.UNKNOWN;
-
-      diag.textContent = `${TXT.invalid} (#${code})`;
+        data.error === "email_not_found" ? 101 :
+        data.error === "access_denied" ? 303 :
+        999;
+      diag.textContent = `❌ Login failed (#${code}) → ${data.error || "unknown"}`;
       return;
     }
 
-    // session
+    // ✅ Login OK
     localStorage.setItem("acw_email", email);
     localStorage.setItem("acw_name", data.name || "");
     localStorage.setItem("acw_role", data.role || "employee");
 
-    // UI
+    diag.textContent = "✅ Login success (#200)";
     document.getElementById("login").style.display="none";
     document.getElementById("welcome").style.display="block";
     document.getElementById("welcomeName").textContent = `Welcome, ${data.name || email.split("@")[0]}`;
     document.getElementById("welcomeRole").textContent = capitalizeRole(data.role || "employee");
-
-    // data
     await getSchedule(email);
-    if(isManagerRole(data.role)){
-      document.getElementById("teamOverviewBtn").style.display="block";
-    }
-
-  }catch(err){
-    diag.textContent = `${TXT.connErr} (#${ERR.CONNECT_FAIL})`;
+  }
+  catch(err){
+    console.error("⚠️ Fetch error:", err);
+    diag.textContent = `⚠️ Connection error (#202)`;
   }
 }
 
