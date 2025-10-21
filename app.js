@@ -8,18 +8,18 @@ export default function App() {
   const [error, setError] = useState("");
   const [now, setNow] = useState(new Date());
 
-  // 🕒 Update live clock every second
+  // 🕒 Recalculate live hours every minute
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
+    const timer = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  // 🧮 Calculate hours for active shift (ends with ".")
+  // 🧮 Calculate live/active shift hours
   function calcLiveHours(shift, hours) {
     if (!shift) return 0;
     if (shift.includes("-")) return hours || 0;
 
-    // Example: "7:30." means started at 7:30 am
+    // If shift ends with "." → active shift
     const match = shift.match(/(\d{1,2})(?::(\d{2}))?/);
     if (!match) return hours || 0;
 
@@ -31,12 +31,13 @@ export default function App() {
     start.setHours(startHour);
     start.setMinutes(startMin);
 
-    let diff = (now - start) / 3600000;
-    if (diff < 0) diff += 24;
-    return Math.round(diff * 10) / 10;
+    let diff = (now - start) / 3600000; // ms → hours
+    if (diff < 0) diff += 24; // midnight correction
+
+    return Math.round(diff * 10) / 10; // round to 0.1h
   }
 
-  // 🔐 Login
+  // 🧩 Handle login
   async function handleLogin(e) {
     e.preventDefault();
     const email = e.target.email.value.trim();
@@ -46,11 +47,11 @@ export default function App() {
 
     try {
       const res = await fetch(
-        `https://script.google.com/macros/s/AKfycbw8qIYHFAkLKq5zDbjhAkmFyHPaR9Ib01C32gP3uRo1m3dVYjD/exec?action=login&email=${email}&password=${password}`
+        `https://script.google.com/macros/s/AKfycbwgwpnpeB9ZUxn241xITDlsTNSOdiDqNqh0fWpfX7QCiAPGjEWwTfnDD4si88fIEI7O/exec?action=login&email=${email}&password=${password}`
       );
       const data = await res.json();
-      if (!data.ok) throw new Error("Invalid email or password");
 
+      if (!data.ok) throw new Error("Invalid email or password");
       setUser(data);
       fetchSchedule(email);
     } catch (err) {
@@ -60,12 +61,12 @@ export default function App() {
     }
   }
 
-  // 📅 Fetch schedule from backend
+  // 📅 Fetch schedule
   async function fetchSchedule(email) {
     setLoading(true);
     try {
       const res = await fetch(
-        `https://script.google.com/macros/s/AKfycbw8qIYHFAkLKq5zDbjhAkmFyHPaR9Ib01C32gP3uRo1m3dVYjD/exec?action=getSmartSchedule&email=${email}`
+        `https://script.google.com/macros/s/AKfycbwgwpnpeB9ZUxn241xITDlsTNSOdiDqNqh0fWpfX7QCiAPGjEWwTfnDD4si88fIEI7O/exec?action=getSmartSchedule&email=${email}`
       );
       const data = await res.json();
       if (data.ok) setSchedule(data);
@@ -83,14 +84,17 @@ export default function App() {
     setSchedule(null);
   }
 
-  // 🧮 Total with live hours
+  // 🧮 Calculate total including live hours
   function calcTotalWithLive(days) {
     return days
-      .reduce((sum, d) => sum + (calcLiveHours(d.shift, d.hours) || 0), 0)
+      .reduce((sum, d) => {
+        const live = calcLiveHours(d.shift, d.hours);
+        return sum + (live || 0);
+      }, 0)
       .toFixed(1);
   }
 
-  // 🖥️ Login screen
+  // 🖼️ Login screen
   if (!user) {
     return (
       <div className="container">
@@ -110,7 +114,7 @@ export default function App() {
     );
   }
 
-  // 📋 Dashboard
+  // 🧾 Dashboard
   return (
     <div className="container">
       <h2>{schedule?.name || user.name}</h2>
@@ -161,7 +165,8 @@ export default function App() {
         </button>
         <p className="footer">
           Powered by <b>JAG15</b> | Allston Car Wash © 2025
-          <br />v4.6.9 — Stable Blue Glass Edition
+          <br />
+          v4.7 — Live Blue Glass Edition
         </p>
       </div>
     </div>
