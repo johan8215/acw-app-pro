@@ -1,150 +1,169 @@
-// ============================================================
-// 💧 ACW-App v4.7 — Blue White Glass Final (Legacy Sync)
-// Johan A. Giraldo (JAG15) & Sky – Oct 2025
-// ============================================================
+import React, { useState, useEffect } from "react";
+import "./App.css";
 
-console.log("🧠 ACW Blue White Glass v4.7 Loaded");
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [schedule, setSchedule] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [now, setNow] = useState(new Date());
 
-// LOGIN HANDLER
-async function loginUser() {
-  const email = document.getElementById("email").value.trim().toLowerCase();
-  const pass = document.getElementById("password").value.trim();
-  const diag = document.getElementById("diag");
-  diag.textContent = "⏳ Connecting...";
+  // 🕒 Recalculate live hours every minute
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
-  if (!email || !pass) {
-    diag.textContent = "⚠️ Please enter your email and password.";
-    return;
-  }
+  // 🧮 Calculate live/active shift hours
+  function calcLiveHours(shift, hours) {
+    if (!shift) return 0;
+    if (shift.includes("-")) return hours || 0;
 
-  const url = `${CONFIG.BASE_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(pass)}`;
-  console.log("🌐 Fetching:", url);
+    // If shift ends with "." → active shift
+    const match = shift.match(/(\d{1,2})(?::(\d{2}))?/);
+    if (!match) return hours || 0;
 
-  try {
-    const res = await fetch(url, { method: "GET", mode: "cors" });
-    const text = await res.text();
-    console.log("🔹 Raw response:", text);
+    const startHour = parseInt(match[1], 10);
+    const startMin = parseInt(match[2] || "0", 10);
 
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      diag.textContent = "⚠️ Invalid JSON (#901)";
-      console.error(e);
-      return;
-    }
-
-    if (!data.ok) {
-      diag.textContent = `❌ Login failed (${data.error || "unknown"})`;
-      return;
-    }
-
-    diag.textContent = "✅ Login successful!";
-    localStorage.setItem("acw_email", email);
-    document.getElementById("login").style.display = "none";
-    document.getElementById("welcome").style.display = "block";
-    document.getElementById("welcomeName").textContent = data.name || email;
-    document.getElementById("welcomeRole").textContent = data.role || "Employee";
-    await loadSchedule(email);
-  } catch (err) {
-    console.error("❌ Connection error:", err);
-    diag.textContent = "⚠️ Connection error. (Fetch)";
-  }
-}
-
-// =======================================================
-// 📅 LOAD SCHEDULE + CLOCK + DAILY TIMER
-// =======================================================
-async function loadSchedule(email) {
-  const box = document.getElementById("schedule");
-  box.innerHTML = "<p>⏳ Loading schedule...</p>";
-
-  try {
-    const url = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`;
-    console.log("📡 Fetching schedule:", url);
-
-    const res = await fetch(url, { mode: "cors" });
-    const data = await res.json();
-    console.log("🧾 SmartSchedule:", data);
-
-    if (!data.ok) {
-      box.innerHTML = `<p style="color:#ff3333;">No schedule found (#${data.error || 'unknown'})</p>`;
-      return;
-    }
-
-    const todayIndex = new Date().getDay(); // 0=Sun, 1=Mon, ...
-    const daysOrder = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-    let html = `
-      <h4>Week of ${data.week}</h4>
-      <h3>${data.name}</h3>
-      <table class="schedule-table">
-        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-    `;
-
-    (data.days || []).forEach((d, i) => {
-      const isToday = daysOrder[i] === daysOrder[todayIndex];
-      const shift = d.shift || "-";
-      const hours = d.hours || 0;
-      const clock = isToday && shift !== "OFF" && shift !== "-" ? `<span id="timerToday" style="color:#0078ff;font-weight:500;">⏱️</span>` : "";
-      html += `<tr><td>${d.name}</td><td>${shift}</td><td>${hours} ${clock}</td></tr>`;
-    });
-
-    html += `</table><p id="totalHours"><b>Total Hours:</b> ${data.total}</p>`;
-    html += `<div id="clockBox" style="margin-top:10px;font-size:14px;color:#0078ff;"></div>`;
-    box.innerHTML = html;
-
-    startClock();
-    startDailyTimer();
-
-  } catch (err) {
-    console.error("❌ Schedule fetch failed:", err);
-    box.innerHTML = `<p style="color:#ff3333;">Connection error (schedule)</p>`;
-  }
-}
-
-// =======================================================
-// 🕒 LIVE CLOCK (Bottom Clock)
-// =======================================================
-function startClock() {
-  const el = document.getElementById("clockBox");
-  if (!el) return;
-  function tick() {
     const now = new Date();
-    el.textContent = "🕒 " + now.toLocaleTimeString([], {
-      hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true
-    });
+    const start = new Date(now);
+    start.setHours(startHour);
+    start.setMinutes(startMin);
+
+    let diff = (now - start) / 3600000; // ms → hours
+    if (diff < 0) diff += 24; // midnight correction
+
+    return Math.round(diff * 10) / 10; // round to 0.1h
   }
-  tick();
-  clearInterval(window.__acwClock);
-  window.__acwClock = setInterval(tick, 1000);
-}
 
-// =======================================================
-// ⏱️ DAILY TIMER — contador en horas/min del día activo
-// =======================================================
-function startDailyTimer() {
-  const el = document.getElementById("timerToday");
-  if (!el) return;
-  let seconds = 0;
-  setInterval(() => {
-    seconds++;
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    el.textContent = `⏱️ ${hrs}h ${mins}m`;
-  }, 60000); // actualiza cada minuto
-}
+  // 🧩 Handle login
+  async function handleLogin(e) {
+    e.preventDefault();
+    const email = e.target.email.value.trim();
+    const password = e.target.password.value.trim();
+    setLoading(true);
+    setError("");
 
-// =======================================================
-// SETTINGS / LOGOUT (inside app)
-// =======================================================
-function openSettings() {
-  document.getElementById("settingsModal").style.display = "flex";
-}
-function closeSettings() {
-  document.getElementById("settingsModal").style.display = "none";
-}
-function logoutUser() {
-  localStorage.clear();
-  location.reload();
+    try {
+      const res = await fetch(
+        `https://script.google.com/macros/s/AKfycbw8qIYHFAkLKq5zDbjhAkmFyHPaR9Ib01C32gP3uRo1m3dVYjD/exec?action=login&email=${email}&password=${password}`
+      );
+      const data = await res.json();
+
+      if (!data.ok) throw new Error("Invalid email or password");
+      setUser(data);
+      fetchSchedule(email);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // 📅 Fetch schedule
+  async function fetchSchedule(email) {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `https://script.google.com/macros/s/AKfycbw8qIYHFAkLKq5zDbjhAkmFyHPaR9Ib01C32gP3uRo1m3dVYjD/exec?action=getSmartSchedule&email=${email}`
+      );
+      const data = await res.json();
+      if (data.ok) setSchedule(data);
+      else setError("Could not load schedule");
+    } catch (err) {
+      setError("Network error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // 🚪 Logout
+  function handleLogout() {
+    setUser(null);
+    setSchedule(null);
+  }
+
+  // 🧮 Calculate total including live hours
+  function calcTotalWithLive(days) {
+    return days.reduce((sum, d) => {
+      const live = calcLiveHours(d.shift, d.hours);
+      return sum + (live || 0);
+    }, 0).toFixed(1);
+  }
+
+  // 🖼️ Login screen
+  if (!user) {
+    return (
+      <div className="container">
+        <h1>ALLSTON CAR WASH</h1>
+        <form onSubmit={handleLogin}>
+          <input type="email" name="email" placeholder="Email" required />
+          <input type="password" name="password" placeholder="Password" required />
+          <button type="submit" disabled={loading}>
+            {loading ? "Signing in..." : "Sign In"}
+          </button>
+        </form>
+        {error && <p className="error">{error}</p>}
+        <p className="footer">Powered by <b>JAG15</b> | Allston Car Wash © 2025</p>
+      </div>
+    );
+  }
+
+  // 🧾 Dashboard
+  return (
+    <div className="container">
+      <h2>{schedule?.name || user.name}</h2>
+      <p className="role">{user.role}</p>
+      <p>Week of {schedule?.week}</p>
+      <p>{schedule?.name}</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Day</th>
+            <th>Shift</th>
+            <th>Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          {schedule?.days?.map((day, i) => {
+            const today = new Date().toLocaleDateString("en-US", { weekday: "short" });
+            const isToday = today === day.name;
+            const live = calcLiveHours(day.shift, day.hours);
+            const displayHours = isToday && day.shift.endsWith(".") ? live : day.hours;
+
+            return (
+              <tr key={i}>
+                <td>{day.name}</td>
+                <td>{day.shift || "-"}</td>
+                <td>
+                  {day.shift?.endsWith(".") && isToday ? (
+                    <span>⏱️ {displayHours}</span>
+                  ) : (
+                    displayHours
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      <p className="total">
+        Total Hours: <b>{calcTotalWithLive(schedule.days)}</b>
+      </p>
+      <p className="clock">🕓 {now.toLocaleTimeString()}</p>
+
+      <div className="settings-box">
+        <button onClick={handleLogout} className="logout">
+          Log Out
+        </button>
+        <p className="footer">
+          Powered by <b>JAG15</b> | Allston Car Wash © 2025<br />
+          v4.7 — Live Blue Glass Edition
+        </p>
+      </div>
+    </div>
+  );
 }
