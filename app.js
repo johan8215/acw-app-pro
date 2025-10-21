@@ -55,13 +55,15 @@ async function loginUser() {
   }
 }
 
-// LOAD SCHEDULE
+// =======================================================
+// 📅 LOAD SCHEDULE + CLOCK (Blue Glass Enhanced)
+// =======================================================
 async function loadSchedule(email) {
   const box = document.getElementById("schedule");
   box.innerHTML = "<p>⏳ Loading schedule...</p>";
 
   try {
-    // Usa la acción getSmartSchedule (recibe el email desde el backend)
+    // ✅ URL con email (para compatibilidad con backend 4.6.9)
     const url = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`;
     console.log("📡 Fetching schedule:", url);
 
@@ -70,16 +72,17 @@ async function loadSchedule(email) {
     console.log("🧾 Raw schedule:", text);
 
     const data = JSON.parse(text);
-
     if (!data.ok) {
       box.innerHTML = `<p style="color:#ff9999;">No schedule found (#${data.error || "unknown"})</p>`;
       return;
     }
 
-    // ✅ Mostrar los datos del horario (versión corregida)
-    let html = `<h4>Week: ${data.week}</h4>`;
-    html += `<table class="schedule-table">
-      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
+    // 🧠 Renderiza semana + tabla
+    let html = `
+      <h4>Week: ${data.week}</h4>
+      <table class="schedule-table">
+        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+    `;
 
     (data.days || []).forEach(d => {
       html += `<tr>
@@ -90,11 +93,30 @@ async function loadSchedule(email) {
     });
 
     html += `</table><p><b>Total Hours: ${data.total || 0}</b></p>`;
+    html += `<div id="clockBox" style="margin-top:10px;font-size:14px;color:#00ffcc;"></div>`;
     box.innerHTML = html;
+
+    // 🕐 Inicia reloj dinámico
+    startClock();
+
   } catch (err) {
     console.error("❌ Schedule fetch failed:", err);
     box.innerHTML = `<p style="color:#ff9999;">Connection error (schedule)</p>`;
   }
+}
+
+// =======================================================
+// 🕐 LIVE CLOCK (igual al del sábado)
+// =======================================================
+function startClock() {
+  const el = document.getElementById("clockBox");
+  function update() {
+    const now = new Date();
+    const opts = { hour: "2-digit", minute: "2-digit", second: "2-digit" };
+    el.textContent = "🕒 " + now.toLocaleTimeString("en-US", opts);
+  }
+  update();
+  setInterval(update, 1000);
 }
 // SETTINGS / LOGOUT
 function openSettings() {
