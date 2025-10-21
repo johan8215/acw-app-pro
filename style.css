@@ -1,0 +1,65 @@
+body {
+  font-family: "SF Pro Display", "Segoe UI", sans-serif;
+  background: radial-gradient(circle at 50% 20%, #001a33, #000814);
+  color: #eaf3ff;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+.container.glass {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  width: 90%;
+  max-width: 400px;
+  margin: 80px auto;
+  padding: 28px;
+  box-shadow: 0 0 45px rgba(0, 102, 255, 0.4);
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 6px 0;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+button {
+  background: linear-gradient(90deg, #0055ff, #66aaff);
+  border: none;
+  color: white;
+  padding: 10px;
+  margin-top: 12px;
+  width: 100%;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.gear-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 50%;
+  color: white;
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+}
+
+.hud.bottom-center {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+}
