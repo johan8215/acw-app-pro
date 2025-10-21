@@ -167,3 +167,86 @@ export default function App() {
     </div>
   );
 }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #ffffff;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 14px;
+  padding: 40px 50px;
+  margin: 60px auto;
+  max-width: 420px;
+  box-shadow: 0 0 35px rgba(0, 120, 255, 0.35); /* 🔵 blue shadow */
+  transition: all 0.4s ease;
+}
+
+h1, h2 {
+  color: #c00;
+  margin-bottom: 10px;
+}
+
+.role {
+  color: #444;
+  font-weight: bold;
+  margin-top: -5px;
+  margin-bottom: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+}
+
+th {
+  color: #c00;
+}
+
+td, th {
+  padding: 8px 4px;
+  border-bottom: 1px solid #ddd;
+}
+
+.total {
+  margin-top: 10px;
+  font-weight: bold;
+  color: #c00;
+}
+
+.clock {
+  margin-top: 5px;
+  color: #0070ff;
+  font-size: 0.9em;
+}
+
+button {
+  background: #c00;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+button:hover {
+  background: #a00;
+}
+
+.footer {
+  margin-top: 20px;
+  font-size: 0.85em;
+  color: #555;
+}
+
+.error {
+  color: #c00;
+  margin-top: 10px;
+}                              
+
+              
