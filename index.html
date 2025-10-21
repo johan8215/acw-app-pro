@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Allston Car Wash</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</head>
+<body>
+  <!-- 🧱 CONTENEDOR PRINCIPAL -->
+  <div class="container">
+    <h1>ALLSTON CAR WASH</h1>
+
+    <!-- LOGIN -->
+    <div id="login">
+      <input type="email" id="email" placeholder="Email" />
+      <input type="password" id="password" placeholder="Password" />
+      <button onclick="loginUser()">Sign In</button>
+    </div>
+
+    <!-- WELCOME -->
+    <div id="welcome" style="display:none;">
+      <h2>Welcome, <span id="userName"></span></h2>
+      <p>Role: <b><span id="userRole">—</span></b></p>
+      <div id="schedule"></div>
+    </div>
+  </div> <!-- ✅ AQUÍ cerramos correctamente el contenedor -->
+
+    <!-- ⚙️ BOTÓN FLOTANTE -->
+  <button id="gearButton" class="gear-btn" onclick="openSettings()">⚙️</button>
+
+  <!-- 🌐 INFORMACIÓN EN ESQUINAS (afuera del contenedor) -->
+  <div class="hud bottom-left">
+    🌐 <a href="https://allstoncarwash.com" target="_blank">allstoncarwash.com</a>
+  </div>
+
+  <div class="hud bottom-left-mid">
+    📞 (617) 254-3200
+  </div>
+
+  <div class="hud bottom-right-mid">
+    ⚙️ ACW-App v3.8 Connected Stable
+  </div>
+
+  <div class="hud bottom-right">
+    Powered by <b>JAG15</b> | Allston Car Wash © 2025
+  </div>
+
+  <!-- 🧩 SETTINGS MODAL -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeSettings()">&times;</span>
+      <h3>⚙️ Settings</h3>
+      <hr />
+      <button class="mini-btn" onclick="togglePasswordPanel()">Change Password</button>
+      <button class="mini-btn logoutBtn" onclick="logoutUser()">🚪 Log Out</button>
+
+      <!-- 🔒 Change Password Panel -->
+      <div id="passwordPanel" style="display:none; margin-top:10px;">
+        <input type="password" id="newPassword" placeholder="New password" />
+        <input type="password" id="confirmPassword" placeholder="Confirm password" />
+        <button class="mini-btn" onclick="changeUserPassword()">Save</button>
+        <p id="settingsMsg"></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
