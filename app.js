@@ -61,8 +61,8 @@ async function loadSchedule(email) {
   box.innerHTML = "<p>⏳ Loading schedule...</p>";
 
   try {
-    // Ahora usamos action=getSchedule, y pasamos el email correcto
-    const url = `${CONFIG.BASE_URL}?action=getSchedule&email=${encodeURIComponent(email)}`;
+    // Usa la acción getSmartSchedule (recibe el email desde el backend)
+    const url = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`;
     console.log("📡 Fetching schedule:", url);
 
     const res = await fetch(url, { mode: "cors" });
@@ -76,22 +76,26 @@ async function loadSchedule(email) {
       return;
     }
 
+    // ✅ Mostrar los datos del horario (versión corregida)
     let html = `<h4>Week: ${data.week}</h4>`;
     html += `<table class="schedule-table">
       <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
 
     (data.days || []).forEach(d => {
-      html += `<tr><td>${d.name}</td><td>${d.shift || "-"}</td><td>${d.hours}</td></tr>`;
+      html += `<tr>
+        <td>${d.name || "-"}</td>
+        <td>${d.shift || "-"}</td>
+        <td>${d.hours || 0}</td>
+      </tr>`;
     });
 
-    html += `</table><p><b>Total Hours: ${data.total}</b></p>`;
+    html += `</table><p><b>Total Hours: ${data.total || 0}</b></p>`;
     box.innerHTML = html;
   } catch (err) {
     console.error("❌ Schedule fetch failed:", err);
     box.innerHTML = `<p style="color:#ff9999;">Connection error (schedule)</p>`;
   }
 }
-
 // SETTINGS / LOGOUT
 function openSettings() {
   document.getElementById("settingsModal").style.display = "flex";
