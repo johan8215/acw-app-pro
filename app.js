@@ -85,7 +85,7 @@ async function loadSchedule(email) {
     `;
 
     (data.days || []).forEach((d, i) => {
-      const dayName = (d.name || d.day || FALLBACK[i] || "-");
+      const dayName = (d.name || d.day || d.Day || FALLBACK[i] || "-");
       const shift = d.shift || "-";
       const hours = d.hours || 0;
       html += `<tr><td>${dayName}</td><td>${shift}</td><td>${hours}</td></tr>`;
