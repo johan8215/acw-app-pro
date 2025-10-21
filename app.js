@@ -1,6 +1,59 @@
+// ============================================================
+// 🧠 ACW-App v4.6.9 — Stable Blue Glass Edition
+// Johan A. Giraldo & Sky (Oct 2025)
+// ============================================================
+
+console.log("🧠 ACW Blue Glass 4.6.9 Stable Reloaded");
+
+// LOGIN HANDLER
+async function loginUser() {
+  const email = document.getElementById("email").value.trim().toLowerCase();
+  const pass = document.getElementById("password").value.trim();
+  const diag = document.getElementById("diag");
+  diag.textContent = "⏳ Connecting...";
+
+  if (!email || !pass) {
+    diag.textContent = "⚠️ Please enter your email and password.";
+    return;
+  }
+
+  const url = `${CONFIG.BASE_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(pass)}`;
+  console.log("🌐 Fetching:", url);
+
+  try {
+    const res = await fetch(url, { method: "GET", mode: "cors" });
+    const text = await res.text();
+    console.log("🔹 Raw response:", text);
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      diag.textContent = "⚠️ Invalid JSON (#901)";
+      console.error(e);
+      return;
+    }
+
+    if (!data.ok) {
+      diag.textContent = `❌ Login failed (${data.error || "unknown"})`;
+      return;
+    }
+
+    diag.textContent = "✅ Login successful!";
+    localStorage.setItem("acw_email", email);
+    document.getElementById("login").style.display = "none";
+    document.getElementById("welcome").style.display = "block";
+    document.getElementById("welcomeName").textContent = data.name || email;
+    document.getElementById("welcomeRole").textContent = data.role || "Employee";
+    await loadSchedule(email);
+  } catch (err) {
+    console.error("❌ Connection error:", err);
+    diag.textContent = "⚠️ Connection error. (Fetch)";
+  }
+}
+
 // =======================================================
-// 📅 LOAD SCHEDULE — v4.7 Blue Glass Sentient Edition
-// Johan A. Giraldo & Sky — Oct 2025
+// 📅 LOAD SCHEDULE + CLOCK (Stable Blue Glass Edition)
 // =======================================================
 async function loadSchedule(email) {
   const box = document.getElementById("schedule");
@@ -16,51 +69,23 @@ async function loadSchedule(email) {
 
     const data = JSON.parse(text);
     if (!data.ok) {
-      box.innerHTML = `<p style="color:#ff9999;">No schedule found (#${data.error || "unknown"})</p>`;
+      box.innerHTML = `<p style="color:#ff9999;">No schedule found (#${data.error || 'unknown'})</p>`;
       return;
     }
 
-    const week = data.week || "(No week)";
-    const days = data.days || [];
-    const total = data.total || 0;
+    // ✅ Tabla limpia
+    let html = `<h4>Week: ${data.week}</h4>`;
+    html += `<table class="schedule-table">
+      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
 
-    // 🔠 Tabla
-    let html = `
-      <h4 class="glowTitle">📅 Week: ${week}</h4>
-      <table class="schedule-table">
-        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-    `;
-
-    days.forEach(d => {
-      const shift = d.shift || "-";
-      const hrs = d.hours || 0;
-      let color = "#888";
-
-      if (shift.toLowerCase().includes("off")) color = "#666";
-      else if (hrs >= 4) color = "#7CFF7C";
-      else if (hrs > 0) color = "#FFD966";
-
-      html += `<tr style="color:${color}">
-        <td>${d.name || "-"}</td>
-        <td>${shift}</td>
-        <td>${hrs}</td>
-      </tr>`;
+    (data.days || []).forEach(d => {
+      html += `<tr><td>${d.name}</td><td>${d.shift || '-'}</td><td>${d.hours}</td></tr>`;
     });
 
-    html += `
-      </table>
-      <p id="totalHours" style="margin-top:6px;font-size:16px;color:#7CFF7C;">
-        ⚪ Total Hours: 0
-      </p>
-      <div id="clockBox" style="margin-top:10px;font-size:14px;color:#00ffcc;"></div>
-      <button onclick="refreshSchedule()" 
-        style="margin-top:10px;padding:6px 12px;background:#003366;border:none;border-radius:8px;
-        color:#aeefff;font-size:13px;">🔄 Refresh</button>
-    `;
+    html += `</table><p><b>Total Hours: ${data.total}</b></p>`;
+    html += `<div id="clockBox" style="margin-top:10px;font-size:14px;color:#00ffcc;"></div>`;
     box.innerHTML = html;
 
-    // 🔢 Animación contador
-    animateHours(total);
     startClock();
 
   } catch (err) {
@@ -70,33 +95,7 @@ async function loadSchedule(email) {
 }
 
 // =======================================================
-// 🔁 REFRESH SCHEDULE
-// =======================================================
-function refreshSchedule() {
-  const email = localStorage.getItem("acw_email");
-  if (email) loadSchedule(email);
-}
-
-// =======================================================
-// 🔢 ANIMATED HOURS COUNTER
-// =======================================================
-function animateHours(target) {
-  const el = document.getElementById("totalHours");
-  if (!el) return;
-  let current = 0;
-  const step = Math.max(0.1, target / 60);
-  const timer = setInterval(() => {
-    current += step;
-    if (current >= target) {
-      current = target;
-      clearInterval(timer);
-    }
-    el.textContent = `⚪ Total Hours: ${current.toFixed(1)}`;
-  }, 25);
-}
-
-// =======================================================
-// 🕒 CLOCK — Blue Glass Neon
+// 🕒 LIVE CLOCK
 // =======================================================
 function startClock() {
   const el = document.getElementById("clockBox");
@@ -110,4 +109,18 @@ function startClock() {
   tick();
   clearInterval(window.__acwClock);
   window.__acwClock = setInterval(tick, 1000);
+}
+
+// =======================================================
+// SETTINGS / LOGOUT
+// =======================================================
+function openSettings() {
+  document.getElementById("settingsModal").style.display = "flex";
+}
+function closeSettings() {
+  document.getElementById("settingsModal").style.display = "none";
+}
+function logoutUser() {
+  localStorage.clear();
+  location.reload();
 }
