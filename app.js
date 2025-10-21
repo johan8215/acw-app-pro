@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import "./App.css";
+import "./style.css";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -8,18 +8,15 @@ export default function App() {
   const [error, setError] = useState("");
   const [now, setNow] = useState(new Date());
 
-  // 🕒 Recalculate live hours every minute
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  // 🧮 Calculate live/active shift hours
   function calcLiveHours(shift, hours) {
     if (!shift) return 0;
     if (shift.includes("-")) return hours || 0;
 
-    // If shift ends with "." → active shift
     const match = shift.match(/(\d{1,2})(?::(\d{2}))?/);
     if (!match) return hours || 0;
 
@@ -31,13 +28,12 @@ export default function App() {
     start.setHours(startHour);
     start.setMinutes(startMin);
 
-    let diff = (now - start) / 3600000; // ms → hours
-    if (diff < 0) diff += 24; // midnight correction
+    let diff = (now - start) / 3600000;
+    if (diff < 0) diff += 24;
 
-    return Math.round(diff * 10) / 10; // round to 0.1h
+    return Math.round(diff * 10) / 10;
   }
 
-  // 🧩 Handle login
   async function handleLogin(e) {
     e.preventDefault();
     const email = e.target.email.value.trim();
@@ -61,7 +57,6 @@ export default function App() {
     }
   }
 
-  // 📅 Fetch schedule
   async function fetchSchedule(email) {
     setLoading(true);
     try {
@@ -71,28 +66,24 @@ export default function App() {
       const data = await res.json();
       if (data.ok) setSchedule(data);
       else setError("Could not load schedule");
-    } catch (err) {
+    } catch {
       setError("Network error");
     } finally {
       setLoading(false);
     }
   }
 
-  // 🚪 Logout
   function handleLogout() {
     setUser(null);
     setSchedule(null);
   }
 
-  // 🧮 Calculate total including live hours
   function calcTotalWithLive(days) {
-    return days.reduce((sum, d) => {
-      const live = calcLiveHours(d.shift, d.hours);
-      return sum + (live || 0);
-    }, 0).toFixed(1);
+    return days
+      .reduce((sum, d) => sum + (calcLiveHours(d.shift, d.hours) || 0), 0)
+      .toFixed(1);
   }
 
-  // 🖼️ Login screen
   if (!user) {
     return (
       <div className="container">
@@ -105,18 +96,18 @@ export default function App() {
           </button>
         </form>
         {error && <p className="error">{error}</p>}
-        <p className="footer">Powered by <b>JAG15</b> | Allston Car Wash © 2025</p>
+        <p className="footer">
+          Powered by <b>JAG15</b> | Allston Car Wash © 2025
+        </p>
       </div>
     );
   }
 
-  // 🧾 Dashboard
   return (
     <div className="container">
       <h2>{schedule?.name || user.name}</h2>
       <p className="role">{user.role}</p>
       <p>Week of {schedule?.week}</p>
-      <p>{schedule?.name}</p>
 
       <table>
         <thead>
