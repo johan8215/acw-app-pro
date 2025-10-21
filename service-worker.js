@@ -1,69 +1,57 @@
-// service-worker.js
-// ACW Blue Glass SW v4.6.9
-const CACHE_NAME = "acw-blueglass-v469";
-const ASSETS = [
-  "/",
-  "/index.html",
-  "/style.css",
-  "/app.js",
-  "/config.js",
-  "/manifest.json",
-  // si tienes íconos, descomenta:
-  // "/icons/icon-192.png",
-  // "/icons/icon-512.png",
+/* ============================================================
+   ⚙️ ACW-App Service Worker — v4.6.9 Blue Glass Edition
+   Enables offline mode and caching
+   Johan A. Giraldo (JAG15) | Oct 2025
+============================================================ */
+
+const CACHE_NAME = "acw-app-v4.6.9";
+const FILES_TO_CACHE = [
+  "./",
+  "./index.html",
+  "./style.css",
+  "./app.js",
+  "./config.js",
+  "./manifest.json"
 ];
 
-// Instala y precachea assets
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+// ✅ Install and cache files
+self.addEventListener("install", (e) => {
+  console.log("💾 Installing ACW service worker...");
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(FILES_TO_CACHE))
   );
   self.skipWaiting();
 });
 
-// Activa y limpia caches viejos
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.map((k) => (k === CACHE_NAME ? null : caches.delete(k))))
-    )
+// ✅ Activate and clear old caches
+self.addEventListener("activate", (e) => {
+  e.waitUntil(
+    caches.keys().then((keyList) => {
+      return Promise.all(
+        keyList.map((key) => {
+          if (key !== CACHE_NAME) {
+            console.log("🧹 Removing old cache:", key);
+            return caches.delete(key);
+          }
+        })
+      );
+    })
   );
   self.clients.claim();
 });
 
-// Estrategia:
-// - Estáticos (mismo origen): Cache First, luego red
-// - Navegación (HTML): Stale-While-Revalidate básico
-// - API de Google Script: no la cacheamos (siempre red)
-self.addEventListener("fetch", (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
-
-  // Nunca interceptar llamadas al backend (Apps Script)
-  if (url.hostname.includes("script.google.com")) return;
-
-  // Navegación (document)
-  if (request.mode === "navigate") {
-    event.respondWith(
-      caches.match("/index.html").then((cached) => {
-        const fetchPromise = fetch(request).catch(() => cached);
-        return cached || fetchPromise;
-      })
-    );
-    return;
-  }
-
-  // Estáticos del mismo origen: Cache First
-  if (url.origin === self.location.origin && request.method === "GET") {
-    event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) return cached;
-        return fetch(request).then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          return response;
-        });
-      })
-    );
-  }
+// ✅ Serve from cache (fallback to network)
+self.addEventListener("fetch", (e) => {
+  e.respondWith(
+    caches.match(e.request).then((response) => {
+      return (
+        response ||
+        fetch(e.request).catch(() =>
+          new Response("Offline mode — check your connection.")
+        )
+      );
+    })
+  );
 });
+
+console.log("✅ ACW Service Worker loaded — v4.6.9");
