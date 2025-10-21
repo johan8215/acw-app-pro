@@ -1,11 +1,10 @@
 // ============================================================
-// 🧠 ACW-App v4.6.9 — Stable Blue Glass Edition
-// Backend URL actualizado (CORS Ready)
+// ⚙️ ACW-App Config — v4.6.9 Stable Blue Glass Edition
 // ============================================================
 
 const CONFIG = {
   BASE_URL: "https://script.google.com/macros/s/AKfycbwgwpnpeB9ZUxn241xITDlsTNSOdiDqNqh0fWpfX7QCiAPGjEWwTfnDD4si88fIEI7O/exec",
-  VERSION: "4.6.9 Stable Blue Glass"
+  VERSION: "v4.6.9 — Stable Blue Glass Edition"
 };
 
-console.log("🧩 CONFIG loaded →", CONFIG.VERSION);
+console.log(`✅ ACW-App connected → ${CONFIG.VERSION}`);
