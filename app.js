@@ -8,15 +8,18 @@ export default function App() {
   const [error, setError] = useState("");
   const [now, setNow] = useState(new Date());
 
+  // 🕒 Update live clock every second
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 60000);
+    const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+  // 🧮 Calculate hours for active shift (ends with ".")
   function calcLiveHours(shift, hours) {
     if (!shift) return 0;
     if (shift.includes("-")) return hours || 0;
 
+    // Example: "7:30." means started at 7:30 am
     const match = shift.match(/(\d{1,2})(?::(\d{2}))?/);
     if (!match) return hours || 0;
 
@@ -30,10 +33,10 @@ export default function App() {
 
     let diff = (now - start) / 3600000;
     if (diff < 0) diff += 24;
-
     return Math.round(diff * 10) / 10;
   }
 
+  // 🔐 Login
   async function handleLogin(e) {
     e.preventDefault();
     const email = e.target.email.value.trim();
@@ -46,8 +49,8 @@ export default function App() {
         `https://script.google.com/macros/s/AKfycbw8qIYHFAkLKq5zDbjhAkmFyHPaR9Ib01C32gP3uRo1m3dVYjD/exec?action=login&email=${email}&password=${password}`
       );
       const data = await res.json();
-
       if (!data.ok) throw new Error("Invalid email or password");
+
       setUser(data);
       fetchSchedule(email);
     } catch (err) {
@@ -57,6 +60,7 @@ export default function App() {
     }
   }
 
+  // 📅 Fetch schedule from backend
   async function fetchSchedule(email) {
     setLoading(true);
     try {
@@ -66,24 +70,27 @@ export default function App() {
       const data = await res.json();
       if (data.ok) setSchedule(data);
       else setError("Could not load schedule");
-    } catch {
+    } catch (err) {
       setError("Network error");
     } finally {
       setLoading(false);
     }
   }
 
+  // 🚪 Logout
   function handleLogout() {
     setUser(null);
     setSchedule(null);
   }
 
+  // 🧮 Total with live hours
   function calcTotalWithLive(days) {
     return days
       .reduce((sum, d) => sum + (calcLiveHours(d.shift, d.hours) || 0), 0)
       .toFixed(1);
   }
 
+  // 🖥️ Login screen
   if (!user) {
     return (
       <div className="container">
@@ -103,11 +110,13 @@ export default function App() {
     );
   }
 
+  // 📋 Dashboard
   return (
     <div className="container">
       <h2>{schedule?.name || user.name}</h2>
       <p className="role">{user.role}</p>
       <p>Week of {schedule?.week}</p>
+      <p>{schedule?.name}</p>
 
       <table>
         <thead>
@@ -151,8 +160,8 @@ export default function App() {
           Log Out
         </button>
         <p className="footer">
-          Powered by <b>JAG15</b> | Allston Car Wash © 2025<br />
-          v4.7 — Live Blue Glass Edition
+          Powered by <b>JAG15</b> | Allston Car Wash © 2025
+          <br />v4.6.9 — Stable Blue Glass Edition
         </p>
       </div>
     </div>
