@@ -1,126 +1,123 @@
-// ============================================================
-// 🧠 ACW-App v4.6.9 — Stable Blue Glass Edition
-// Johan A. Giraldo & Sky (Oct 2025)
-// ============================================================
+/* ============================================================
+   ACW-App v4.7 — Blue White Glass Edition
+   Johan A. Giraldo & Sky · Oct 2025
+============================================================ */
 
-console.log("🧠 ACW Blue Glass 4.6.9 Stable Reloaded");
-
-// LOGIN HANDLER
-async function loginUser() {
-  const email = document.getElementById("email").value.trim().toLowerCase();
-  const pass = document.getElementById("password").value.trim();
-  const diag = document.getElementById("diag");
-  diag.textContent = "⏳ Connecting...";
-
-  if (!email || !pass) {
-    diag.textContent = "⚠️ Please enter your email and password.";
-    return;
-  }
-
-  const url = `${CONFIG.BASE_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(pass)}`;
-  console.log("🌐 Fetching:", url);
-
-  try {
-    const res = await fetch(url, { method: "GET", mode: "cors" });
-    const text = await res.text();
-    console.log("🔹 Raw response:", text);
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      diag.textContent = "⚠️ Invalid JSON (#901)";
-      console.error(e);
-      return;
-    }
-
-    if (!data.ok) {
-      diag.textContent = `❌ Login failed (${data.error || "unknown"})`;
-      return;
-    }
-
-    diag.textContent = "✅ Login successful!";
-    localStorage.setItem("acw_email", email);
-    document.getElementById("login").style.display = "none";
-    document.getElementById("welcome").style.display = "block";
-    document.getElementById("welcomeName").textContent = data.name || email;
-    document.getElementById("welcomeRole").textContent = data.role || "Employee";
-    await loadSchedule(email);
-  } catch (err) {
-    console.error("❌ Connection error:", err);
-    diag.textContent = "⚠️ Connection error. (Fetch)";
-  }
+body {
+  background: #ffffff;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #cc0000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
 }
 
-// =======================================================
-// 📅 LOAD SCHEDULE + CLOCK (Stable Blue Glass Edition)
-// =======================================================
-async function loadSchedule(email) {
-  const box = document.getElementById("schedule");
-  box.innerHTML = "<p>⏳ Loading schedule...</p>";
-
-  try {
-    const url = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`;
-    console.log("📡 Fetching schedule:", url);
-
-    const res = await fetch(url, { mode: "cors" });
-    const text = await res.text();
-    console.log("🧾 Raw schedule:", text);
-
-    const data = JSON.parse(text);
-    if (!data.ok) {
-      box.innerHTML = `<p style="color:#ff9999;">No schedule found (#${data.error || 'unknown'})</p>`;
-      return;
-    }
-
-    // ✅ Tabla limpia
-    let html = `<h4>Week: ${data.week}</h4>`;
-    html += `<table class="schedule-table">
-      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
-
-    (data.days || []).forEach(d => {
-      html += `<tr><td>${d.name}</td><td>${d.shift || '-'}</td><td>${d.hours}</td></tr>`;
-    });
-
-    html += `</table><p><b>Total Hours: ${data.total}</b></p>`;
-    html += `<div id="clockBox" style="margin-top:10px;font-size:14px;color:#00ffcc;"></div>`;
-    box.innerHTML = html;
-
-    startClock();
-
-  } catch (err) {
-    console.error("❌ Schedule fetch failed:", err);
-    box.innerHTML = `<p style="color:#ff9999;">Connection error (schedule)</p>`;
-  }
+/* ---------- Contenedor principal ---------- */
+.container {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 14px;
+  padding: 40px 50px;
+  box-shadow: 0 0 35px rgba(0,120,255,0.35); /* 🔵 sombra azul */
+  transition: all 0.4s ease;
 }
 
-// =======================================================
-// 🕒 LIVE CLOCK
-// =======================================================
-function startClock() {
-  const el = document.getElementById("clockBox");
-  if (!el) return;
-  function tick() {
-    const now = new Date();
-    el.textContent = "🕒 " + now.toLocaleTimeString([], {
-      hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true
-    });
-  }
-  tick();
-  clearInterval(window.__acwClock);
-  window.__acwClock = setInterval(tick, 1000);
+/* ---------- Títulos ---------- */
+h1 {
+  color: #cc0000;
+  font-size: 1.9em;
+  margin-bottom: 5px;
+  letter-spacing: 0.5px;
 }
 
-// =======================================================
-// SETTINGS / LOGOUT
-// =======================================================
-function openSettings() {
-  document.getElementById("settingsModal").style.display = "flex";
+h3, h4 {
+  color: #cc0000;
+  font-weight: normal;
+  margin-top: 4px;
+  margin-bottom: 10px;
 }
-function closeSettings() {
-  document.getElementById("settingsModal").style.display = "none";
+
+/* ---------- Tabla ---------- */
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14px;
 }
-function logoutUser() {
-  localStorage.clear();
-  location.reload();
+
+.schedule-table th {
+  background: rgba(255, 255, 255, 0.8);
+  color: #cc0000;
+  padding: 8px;
+  border-bottom: 2px solid #cc0000;
+  font-weight: bold;
+}
+
+.schedule-table td {
+  padding: 7px;
+  border-bottom: 1px solid #ddd;
+  color: #333;
+}
+
+.schedule-table tr:hover {
+  background: rgba(0, 136, 255, 0.08);
+}
+
+/* ---------- Total Hours ---------- */
+#totalHours {
+  font-size: 15px;
+  color: #cc0000;
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+/* ---------- Clock ---------- */
+#clockBox {
+  font-size: 13px;
+  color: #0078ff;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+/* ---------- Logout button ---------- */
+button {
+  background: #cc0000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  margin-top: 14px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+button:hover {
+  background: #a40000;
+}
+
+/* ---------- Settings flotante ---------- */
+#settingsBtn {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  background: rgba(0, 122, 255, 0.08);
+  border: 1px solid rgba(0, 122, 255, 0.3);
+  color: #0056cc;
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px;
+  cursor: pointer;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 0 12px rgba(0,122,255,0.25);
+  transition: all 0.3s ease;
+}
+
+#settingsBtn:hover {
+  background: rgba(0, 122, 255, 0.18);
+  transform: scale(1.08);
 }
