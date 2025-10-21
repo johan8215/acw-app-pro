@@ -17,10 +17,15 @@ body {
 /* ---------- Contenedor principal ---------- */
 .container {
   text-align: center;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.96);
   border-radius: 14px;
   padding: 40px 50px;
-  box-shadow: 0 0 35px rgba(0,120,255,0.35); /* 🔵 sombra azul */
+  margin: 40px auto;
+  max-width: 420px;
+  box-shadow:
+    0 0 35px rgba(0,120,255,0.45),   /* 💎 halo azul principal */
+    0 8px 25px rgba(0,0,0,0.08);     /* sombra difusa inferior */
+  backdrop-filter: blur(6px);
   transition: all 0.4s ease;
 }
 
