@@ -1,5 +1,5 @@
 body {
-  font-family: 'Segoe UI', sans-serif;
+  font-family: "Segoe UI", sans-serif;
   background: #ffffff;
   margin: 0;
   padding: 0;
@@ -12,11 +12,12 @@ body {
   padding: 40px 50px;
   margin: 60px auto;
   max-width: 420px;
-  box-shadow: 0 0 35px rgba(0, 120, 255, 0.35);
+  box-shadow: 0 0 35px rgba(0, 120, 255, 0.35); /* 🔵 blue shadow */
   transition: all 0.4s ease;
 }
 
-h1, h2 {
+h1,
+h2 {
   color: #c00;
   margin-bottom: 10px;
 }
@@ -38,7 +39,8 @@ th {
   color: #c00;
 }
 
-td, th {
+td,
+th {
   padding: 8px 4px;
   border-bottom: 1px solid #ddd;
 }
