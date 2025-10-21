@@ -5,33 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Allston Car Wash – ACW Blue Glass</title>
 
-  <!-- PWA -->
+  <!-- 📱 PWA META -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#001a33">
 
-  <!-- Styles -->
+  <!-- 🎨 Styles -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- 🔐 LOGIN -->
+  <!-- 🔐 LOGIN SCREEN -->
   <div id="login" class="container glass">
     <h1>ALLSTON CAR WASH</h1>
     <input id="email" type="email" placeholder="Email" autocomplete="email">
     <input id="password" type="password" placeholder="Password" autocomplete="current-password">
     <button onclick="loginUser()">Sign In</button>
-    <p id="diag" style="font-size:13px;color:#ff9999;margin-top:8px;"></p>
+    <p id="diag" class="error"></p>
   </div>
 
-  <!-- 👋 WELCOME -->
+  <!-- 👋 WELCOME DASHBOARD -->
   <div id="welcome" class="container glass" style="display:none;">
     <h2 id="welcomeName"></h2>
     <p id="welcomeRole"></p>
     <div id="schedule"></div>
+    <p id="clock" class="clock"></p>
+    <p id="totalHours" class="total"></p>
   </div>
 
-  <!-- ⚙️ SETTINGS -->
-  <button class="gear-btn" onclick="openSettings()">⚙️</button>
+  <!-- ⚙️ SETTINGS MODAL -->
+  <button id="settingsBtn" class="gear-btn" onclick="openSettings()">⚙️</button>
   <div id="settingsModal" class="modal">
     <div class="modal-content glass">
       <span class="close" onclick="closeSettings()">×</span>
@@ -46,7 +48,7 @@
     <small>v4.6.9 — Stable Blue Glass Edition</small>
   </footer>
 
-  <!-- 🧠 APP -->
+  <!-- 🧠 CORE SCRIPTS -->
   <script src="./config.js"></script>
   <script src="./app.js"></script>
 
@@ -56,10 +58,9 @@
       navigator.serviceWorker
         .register('./service-worker.js')
         .then(() => console.log('✅ ACW Service Worker registered'))
-        .catch(err => console.error('SW registration failed:', err));
+        .catch(err => console.warn('SW registration failed:', err));
     }
   </script>
-  
-<div id="settingsBtn" onclick="openSettings()">⚙️</div>
+
 </body>
 </html>
