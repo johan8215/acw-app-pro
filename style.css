@@ -1,128 +1,169 @@
-/* ============================================================
-   ACW-App v4.7 — Blue White Glass Edition
-   Johan A. Giraldo & Sky · Oct 2025
-============================================================ */
+import React, { useState, useEffect } from "react";
+import "./App.css";
 
-body {
-  background: #ffffff;
-  font-family: "Segoe UI", Arial, sans-serif;
-  color: #cc0000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  margin: 0;
-}
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [schedule, setSchedule] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [now, setNow] = useState(new Date());
 
-/* ---------- Contenedor principal ---------- */
-.container {
-  text-align: center;
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 14px;
-  padding: 40px 50px;
-  margin: 40px auto;
-  max-width: 420px;
-  box-shadow:
-    0 0 35px rgba(0,120,255,0.45),   /* 💎 halo azul principal */
-    0 8px 25px rgba(0,0,0,0.08);     /* sombra difusa inferior */
-  backdrop-filter: blur(6px);
-  transition: all 0.4s ease;
-}
+  // 🕒 Recalculate live hours every minute
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
-/* ---------- Títulos ---------- */
-h1 {
-  color: #cc0000;
-  font-size: 1.9em;
-  margin-bottom: 5px;
-  letter-spacing: 0.5px;
-}
+  // 🧮 Calculate live/active shift hours
+  function calcLiveHours(shift, hours) {
+    if (!shift) return 0;
+    if (shift.includes("-")) return hours || 0;
 
-h3, h4 {
-  color: #cc0000;
-  font-weight: normal;
-  margin-top: 4px;
-  margin-bottom: 10px;
-}
+    // If shift ends with "." → active shift
+    const match = shift.match(/(\d{1,2})(?::(\d{2}))?/);
+    if (!match) return hours || 0;
 
-/* ---------- Tabla ---------- */
-.schedule-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 14px;
-}
+    const startHour = parseInt(match[1], 10);
+    const startMin = parseInt(match[2] || "0", 10);
 
-.schedule-table th {
-  background: rgba(255, 255, 255, 0.8);
-  color: #cc0000;
-  padding: 8px;
-  border-bottom: 2px solid #cc0000;
-  font-weight: bold;
-}
+    const now = new Date();
+    const start = new Date(now);
+    start.setHours(startHour);
+    start.setMinutes(startMin);
 
-.schedule-table td {
-  padding: 7px;
-  border-bottom: 1px solid #ddd;
-  color: #333;
-}
+    let diff = (now - start) / 3600000; // ms → hours
+    if (diff < 0) diff += 24; // midnight correction
 
-.schedule-table tr:hover {
-  background: rgba(0, 136, 255, 0.08);
-}
+    return Math.round(diff * 10) / 10; // round to 0.1h
+  }
 
-/* ---------- Total Hours ---------- */
-#totalHours {
-  font-size: 15px;
-  color: #cc0000;
-  margin-top: 10px;
-  font-weight: 600;
-}
+  // 🧩 Handle login
+  async function handleLogin(e) {
+    e.preventDefault();
+    const email = e.target.email.value.trim();
+    const password = e.target.password.value.trim();
+    setLoading(true);
+    setError("");
 
-/* ---------- Clock ---------- */
-#clockBox {
-  font-size: 13px;
-  color: #0078ff;
-  margin-top: 6px;
-  font-weight: 500;
-}
+    try {
+      const res = await fetch(
+        `https://script.google.com/macros/s/AKfycbw8qIYHFAkLKq5zDbjhAkmFyHPaR9Ib01C32gP3uRo1m3dVYjD/exec?action=login&email=${email}&password=${password}`
+      );
+      const data = await res.json();
 
-/* ---------- Logout button ---------- */
-button {
-  background: #cc0000;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  margin-top: 14px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-button:hover {
-  background: #a40000;
-}
+      if (!data.ok) throw new Error("Invalid email or password");
+      setUser(data);
+      fetchSchedule(email);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-/* ---------- Settings flotante ---------- */
-#settingsBtn {
-  position: fixed;
-  bottom: 25px;
-  right: 25px;
-  background: rgba(0, 122, 255, 0.08);
-  border: 1px solid rgba(0, 122, 255, 0.3);
-  color: #0056cc;
-  border-radius: 50%;
-  width: 45px;
-  height: 45px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 20px;
-  cursor: pointer;
-  backdrop-filter: blur(5px);
-  box-shadow: 0 0 12px rgba(0,122,255,0.25);
-  transition: all 0.3s ease;
-}
+  // 📅 Fetch schedule
+  async function fetchSchedule(email) {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `https://script.google.com/macros/s/AKfycbw8qIYHFAkLKq5zDbjhAkmFyHPaR9Ib01C32gP3uRo1m3dVYjD/exec?action=getSmartSchedule&email=${email}`
+      );
+      const data = await res.json();
+      if (data.ok) setSchedule(data);
+      else setError("Could not load schedule");
+    } catch (err) {
+      setError("Network error");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-#settingsBtn:hover {
-  background: rgba(0, 122, 255, 0.18);
-  transform: scale(1.08);
+  // 🚪 Logout
+  function handleLogout() {
+    setUser(null);
+    setSchedule(null);
+  }
+
+  // 🧮 Calculate total including live hours
+  function calcTotalWithLive(days) {
+    return days.reduce((sum, d) => {
+      const live = calcLiveHours(d.shift, d.hours);
+      return sum + (live || 0);
+    }, 0).toFixed(1);
+  }
+
+  // 🖼️ Login screen
+  if (!user) {
+    return (
+      <div className="container">
+        <h1>ALLSTON CAR WASH</h1>
+        <form onSubmit={handleLogin}>
+          <input type="email" name="email" placeholder="Email" required />
+          <input type="password" name="password" placeholder="Password" required />
+          <button type="submit" disabled={loading}>
+            {loading ? "Signing in..." : "Sign In"}
+          </button>
+        </form>
+        {error && <p className="error">{error}</p>}
+        <p className="footer">Powered by <b>JAG15</b> | Allston Car Wash © 2025</p>
+      </div>
+    );
+  }
+
+  // 🧾 Dashboard
+  return (
+    <div className="container">
+      <h2>{schedule?.name || user.name}</h2>
+      <p className="role">{user.role}</p>
+      <p>Week of {schedule?.week}</p>
+      <p>{schedule?.name}</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Day</th>
+            <th>Shift</th>
+            <th>Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          {schedule?.days?.map((day, i) => {
+            const today = new Date().toLocaleDateString("en-US", { weekday: "short" });
+            const isToday = today === day.name;
+            const live = calcLiveHours(day.shift, day.hours);
+            const displayHours = isToday && day.shift.endsWith(".") ? live : day.hours;
+
+            return (
+              <tr key={i}>
+                <td>{day.name}</td>
+                <td>{day.shift || "-"}</td>
+                <td>
+                  {day.shift?.endsWith(".") && isToday ? (
+                    <span>⏱️ {displayHours}</span>
+                  ) : (
+                    displayHours
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      <p className="total">
+        Total Hours: <b>{calcTotalWithLive(schedule.days)}</b>
+      </p>
+      <p className="clock">🕓 {now.toLocaleTimeString()}</p>
+
+      <div className="settings-box">
+        <button onClick={handleLogout} className="logout">
+          Log Out
+        </button>
+        <p className="footer">
+          Powered by <b>JAG15</b> | Allston Car Wash © 2025<br />
+          v4.7 — Live Blue Glass Edition
+        </p>
+      </div>
+    </div>
+  );
 }
