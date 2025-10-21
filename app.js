@@ -54,7 +54,6 @@ async function loginUser() {
     diag.textContent = "⚠️ Connection error. (Fetch)";
   }
 }
-
 // =======================================================
 // 📅 LOAD SCHEDULE + CLOCK (Blue Glass Enhanced)
 // =======================================================
@@ -63,7 +62,6 @@ async function loadSchedule(email) {
   box.innerHTML = "<p>⏳ Loading schedule...</p>";
 
   try {
-    // ✅ URL con email (para compatibilidad con backend 4.6.9)
     const url = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`;
     console.log("📡 Fetching schedule:", url);
 
@@ -77,26 +75,27 @@ async function loadSchedule(email) {
       return;
     }
 
-    // 🧠 Renderiza semana + tabla
+    // 🔠 Fallback para los nombres de días
+    const FALLBACK = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
     let html = `
-      <h4>Week: ${data.week}</h4>
+      <h4>Week: ${data.week || ""}</h4>
       <table class="schedule-table">
         <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
     `;
 
-    (data.days || []).forEach(d => {
-      html += `<tr>
-        <td>${d.name || "-"}</td>
-        <td>${d.shift || "-"}</td>
-        <td>${d.hours || 0}</td>
-      </tr>`;
+    (data.days || []).forEach((d, i) => {
+      const dayName = (d.name || d.day || FALLBACK[i] || "-");
+      const shift = d.shift || "-";
+      const hours = d.hours || 0;
+      html += `<tr><td>${dayName}</td><td>${shift}</td><td>${hours}</td></tr>`;
     });
 
     html += `</table><p><b>Total Hours: ${data.total || 0}</b></p>`;
     html += `<div id="clockBox" style="margin-top:10px;font-size:14px;color:#00ffcc;"></div>`;
     box.innerHTML = html;
 
-    // 🕐 Inicia reloj dinámico
+    // 🕒 Iniciar reloj en vivo
     startClock();
 
   } catch (err) {
@@ -104,28 +103,19 @@ async function loadSchedule(email) {
     box.innerHTML = `<p style="color:#ff9999;">Connection error (schedule)</p>`;
   }
 }
-
 // =======================================================
-// 🕐 LIVE CLOCK (igual al del sábado)
+// 🕒 LIVE CLOCK (Blue Glass)
 // =======================================================
 function startClock() {
   const el = document.getElementById("clockBox");
-  function update() {
+  if (!el) return;
+  function tick() {
     const now = new Date();
-    const opts = { hour: "2-digit", minute: "2-digit", second: "2-digit" };
-    el.textContent = "🕒 " + now.toLocaleTimeString("en-US", opts);
+    el.textContent = "🕒 " + now.toLocaleTimeString([], {
+      hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true
+    });
   }
-  update();
-  setInterval(update, 1000);
-}
-// SETTINGS / LOGOUT
-function openSettings() {
-  document.getElementById("settingsModal").style.display = "flex";
-}
-function closeSettings() {
-  document.getElementById("settingsModal").style.display = "none";
-}
-function logoutUser() {
-  localStorage.clear();
-  location.reload();
+  tick();
+  clearInterval(window.__acwClock);
+  window.__acwClock = setInterval(tick, 1000);
 }
