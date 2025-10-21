@@ -1,9 +1,9 @@
 // ============================================================
-// 🧠 ACW-App v4.6.9 — Stable Blue Glass Edition
-// Johan A. Giraldo & Sky (Oct 2025)
+// 💧 ACW-App v4.7 — Blue White Glass Final (Legacy Sync)
+// Johan A. Giraldo (JAG15) & Sky – Oct 2025
 // ============================================================
 
-console.log("🧠 ACW Blue Glass 4.6.9 Stable Reloaded");
+console.log("🧠 ACW Blue White Glass v4.7 Loaded");
 
 // LOGIN HANDLER
 async function loginUser() {
@@ -53,7 +53,7 @@ async function loginUser() {
 }
 
 // =======================================================
-// 📅 LOAD SCHEDULE + CLOCK (Stable Blue Glass Edition)
+// 📅 LOAD SCHEDULE + CLOCK + DAILY TIMER
 // =======================================================
 async function loadSchedule(email) {
   const box = document.getElementById("schedule");
@@ -64,38 +64,47 @@ async function loadSchedule(email) {
     console.log("📡 Fetching schedule:", url);
 
     const res = await fetch(url, { mode: "cors" });
-    const text = await res.text();
-    console.log("🧾 Raw schedule:", text);
+    const data = await res.json();
+    console.log("🧾 SmartSchedule:", data);
 
-    const data = JSON.parse(text);
     if (!data.ok) {
-      box.innerHTML = `<p style="color:#ff9999;">No schedule found (#${data.error || 'unknown'})</p>`;
+      box.innerHTML = `<p style="color:#ff3333;">No schedule found (#${data.error || 'unknown'})</p>`;
       return;
     }
 
-    // ✅ Tabla limpia
-    let html = `<h4>Week: ${data.week}</h4>`;
-    html += `<table class="schedule-table">
-      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
+    const todayIndex = new Date().getDay(); // 0=Sun, 1=Mon, ...
+    const daysOrder = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-    (data.days || []).forEach(d => {
-      html += `<tr><td>${d.name}</td><td>${d.shift || '-'}</td><td>${d.hours}</td></tr>`;
+    let html = `
+      <h4>Week of ${data.week}</h4>
+      <h3>${data.name}</h3>
+      <table class="schedule-table">
+        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+    `;
+
+    (data.days || []).forEach((d, i) => {
+      const isToday = daysOrder[i] === daysOrder[todayIndex];
+      const shift = d.shift || "-";
+      const hours = d.hours || 0;
+      const clock = isToday && shift !== "OFF" && shift !== "-" ? `<span id="timerToday" style="color:#0078ff;font-weight:500;">⏱️</span>` : "";
+      html += `<tr><td>${d.name}</td><td>${shift}</td><td>${hours} ${clock}</td></tr>`;
     });
 
-    html += `</table><p><b>Total Hours: ${data.total}</b></p>`;
-    html += `<div id="clockBox" style="margin-top:10px;font-size:14px;color:#00ffcc;"></div>`;
+    html += `</table><p id="totalHours"><b>Total Hours:</b> ${data.total}</p>`;
+    html += `<div id="clockBox" style="margin-top:10px;font-size:14px;color:#0078ff;"></div>`;
     box.innerHTML = html;
 
     startClock();
+    startDailyTimer();
 
   } catch (err) {
     console.error("❌ Schedule fetch failed:", err);
-    box.innerHTML = `<p style="color:#ff9999;">Connection error (schedule)</p>`;
+    box.innerHTML = `<p style="color:#ff3333;">Connection error (schedule)</p>`;
   }
 }
 
 // =======================================================
-// 🕒 LIVE CLOCK
+// 🕒 LIVE CLOCK (Bottom Clock)
 // =======================================================
 function startClock() {
   const el = document.getElementById("clockBox");
@@ -112,7 +121,22 @@ function startClock() {
 }
 
 // =======================================================
-// SETTINGS / LOGOUT
+// ⏱️ DAILY TIMER — contador en horas/min del día activo
+// =======================================================
+function startDailyTimer() {
+  const el = document.getElementById("timerToday");
+  if (!el) return;
+  let seconds = 0;
+  setInterval(() => {
+    seconds++;
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    el.textContent = `⏱️ ${hrs}h ${mins}m`;
+  }, 60000); // actualiza cada minuto
+}
+
+// =======================================================
+// SETTINGS / LOGOUT (inside app)
 // =======================================================
 function openSettings() {
   document.getElementById("settingsModal").style.display = "flex";
