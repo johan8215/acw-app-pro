@@ -1,174 +1,168 @@
-import React, { useState, useEffect } from "react";
-import "./style.css";
+// ============================================================
+// 🧠 ACW-App v4.6.9 — Stable Blue Glass Edition
+// Johan A. Giraldo (JAG15) & Sky — Oct 2025
+// ============================================================
 
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [schedule, setSchedule] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [now, setNow] = useState(new Date());
+let currentUser = null;
+let scheduleData = null;
+let clockTimer = null;
 
-  // 🕒 Recalculate live hours every minute
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // 🧮 Calculate live/active shift hours
-  function calcLiveHours(shift, hours) {
-    if (!shift) return 0;
-    if (shift.includes("-")) return hours || 0;
-
-    // If shift ends with "." → active shift
-    const match = shift.match(/(\d{1,2})(?::(\d{2}))?/);
-    if (!match) return hours || 0;
-
-    const startHour = parseInt(match[1], 10);
-    const startMin = parseInt(match[2] || "0", 10);
-
-    const now = new Date();
-    const start = new Date(now);
-    start.setHours(startHour);
-    start.setMinutes(startMin);
-
-    let diff = (now - start) / 3600000; // ms → hours
-    if (diff < 0) diff += 24; // midnight correction
-
-    return Math.round(diff * 10) / 10; // round to 0.1h
+// 🧩 LOGIN FUNCTION
+async function loginUser() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const diag = document.getElementById("diag");
+  diag.textContent = "";
+  if (!email || !password) {
+    diag.textContent = "Please enter your email and password.";
+    return;
   }
 
-  // 🧩 Handle login
-  async function handleLogin(e) {
-    e.preventDefault();
-    const email = e.target.email.value.trim();
-    const password = e.target.password.value.trim();
-    setLoading(true);
-    setError("");
-
-    try {
-      const res = await fetch(
-        `https://script.google.com/macros/s/AKfycbwgwpnpeB9ZUxn241xITDlsTNSOdiDqNqh0fWpfX7QCiAPGjEWwTfnDD4si88fIEI7O/exec?action=login&email=${email}&password=${password}`
-      );
-      const data = await res.json();
-
-      if (!data.ok) throw new Error("Invalid email or password");
-      setUser(data);
-      fetchSchedule(email);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // 📅 Fetch schedule
-  async function fetchSchedule(email) {
-    setLoading(true);
-    try {
-      const res = await fetch(
-        `https://script.google.com/macros/s/AKfycbwgwpnpeB9ZUxn241xITDlsTNSOdiDqNqh0fWpfX7QCiAPGjEWwTfnDD4si88fIEI7O/exec?action=getSmartSchedule&email=${email}`
-      );
-      const data = await res.json();
-      if (data.ok) setSchedule(data);
-      else setError("Could not load schedule");
-    } catch (err) {
-      setError("Network error");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // 🚪 Logout
-  function handleLogout() {
-    setUser(null);
-    setSchedule(null);
-  }
-
-  // 🧮 Calculate total including live hours
-  function calcTotalWithLive(days) {
-    return days
-      .reduce((sum, d) => {
-        const live = calcLiveHours(d.shift, d.hours);
-        return sum + (live || 0);
-      }, 0)
-      .toFixed(1);
-  }
-
-  // 🖼️ Login screen
-  if (!user) {
-    return (
-      <div className="container">
-        <h1>ALLSTON CAR WASH</h1>
-        <form onSubmit={handleLogin}>
-          <input type="email" name="email" placeholder="Email" required />
-          <input type="password" name="password" placeholder="Password" required />
-          <button type="submit" disabled={loading}>
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
-        {error && <p className="error">{error}</p>}
-        <p className="footer">
-          Powered by <b>JAG15</b> | Allston Car Wash © 2025
-        </p>
-      </div>
+  try {
+    diag.textContent = "Signing in...";
+    const res = await fetch(
+      `${CONFIG.BASE_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
     );
+    const data = await res.json();
+
+    if (!data.ok) throw new Error("Invalid email or password.");
+
+    currentUser = data;
+    diag.textContent = "";
+    showWelcome(data.name, data.role);
+    await loadSchedule(email);
+  } catch (err) {
+    diag.textContent = err.message;
   }
-
-  // 🧾 Dashboard
-  return (
-    <div className="container">
-      <h2>{schedule?.name || user.name}</h2>
-      <p className="role">{user.role}</p>
-      <p>Week of {schedule?.week}</p>
-      <p>{schedule?.name}</p>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Day</th>
-            <th>Shift</th>
-            <th>Hours</th>
-          </tr>
-        </thead>
-        <tbody>
-          {schedule?.days?.map((day, i) => {
-            const today = new Date().toLocaleDateString("en-US", { weekday: "short" });
-            const isToday = today === day.name;
-            const live = calcLiveHours(day.shift, day.hours);
-            const displayHours = isToday && day.shift.endsWith(".") ? live : day.hours;
-
-            return (
-              <tr key={i}>
-                <td>{day.name}</td>
-                <td>{day.shift || "-"}</td>
-                <td>
-                  {day.shift?.endsWith(".") && isToday ? (
-                    <span>⏱️ {displayHours}</span>
-                  ) : (
-                    displayHours
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
-      <p className="total">
-        Total Hours: <b>{calcTotalWithLive(schedule.days)}</b>
-      </p>
-      <p className="clock">🕓 {now.toLocaleTimeString()}</p>
-
-      <div className="settings-box">
-        <button onClick={handleLogout} className="logout">
-          Log Out
-        </button>
-        <p className="footer">
-          Powered by <b>JAG15</b> | Allston Car Wash © 2025
-          <br />
-          v4.7 — Live Blue Glass Edition
-        </p>
-      </div>
-    </div>
-  );
 }
+
+// 🧮 LOAD SCHEDULE
+async function loadSchedule(email) {
+  const diag = document.getElementById("diag");
+  diag.textContent = "Loading schedule...";
+
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error("Could not load schedule.");
+
+    scheduleData = data;
+    diag.textContent = "";
+    renderSchedule(data);
+    startClock();
+  } catch (err) {
+    diag.textContent = "Error loading schedule.";
+    console.error(err);
+  }
+}
+
+// 🧾 RENDER SCHEDULE TABLE
+function renderSchedule(data) {
+  const container = document.getElementById("schedule");
+  container.innerHTML = "";
+
+  const table = document.createElement("table");
+  table.innerHTML = `
+    <thead>
+      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+    </thead>
+    <tbody>
+      ${data.days
+        .map(day => {
+          const today = new Date().toLocaleDateString("en-US", { weekday: "short" });
+          const isToday = today === day.name;
+          const liveHours = calcLiveHours(day.shift, day.hours);
+          const showLive = isToday && day.shift?.endsWith(".");
+          const hoursDisplay = showLive ? `⏱️ ${liveHours}` : day.hours || "-";
+          return `
+            <tr${isToday ? ' class="today"' : ""}>
+              <td>${day.name}</td>
+              <td>${day.shift || "-"}</td>
+              <td>${hoursDisplay}</td>
+            </tr>
+          `;
+        })
+        .join("")}
+    </tbody>
+  `;
+  container.appendChild(table);
+
+  const total = calcTotalHours(data.days);
+  document.getElementById("totalHours").innerHTML = `Total Hours: <b>${total}</b>`;
+}
+
+// 🧮 CALCULATE LIVE HOURS (if shift ends with ".")
+function calcLiveHours(shift, hours) {
+  if (!shift) return 0;
+  if (shift.includes("-")) return hours || 0;
+
+  const match = shift.match(/(\d{1,2})(?::(\d{2}))?/);
+  if (!match) return hours || 0;
+
+  const startHour = parseInt(match[1], 10);
+  const startMin = parseInt(match[2] || "0", 10);
+
+  const now = new Date();
+  const start = new Date();
+  start.setHours(startHour);
+  start.setMinutes(startMin);
+
+  let diff = (now - start) / 3600000;
+  if (diff < 0) diff += 24;
+  return Math.round(diff * 10) / 10;
+}
+
+// 🧮 CALCULATE TOTAL INCLUDING ACTIVE SHIFT
+function calcTotalHours(days) {
+  let total = 0;
+  for (const d of days) {
+    total += calcLiveHours(d.shift, d.hours);
+  }
+  return total.toFixed(1);
+}
+
+// 🕓 CLOCK & REFRESH
+function startClock() {
+  if (clockTimer) clearInterval(clockTimer);
+  const clockEl = document.getElementById("clock");
+  clockEl.textContent = "";
+
+  clockTimer = setInterval(() => {
+    const now = new Date();
+    clockEl.textContent = `🕓 ${now.toLocaleTimeString()}`;
+    if (scheduleData) renderSchedule(scheduleData); // refresh live hours
+  }, 60000);
+
+  // first tick immediately
+  const now = new Date();
+  clockEl.textContent = `🕓 ${now.toLocaleTimeString()}`;
+}
+
+// 👋 SHOW WELCOME DASHBOARD
+function showWelcome(name, role) {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("welcome").style.display = "block";
+  document.getElementById("welcomeName").textContent = name;
+  document.getElementById("welcomeRole").textContent = role;
+}
+
+// 🚪 LOGOUT
+function logoutUser() {
+  currentUser = null;
+  scheduleData = null;
+  if (clockTimer) clearInterval(clockTimer);
+  document.getElementById("login").style.display = "block";
+  document.getElementById("welcome").style.display = "none";
+  document.getElementById("email").value = "";
+  document.getElementById("password").value = "";
+}
+
+// ⚙️ SETTINGS MODAL
+function openSettings() {
+  document.getElementById("settingsModal").style.display = "block";
+}
+function closeSettings() {
+  document.getElementById("settingsModal").style.display = "none";
+}
+
+console.log("✅ ACW Blue Glass v4.6.9 — app.js loaded");
