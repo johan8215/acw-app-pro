@@ -4,7 +4,7 @@
    ============================================================ */
 
 const CONFIG = {
-  BASE_URL: "https://script.google.com/macros/s/AKfycbw-your-deployment-id/exec",
+  BASE_URL: "https://script.google.com/macros/s/AKfycbwgwpnpeB9ZUxn241xITDlsTNSOdiDqNqh0fWpfX7QCiAPGjEWwTfnDD4si88fIEI7O/exec",
   VERSION: "4.7.2",
   APP_NAME: "ACW Blue Glass White Edition",
   AUTHOR: "JAG15 & Sky"
