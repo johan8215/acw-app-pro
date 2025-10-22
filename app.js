@@ -30,6 +30,7 @@ async function loginUser() {
     if (!data.ok) throw new Error("Invalid email or password.");
 
     currentUser = data;
+    localStorage.setItem("acwUser", JSON.stringify(data));
     diag.textContent = "";
     showWelcome(data.name, data.role);
     await loadSchedule(email);
