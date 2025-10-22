@@ -19,7 +19,7 @@ async function loginUser() {
   }
 
   /* ============================================================
-   👋 SHOW WELCOME DASHBOARD — Blue Glass White Edition
+   👋 SHOW WELCOME DASHBOARD — with phone from Employees sheet
    ============================================================ */
 function showWelcome(name, role) {
   // Oculta login y muestra dashboard
@@ -30,12 +30,16 @@ function showWelcome(name, role) {
   document.getElementById("welcomeName").innerHTML = `<b>${name}</b>`;
   document.getElementById("welcomeRole").textContent = role;
 
-  // 📞 Mostrar número de teléfono debajo del nombre
+  // 📞 Mostrar teléfono dinámico desde currentUser
   const schedDiv = document.getElementById("schedule");
-  if (currentUser?.phone) {
-    const phoneHTML = `<p class="user-phone">📞 ${currentUser.phone}</p>`;
-    schedDiv.insertAdjacentHTML("beforebegin", phoneHTML);
-  }
+  const phone = currentUser?.phone || "(no phone)";
+  const phoneHTML = `<p class="user-phone">📞 ${phone}</p>`;
+
+  // Evita duplicados si se recarga
+  const existing = document.querySelector(".user-phone");
+  if (existing) existing.remove();
+
+  schedDiv.insertAdjacentHTML("beforebegin", phoneHTML);
 
   // Solo managers o supervisores ven el botón "Team View"
   if (role === "manager" || role === "supervisor") {
