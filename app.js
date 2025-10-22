@@ -36,59 +36,48 @@ async function loginUser() {
   }
 }
 
-// 🧮 LOAD SCHEDULE
-async function loadSchedule(email) {
-  const diag = document.getElementById("diag");
-  diag.textContent = "Loading schedule...";
-
-  try {
-    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
-    const data = await res.json();
-    if (!data.ok) throw new Error("Could not load schedule.");
-
-    scheduleData = data;
-    diag.textContent = "";
-    renderSchedule(data);
-    startClock();
-  } catch (err) {
-    diag.textContent = "Error loading schedule.";
-    console.error(err);
-  }
-}
-
-// 🧾 RENDER SCHEDULE TABLE
 function renderSchedule(data) {
   const container = document.getElementById("schedule");
-  container.innerHTML = "";
+  if (!data || !data.days) {
+    container.innerHTML = "<p>No schedule data found.</p>";
+    return;
+  }
 
-  const table = document.createElement("table");
-  table.innerHTML = `
-    <thead>
-      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-    </thead>
-    <tbody>
-      ${data.days
-        .map(day => {
-          const today = new Date().toLocaleDateString("en-US", { weekday: "short" });
-          const isToday = today === day.name;
-          const liveHours = calcLiveHours(day.shift, day.hours);
-          const showLive = isToday && day.shift?.endsWith(".");
-          const hoursDisplay = showLive ? `⏱️ ${liveHours}` : day.hours || "-";
-          return `
-            <tr${isToday ? ' class="today"' : ""}>
-              <td>${day.name}</td>
-              <td>${day.shift || "-"}</td>
-              <td>${hoursDisplay}</td>
-            </tr>
-          `;
-        })
-        .join("")}
-    </tbody>
+  // 🔧 fallback para nombres de día
+  const fallbackDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  let html = `
+    <h2>${data.name}</h2>
+    <p class="role">${data.role}</p>
+    <p>Week: ${data.week}</p>
+    <table>
+      <thead>
+        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+      </thead>
+      <tbody>
   `;
-  container.appendChild(table);
 
-  const total = calcTotalHours(data.days);
-  document.getElementById("totalHours").innerHTML = `Total Hours: <b>${total}</b>`;
+  data.days.forEach((day, i) => {
+    const dayName = day.day || fallbackDays[i] || "-";
+    const shift = day.shift || "-";
+    const hours = day.hours || 0;
+
+    html += `
+      <tr>
+        <td>${dayName}</td>
+        <td>${shift}</td>
+        <td>${hours}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      </tbody>
+    </table>
+    <p class="total">Total Hours: <b>${data.total}</b></p>
+  `;
+
+  container.innerHTML = html;
 }
 
 // 🧮 CALCULATE LIVE HOURS (if shift ends with ".")
