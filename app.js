@@ -18,8 +18,8 @@ async function loginUser() {
     return;
   }
 
-   /* ============================================================
-   👋 SHOW WELCOME DASHBOARD
+  /* ============================================================
+   👋 SHOW WELCOME DASHBOARD — Blue Glass White Edition
    ============================================================ */
 function showWelcome(name, role) {
   // Oculta login y muestra dashboard
@@ -27,14 +27,35 @@ function showWelcome(name, role) {
   document.getElementById("welcome").style.display = "block";
 
   // Asigna el nombre y rol
-  document.getElementById("welcomeName").textContent = name;
+  document.getElementById("welcomeName").innerHTML = `<b>${name}</b>`;
   document.getElementById("welcomeRole").textContent = role;
+
+  // 📞 Mostrar número de teléfono debajo del nombre
+  const schedDiv = document.getElementById("schedule");
+  if (currentUser?.phone) {
+    const phoneHTML = `<p class="user-phone">📞 ${currentUser.phone}</p>`;
+    schedDiv.insertAdjacentHTML("beforebegin", phoneHTML);
+  }
 
   // Solo managers o supervisores ven el botón "Team View"
   if (role === "manager" || role === "supervisor") {
     addTeamButton();
   }
 }
+
+/* ============================================================
+   🔐 LOGIN FUNCTION (completa y corregida)
+   ============================================================ */
+async function loginUser() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const diag = document.getElementById("diag");
+  const btn = document.querySelector("#login button");
+
+  if (!email || !password) {
+    diag.textContent = "Please enter your email and password.";
+    return;
+  }
 
   try {
     btn.disabled = true;
@@ -72,7 +93,7 @@ window.addEventListener("load", () => {
     loadSchedule(user.email);
   }
 });
-
+   
 /* ============================================================
    📅 LOAD SCHEDULE — Blue Glass White Edition
    ============================================================ */
