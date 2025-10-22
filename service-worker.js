@@ -1,43 +1,39 @@
 /* ============================================================
-   🧼 ACW-App Service Worker — Stable Mode (No Popup)
-   Johan A. Giraldo | Oct 2025
-============================================================ */
+   ⚙️ SERVICE WORKER — ACW-App Blue Glass White Edition
+   Silent cache, no popup
+   ============================================================ */
 
-const CACHE_NAME = "acw-app-v4.8.2";
+const CACHE_NAME = "acw-blue-glass-v472";
 const ASSETS = [
-  "/",
-  "/index.html",
-  "/style.css",
-  "/app.js",
-  "/config.js",
-  "/manifest.json",
-  "/acw-icon-512.png"
+  "./",
+  "./index.html",
+  "./style.css",
+  "./app.js",
+  "./config.js",
+  "./manifest.json",
+  "./acw-icon-512.png"
 ];
 
-// 🧩 Install: cache essential files
 self.addEventListener("install", e => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then(cache => {
+      console.log("📦 Caching assets");
+      return cache.addAll(ASSETS);
+    })
   );
-  self.skipWaiting();
 });
 
-// ♻️ Activate: clear old caches
+self.addEventListener("fetch", e => {
+  e.respondWith(
+    caches.match(e.request).then(res => res || fetch(e.request))
+  );
+});
+
 self.addEventListener("activate", e => {
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
     )
   );
-  self.clients.claim();
+  console.log("♻️ Old cache cleared");
 });
-
-// 🌐 Fetch: serve cached or network fallback
-self.addEventListener("fetch", e => {
-  e.respondWith(
-    caches.match(e.request).then(resp => resp || fetch(e.request))
-  );
-});
-
-// 🚫 NO AUTO-RELOAD POPUPS — Stable build
-// (Removed postMessage logic completely)
