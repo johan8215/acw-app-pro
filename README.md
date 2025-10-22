@@ -1,67 +1,77 @@
-# 🚘 Allston Car Wash — ACW-App v4.7.4  
-**Edition:** Blue Glass White  
-**Authors:** Johan A. Giraldo (JAG15) & Sky (AI Assistant)  
-**Date:** October 22, 2025  
+<p align="center">
+  <img src="https://i.imgur.com/1LqoqYp.png" width="120" alt="ACW Logo"><br>
+  <h2 align="center">🚘 Allston Car Wash — ACW-App v4.7.4</h2>
+  <p align="center">
+    <b>Blue Glass White Edition (Stable Clean Build)</b><br>
+    Johan A. Giraldo (JAG15) & Sky — October 2025
+  </p>
+</p>
+
+---
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Version-4.7.4-blue?style=for-the-badge&logo=vercel">
+  <img src="https://img.shields.io/badge/Status-Stable-success?style=for-the-badge&logo=github">
+  <img src="https://img.shields.io/badge/Platform-PWA%20|%20Web%20|%20iOS%20|%20Android-lightgrey?style=for-the-badge&logo=googlechrome">
+  <img src="https://img.shields.io/badge/Made%20with-%E2%9D%A4%EF%B8%8F%20in%20Boston-red?style=for-the-badge">
+</p>
 
 ---
 
 ## 🧠 Overview
 
-**ACW-App** is a modern, lightweight Progressive Web Application (PWA) designed for  
-**Allston Car Wash** employee scheduling, real-time updates, and management communication.  
-This build — *Blue Glass White Edition* — introduces a refined white interface with blue-glass shadows,  
-enhanced live-hour tracking, and improved session persistence for seamless daily use.
+**ACW-App** is a modern Progressive Web Application (PWA) built for  
+**Allston Car Wash (Boston, MA)** to manage employee schedules, live shift tracking,  
+and internal communication.  
+
+The **Blue Glass White Edition** introduces a clean white interface with glassy blue shadows,  
+enhanced real-time hour updates, and optimized session handling.
 
 ---
 
-## 🎨 Design Highlights
+## 🎨 UI & Design
 
 | Element | Description |
 |----------|-------------|
-| **Theme** | White minimalist with blue-glass shadows |
-| **Accent Color** | 🔵 Metallic blue (#0078ff) |
-| **Primary Button** | 🔴 Red (hover brightens to #ff3333) |
-| **Typography** | Segoe UI / Roboto, centered & clean |
-| **App Icon** | White background, blue glow, red ACW text, blue droplet logo |
+| **Theme** | White minimalist + Blue-glass glow |
+| **Accent Color** | `#0078ff` Metallic Blue |
+| **Typography** | Segoe UI / Roboto (centered layout) |
+| **Components** | Floating panels, blur-glass modals, glowing buttons |
 
-The app interface is optimized for mobile and desktop with touch-friendly buttons and centered modals.  
-All elements use smooth transitions and blurred glass containers to maintain the Blue Glass visual identity.
+<p align="center">
+  <img src="https://i.imgur.com/QLxFoRy.png" width="420" alt="UI Preview">
+</p>
 
 ---
 
 ## 🧩 Core Features
 
 ### 🔐 Login System
-- Secure login with dynamic validation  
-- Displays name, role, and phone (fetched from “Employees” sheet)  
-- Persistent session storage (`localStorage`)
+- Secure login with server validation  
+- Fetches user phone and role dynamically  
+- Persistent sessions using `localStorage`
 
 ### 📅 Smart Schedule
-- Auto-fetches schedule via `getSmartSchedule` API  
-- Highlights today’s shift dynamically  
+- Loads from Google Sheets backend (`getSmartSchedule`)  
+- Highlights current day automatically  
 - Displays total weekly hours  
 
 ### ⏱️ Live Hours Indicator
-- Real-time hour accumulation  
-- Updates every minute without reloading  
-- Overtime (>9h) displayed in red 🔴  
+- Real-time shift timer (auto-updates every 60s)  
+- Adds live worked hours to total dynamically  
+- Overtime (>9h) shown in **red 🔴**
 
 ### 👥 Team View
-- Floating centered modal with full employee list  
-- Includes **Name**, **Role**, **Email**, **Phone**  
-- “✖️ Close” button with soft blue shadow  
+- Floating glass panel with full directory (Name / Role / Email / Phone)  
+- ✖️ Close button for easy exit  
+- Optimized for iPhone, iPad, and desktop  
 
 ### ⚙️ Settings Modal
-- Integrated buttons:
-  - 🔄 **Check for Updates** (manual refresh + cache clear)
-  - 🚪 **Log Out** (resets localStorage and reloads app)
-- Smooth transitions with blue-glass borders  
-
-### 📲 PWA Install Support
-- Fully installable on iOS, Android, and Desktop (Chrome/Safari)  
-- Includes manifest.json and 512px icon (`acw-icon-512.png`)  
-- Works offline via service worker  
+- Floating blue-glass settings button ⚙️  
+- Inside:  
+  - 🔄 **Check for Updates** → Clears cache + reloads app  
+  - 🚪 **Log Out** → Resets session instantly  
 
 ---
 
-## 📁 Project Structure
+## 📁 File Structure
