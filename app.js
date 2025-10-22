@@ -47,7 +47,7 @@ async function loginUser() {
 }
 
 /* ============================================================
-   👋 SHOW WELCOME DASHBOARD — (fetch phone from Employees)
+   👋 SHOW WELCOME DASHBOARD — with delayed phone render
    ============================================================ */
 async function showWelcome(name, role) {
   document.getElementById("login").style.display = "none";
@@ -62,21 +62,23 @@ async function showWelcome(name, role) {
   try {
     const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
     const data = await res.json();
+
     if (data.ok && data.directory) {
       const match = data.directory.find(e =>
         e.email?.toLowerCase() === (currentUser?.email || "").toLowerCase()
       );
-     if (match && match.phone) {
-  const existing = document.querySelector(".user-phone");
-  if (existing) existing.remove();
 
-  const phoneHTML = `<p class="user-phone">📞 ${match.phone}</p>`;
+      if (match && match.phone) {
+        setTimeout(() => {
+          const existing = document.querySelector(".user-phone");
+          if (existing) existing.remove();
 
-  // Inserta justo debajo del nombre en vez de antes del schedule
-  const nameEl = document.getElementById("welcomeName");
-  if (nameEl)
-    nameEl.insertAdjacentHTML("afterend", phoneHTML);
-}
+          // clickable + glow azul
+          const phoneHTML = `<p class="user-phone">📞 <a href="tel:${match.phone}" style="color:#0078ff;text-decoration:none;font-weight:600;">${match.phone}</a></p>`;
+          const nameEl = document.getElementById("welcomeName");
+          if (nameEl) nameEl.insertAdjacentHTML("afterend", phoneHTML);
+        }, 300);
+      }
     }
   } catch (err) {
     console.warn("Could not load phone number:", err);
@@ -233,20 +235,44 @@ function updateTotalDisplay(value) {
     totalEl.innerHTML = `Total Hours: <b>${value.toFixed(2)}</b> ⏱️`;
 }
 
-const originalLoadSchedule = loadSchedule;
-loadSchedule = async function (email) {
-  await originalLoadSchedule(email);
+/* ============================================================
+   👋 SHOW WELCOME DASHBOARD — with delayed phone render
+   ============================================================ */
+async function showWelcome(name, role) {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("welcome").style.display = "block";
+  document.getElementById("welcomeName").innerHTML = `<b>${name}</b>`;
+  document.getElementById("welcomeRole").textContent = role;
+
+  // Solo managers o supervisores ven el botón "Team View"
+  if (role === "manager" || role === "supervisor") addTeamButton();
+
+  // 🔍 Buscar teléfono desde Employees list
   try {
-    const res = await fetch(
-      `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`
-    );
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
     const data = await res.json();
-    if (data.ok && data.days)
-      setTimeout(() => startLiveTimer(data.days, Number(data.total || 0)), 800);
-  } catch (e) {
-    console.warn("Live timer skipped:", e);
+
+    if (data.ok && data.directory) {
+      const match = data.directory.find(e =>
+        e.email?.toLowerCase() === (currentUser?.email || "").toLowerCase()
+      );
+
+      if (match && match.phone) {
+        setTimeout(() => {
+          const existing = document.querySelector(".user-phone");
+          if (existing) existing.remove();
+
+          // clickable + glow azul
+          const phoneHTML = `<p class="user-phone">📞 <a href="tel:${match.phone}" style="color:#0078ff;text-decoration:none;font-weight:600;">${match.phone}</a></p>`;
+          const nameEl = document.getElementById("welcomeName");
+          if (nameEl) nameEl.insertAdjacentHTML("afterend", phoneHTML);
+        }, 300);
+      }
+    }
+  } catch (err) {
+    console.warn("Could not load phone number:", err);
   }
-};
+}
 
 /* ============================================================
    🧩 TEAM VIEW ENHANCED — with Close button (modern)
