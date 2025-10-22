@@ -138,24 +138,23 @@ let directoryVisible = false;
 // 🧩 Add floating “Team Overview” button
 function addTeamButton() {
   if (document.getElementById("teamBtn")) return;
-
-  const btn = document.createElement("div");
+  const btn = document.createElement("button");
   btn.id = "teamBtn";
-  btn.className = "team-box-btn";
+  btn.className = "team-btn";
   btn.textContent = "Team Overview";
   btn.onclick = toggleTeamOverview;
   document.body.appendChild(btn);
 }
 
-// Toggle open/close
+let directoryVisible = false;
 function toggleTeamOverview() {
   if (directoryVisible) {
-    document.querySelectorAll(".team-grid").forEach(e => e.remove());
+    document.getElementById("directoryWrapper")?.remove();
     directoryVisible = false;
-  } else {
-    loadEmployeeDirectory();
-    directoryVisible = true;
+    return;
   }
+  loadEmployeeDirectory();
+  directoryVisible = true;
 }
 
 // Load employee list
@@ -235,24 +234,27 @@ function closeSettings() {
    📲 INSTALL APP PROMPT — Blue Glass Edition (iOS & Android)
    ============================================================ */
 let deferredPrompt;
-window.addEventListener("beforeinstallprompt",e=>{
-  e.preventDefault();deferredPrompt=e;showInstallButton();
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallButton();
 });
-function showInstallButton(){
-  if(document.getElementById("installBtn"))return;
-  const btn=document.createElement("button");
-  btn.id="installBtn";btn.className="install-btn";btn.innerHTML="📲";
-  btn.onclick=async()=>{
-    if(deferredPrompt){
+
+function showInstallButton() {
+  if (document.getElementById("installBtn")) return;
+  const btn = document.createElement("button");
+  btn.id = "installBtn";
+  btn.className = "install-btn";
+  btn.textContent = "Add App";
+  btn.onclick = async () => {
+    if (deferredPrompt) {
       deferredPrompt.prompt();
-      const{outcome}=await deferredPrompt.userChoice;
-      console.log("User response to install:",outcome);
-      deferredPrompt=null;btn.remove();
-    }else{
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      btn.remove();
+    } else {
       alert("Add this app to your Home Screen from Safari’s share menu.");
     }
   };
   document.body.appendChild(btn);
 }
-
-console.log("✅ ACW Blue Glass v4.7 — Full Build Loaded");
