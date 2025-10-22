@@ -73,7 +73,7 @@ async function showWelcome(name, role) {
           const existing = document.querySelector(".user-phone");
           if (existing) existing.remove();
 
-          // clickable + glow azul
+          // Teléfono clickeable con efecto azul
           const phoneHTML = `<p class="user-phone">📞 <a href="tel:${match.phone}" style="color:#0078ff;text-decoration:none;font-weight:600;">${match.phone}</a></p>`;
           const nameEl = document.getElementById("welcomeName");
           if (nameEl) nameEl.insertAdjacentHTML("afterend", phoneHTML);
