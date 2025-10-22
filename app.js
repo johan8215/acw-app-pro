@@ -1,206 +1,293 @@
+// ============================================================
+// 🧠 ACW-App v4.8.2 — White-Blue Stable Build
+// Johan A. Giraldo (JAG15) & Sky — Oct 2025
+// ============================================================
+
+let currentUser = null;
+let scheduleData = null;
+let clockTimer = null;
+
 /* ============================================================
-   🎨 ACW-App v4.8.2 — White-Blue Hybrid Stable Edition
-   Johan A. Giraldo (JAG15) | Allston Car Wash © 2025
-============================================================ */
+   🔐 LOGIN & SESSION RESTORE
+   ============================================================ */
+async function loginUser() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const diag = document.getElementById("diag");
+  diag.textContent = "";
 
-/* ---------- Base ---------- */
-body {
-  font-family: 'Segoe UI', Roboto, sans-serif;
-  background: #ffffff;
-  color: #111;
-  margin: 0;
-  padding: 0;
-  text-align: center;
-}
+  if (!email || !password) {
+    diag.textContent = "Please enter your email and password.";
+    return;
+  }
 
-/* ---------- Glass Container ---------- */
-.container {
-  background: rgba(255, 255, 255, 0.98);
-  border-radius: 16px;
-  padding: 40px 50px;
-  margin: 70px auto;
-  max-width: 420px;
-  box-shadow: 0 0 40px rgba(0, 120, 255, 0.35);
-  transition: all 0.4s ease;
-}
+  try {
+    diag.textContent = "Signing in...";
+    const res = await fetch(
+      `${CONFIG.BASE_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
+    );
+    const data = await res.json();
+    if (!data.ok) throw new Error("Invalid email or password.");
 
-/* ---------- Headings ---------- */
-h1, h2 {
-  color: #e60000;
-  margin-bottom: 10px;
-}
+    currentUser = data;
+    localStorage.setItem("acwUser", JSON.stringify(data));
 
-.role {
-  color: #333;
-  font-weight: 600;
-  margin-top: -5px;
-  margin-bottom: 10px;
+    diag.textContent = "";
+    showWelcome(data.name, data.role);
+    await loadSchedule(email);
+  } catch (err) {
+    diag.textContent = err.message;
+  }
 }
 
-/* ---------- Inputs & Buttons ---------- */
-input {
-  display: block;
-  width: 80%;
-  margin: 10px auto;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 15px;
+// 🧩 Restore session automatically
+window.addEventListener("load", () => {
+  const saved = localStorage.getItem("acwUser");
+  if (saved) {
+    try {
+      const user = JSON.parse(saved);
+      currentUser = user;
+      showWelcome(user.name, user.role);
+      loadSchedule(user.email);
+    } catch (e) {
+      console.error("Session restore failed:", e);
+      localStorage.removeItem("acwUser");
+    }
+  }
+});
+
+/* ============================================================
+   📅 LOAD & RENDER SCHEDULE
+   ============================================================ */
+async function loadSchedule(email) {
+  const diag = document.getElementById("diag");
+  diag.textContent = "Loading schedule...";
+
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error("Could not load schedule.");
+
+    scheduleData = data;
+    diag.textContent = "";
+    renderSchedule(data);
+    startClock();
+  } catch (err) {
+    diag.textContent = "Error loading schedule.";
+    console.error(err);
+  }
 }
 
-button {
-  background: #e60000;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 22px;
-  cursor: pointer;
-  margin-top: 15px;
-  font-size: 15px;
-  transition: background 0.2s ease;
+function renderSchedule(data) {
+  const box = document.getElementById("schedule");
+  if (!data || !data.ok) {
+    box.innerHTML = `<p style="color:#ff9999;">No schedule found</p>`;
+    return;
+  }
+
+  const FALLBACK = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  let html = `
+    <h4>Week: ${data.week}</h4>
+    <table class="schedule-table">
+      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+  `;
+
+  (data.days || []).forEach((d,i) => {
+    const dayName = d.name || FALLBACK[i];
+    const shift = d.shift || "-";
+    const hours = d.hours || 0;
+    html += `<tr><td>${dayName}</td><td>${shift}</td><td>${hours}</td></tr>`;
+  });
+
+  html += `</table>
+    <p><b>Total Hours: ${calcTotalHours(data.days)}</b></p>
+    <div id="clockBox" class="clock"></div>`;
+  box.innerHTML = html;
 }
 
-button:hover {
-  background: #ff3333;
+/* ============================================================
+   ⏰ CLOCK & HOURS
+   ============================================================ */
+function calcLiveHours(shift,hours) {
+  if (!shift) return 0;
+  if (shift.includes("-")) return hours || 0;
+  const match = shift.match(/(\d{1,2})(?::(\d{2}))?/);
+  if (!match) return hours || 0;
+  const startHour = parseInt(match[1],10);
+  const startMin = parseInt(match[2] || "0",10);
+  const now = new Date();
+  const start = new Date();
+  start.setHours(startHour);
+  start.setMinutes(startMin);
+  let diff = (now - start)/3600000;
+  if (diff < 0) diff += 24;
+  return Math.round(diff*10)/10;
+}
+function calcTotalHours(days) {
+  let total = 0;
+  for (const d of days) total += calcLiveHours(d.shift,d.hours);
+  return total.toFixed(1);
+}
+function startClock() {
+  if (clockTimer) clearInterval(clockTimer);
+  const box = document.getElementById("clockBox");
+  function tick(){
+    const now = new Date();
+    box.textContent = "🕒 " + now.toLocaleTimeString([],{
+      hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true
+    });
+  }
+  tick();
+  clockTimer = setInterval(tick,1000);
 }
 
-/* ---------- Table ---------- */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 20px 0;
-  font-size: 15px;
+/* ============================================================
+   👋 DASHBOARD
+   ============================================================ */
+function showWelcome(name, role) {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("welcome").style.display = "block";
+  document.getElementById("welcomeName").textContent = name;
+  document.getElementById("welcomeRole").textContent = role;
+
+  if (role === "manager" || role === "supervisor") {
+    addTeamButton();
+  }
 }
 
-th {
-  color: #e60000;
-  border-bottom: 2px solid #e60000;
-  padding: 8px;
+/* ============================================================
+   👥 TEAM OVERVIEW — Floating White/Blue Table
+   ============================================================ */
+function addTeamButton() {
+  if (document.getElementById("teamBtn")) return;
+  const btn = document.createElement("button");
+  btn.id = "teamBtn";
+  btn.className = "team-btn";
+  btn.textContent = "Team Overview";
+  btn.onclick = toggleTeamOverview;
+  document.body.appendChild(btn);
 }
 
-td {
-  padding: 8px 6px;
-  border-bottom: 1px solid #ddd;
+let directoryVisible = false;
+function toggleTeamOverview() {
+  if (directoryVisible) {
+    document.getElementById("directoryWrapper")?.remove();
+    directoryVisible = false;
+    return;
+  }
+  loadEmployeeDirectory();
+  directoryVisible = true;
 }
 
-/* ---------- Totals & Clock ---------- */
-.total {
-  margin-top: 10px;
-  font-weight: bold;
-  color: #e60000;
+async function loadEmployeeDirectory() {
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
+    const data = await res.json();
+    if (!data.ok) return;
+    renderDirectoryTable(data.directory);
+  } catch (err) {
+    console.error("Error loading directory:", err);
+  }
 }
 
-.clock {
-  margin-top: 6px;
-  color: #0070ff;
-  font-size: 0.9em;
+function renderDirectoryTable(list) {
+  document.getElementById("directoryWrapper")?.remove();
+  const wrapper = document.createElement("div");
+  wrapper.id = "directoryWrapper";
+  wrapper.className = "directory-wrapper";
+
+  let html = `
+    <h3 style="margin-top:0;margin-bottom:10px;color:#0070ff;">Team Overview</h3>
+    <table class="directory-table">
+      <tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Status</th><th></th></tr>
+  `;
+  list.forEach(emp => {
+    const active = emp.status === "active";
+    html += `
+      <tr class="${active ? "active-row" : "inactive-row"}">
+        <td><b>${emp.name}</b></td>
+        <td>${emp.role}</td>
+        <td>${emp.email}</td>
+        <td>${emp.phone || ""}</td>
+        <td style="color:${active ? "#00b37d" : "#888"};">${emp.status}</td>
+        <td><button class="open-btn" onclick="openEmployeeCard('${emp.email}','${emp.name}','${emp.role}','${emp.phone}')">Open</button></td>
+      </tr>`;
+  });
+  html += "</table>";
+  wrapper.innerHTML = html;
+  document.body.appendChild(wrapper);
 }
 
-/* ---------- Floating Team Overview ---------- */
-.team-btn {
-  position: fixed;
-  top: 22px;
-  right: 26px;
-  background: #fff;
-  color: #0070ff;
-  border: 2px solid #0070ff;
-  border-radius: 8px;
-  padding: 8px 18px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 0 25px rgba(0, 120, 255, 0.3);
-  transition: all 0.3s ease;
-  animation: pulseBlue 3s infinite ease-in-out;
-  z-index: 10000;
+async function openEmployeeCard(email,name,role,phone){
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
+    const data = await res.json();
+    if (!data.ok) return alert("No schedule found for this employee.");
+
+    const modal = document.createElement("div");
+    modal.className = "employee-modal";
+    modal.innerHTML = `
+      <div class="modal-header">
+        <span class="modal-close" onclick="this.parentElement.parentElement.remove()">×</span>
+        <h3>${name}</h3>
+        <p>${role||""}</p>
+        <p>${phone||""}</p>
+      </div>
+      <table class="schedule-mini">
+        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+        ${data.days.map(d=>`<tr><td>${d.name}</td><td>${d.shift}</td><td>${d.hours}</td></tr>`).join("")}
+      </table>
+      <p class="total">Total Hours: <b>${data.total}</b></p>
+    `;
+    document.body.appendChild(modal);
+  } catch(err) {
+    console.error("Error opening card:", err);
+  }
 }
 
-@keyframes pulseBlue {
-  0%, 100% { box-shadow: 0 0 15px rgba(0,120,255,0.25); }
-  50% { box-shadow: 0 0 25px rgba(0,120,255,0.55); }
+/* ============================================================
+   🚪 LOGOUT & SETTINGS
+   ============================================================ */
+function logoutUser(){
+  currentUser=null;
+  scheduleData=null;
+  if(clockTimer)clearInterval(clockTimer);
+  localStorage.removeItem("acwUser");
+  document.getElementById("login").style.display="block";
+  document.getElementById("welcome").style.display="none";
+  document.getElementById("email").value="";
+  document.getElementById("password").value="";
+}
+function openSettings(){document.getElementById("settingsModal").style.display="block";}
+function closeSettings(){document.getElementById("settingsModal").style.display="none";}
+
+/* ============================================================
+   📲 INSTALL APP BUTTON
+   ============================================================ */
+let deferredPrompt;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallButton();
+});
+
+function showInstallButton() {
+  if (document.getElementById("installBtn")) return;
+  const btn = document.createElement("button");
+  btn.id = "installBtn";
+  btn.className = "install-btn";
+  btn.textContent = "Add App";
+  btn.onclick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      btn.remove();
+    } else {
+      alert("Add this app to your Home Screen from Safari’s share menu.");
+    }
+  };
+  document.body.appendChild(btn);
 }
 
-.team-btn:hover {
-  background: #0070ff;
-  color: #fff;
-}
-
-/* ---------- Directory Table ---------- */
-.directory-wrapper {
-  position: fixed;
-  top: 80px;
-  right: 26px;
-  background: rgba(255,255,255,0.98);
-  border: 1px solid rgba(0,120,255,0.25);
-  border-radius: 12px;
-  box-shadow: 0 4px 30px rgba(0,120,255,0.35);
-  width: 420px;
-  max-height: 70vh;
-  overflow-y: auto;
-  padding: 16px;
-  z-index: 9999;
-}
-
-.directory-table {
-  width: 100%;
-  border-collapse: collapse;
-  color: #111;
-}
-.directory-table th {
-  color: #0070ff;
-  border-bottom: 1px solid #ddd;
-  padding: 6px;
-  text-align: left;
-}
-.directory-table td {
-  padding: 6px;
-  border-bottom: 1px solid #eee;
-}
-
-.open-btn {
-  background: #e60000;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 4px 10px;
-  cursor: pointer;
-  font-size: 13px;
-}
-.open-btn:hover { background: #ff3333; }
-
-/* ---------- Modal ---------- */
-.employee-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(255,255,255,0.98);
-  border: 1px solid rgba(0,120,255,0.2);
-  border-radius: 14px;
-  padding: 22px;
-  width: 420px;
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 45px rgba(0,120,255,0.35);
-  z-index: 10000;
-  text-align: center;
-}
-
-/* ---------- Add App Button ---------- */
-.install-btn {
-  position: fixed;
-  bottom: 26px;
-  right: 26px;
-  background: rgba(0, 255, 180, 0.9);
-  border: none;
-  border-radius: 8px;
-  color: #fff;
-  padding: 10px 18px;
-  font-size: 14px;
-  cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
-  transition: all 0.3s ease;
-}
-.install-btn:hover {
-  background: rgba(0,255,200,1);
-  transform: scale(1.05);
-}
+console.log("✅ ACW-App v4.8.2 — White-Blue Stable Build Loaded");
