@@ -284,6 +284,32 @@ async function showWelcome(name, role) {
 }
 
 /* ============================================================
+   👥 TEAM VIEW — Button Logic
+   ============================================================ */
+function addTeamButton() {
+  if (document.getElementById("teamBtn")) return;
+  const btn = document.createElement("button");
+  btn.id = "teamBtn";
+  btn.className = "team-btn";
+  btn.textContent = "Team View";
+  btn.onclick = toggleTeamOverview;
+  document.body.appendChild(btn);
+}
+
+function toggleTeamOverview() {
+  const wrapper = document.getElementById("directoryWrapper");
+  if (wrapper) return wrapper.remove();
+  loadEmployeeDirectory();
+}
+
+async function loadEmployeeDirectory() {
+  const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
+  const data = await res.json();
+  if (!data.ok) return;
+  renderDirectory(data.directory);
+}
+
+/* ============================================================
    🧩 TEAM VIEW ENHANCED — with Close button (modern)
    ============================================================ */
 function renderDirectory(list) {
