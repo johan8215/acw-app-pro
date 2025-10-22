@@ -38,6 +38,21 @@ async function loginUser() {
     diag.textContent = err.message;
   }
 }
+// 🧩 Restore session on load
+window.addEventListener("load", () => {
+  const savedUser = localStorage.getItem("acwUser");
+  if (savedUser) {
+    try {
+      const user = JSON.parse(savedUser);
+      currentUser = user;
+      showWelcome(user.name, user.role);
+      loadSchedule(user.email);
+    } catch (e) {
+      console.error("Failed to restore session:", e);
+      localStorage.removeItem("acwUser");
+    }
+  }
+});
 
 /* ============================================================
    📅 LOAD & RENDER SCHEDULE
