@@ -104,3 +104,27 @@ button:hover { background: #ff3333; }
   margin-bottom: -6px;
   text-shadow: 0 0 8px rgba(0,120,255,0.25);
 }
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.settings-section button {
+  background: #e60000;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  transition: all 0.3s ease;
+}
+
+.settings-section button:hover {
+  background: #ff3333;
+  transform: scale(1.03);
+}
