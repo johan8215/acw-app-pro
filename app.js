@@ -1,5 +1,5 @@
 // ============================================================
-// 🧠 ACW-App v4.8.2 — White-Blue Stable Build
+// 🧠 ACW-App v4.7 — Blue Glass Edition (Final Build)
 // Johan A. Giraldo (JAG15) & Sky — Oct 2025
 // ============================================================
 
@@ -8,7 +8,7 @@ let scheduleData = null;
 let clockTimer = null;
 
 /* ============================================================
-   🔐 LOGIN & SESSION RESTORE
+   🔐 LOGIN
    ============================================================ */
 async function loginUser() {
   const email = document.getElementById("email").value.trim();
@@ -31,7 +31,6 @@ async function loginUser() {
 
     currentUser = data;
     localStorage.setItem("acwUser", JSON.stringify(data));
-
     diag.textContent = "";
     showWelcome(data.name, data.role);
     await loadSchedule(email);
@@ -39,18 +38,17 @@ async function loginUser() {
     diag.textContent = err.message;
   }
 }
-
-// 🧩 Restore session automatically
+// 🧩 Restore session on load
 window.addEventListener("load", () => {
-  const saved = localStorage.getItem("acwUser");
-  if (saved) {
+  const savedUser = localStorage.getItem("acwUser");
+  if (savedUser) {
     try {
-      const user = JSON.parse(saved);
+      const user = JSON.parse(savedUser);
       currentUser = user;
       showWelcome(user.name, user.role);
       loadSchedule(user.email);
     } catch (e) {
-      console.error("Session restore failed:", e);
+      console.error("Failed to restore session:", e);
       localStorage.removeItem("acwUser");
     }
   }
@@ -62,12 +60,10 @@ window.addEventListener("load", () => {
 async function loadSchedule(email) {
   const diag = document.getElementById("diag");
   diag.textContent = "Loading schedule...";
-
   try {
     const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
     const data = await res.json();
     if (!data.ok) throw new Error("Could not load schedule.");
-
     scheduleData = data;
     diag.textContent = "";
     renderSchedule(data);
@@ -84,210 +80,179 @@ function renderSchedule(data) {
     box.innerHTML = `<p style="color:#ff9999;">No schedule found</p>`;
     return;
   }
-
   const FALLBACK = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-  let html = `
-    <h4>Week: ${data.week}</h4>
-    <table class="schedule-table">
-      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-  `;
-
+  let html = `<h4>Week: ${data.week}</h4>
+  <table class="schedule-table">
+  <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
   (data.days || []).forEach((d,i) => {
     const dayName = d.name || FALLBACK[i];
-    const shift = d.shift || "-";
-    const hours = d.hours || 0;
-    html += `<tr><td>${dayName}</td><td>${shift}</td><td>${hours}</td></tr>`;
+    html += `<tr><td>${dayName}</td><td>${d.shift||"-"}</td><td>${d.hours||0}</td></tr>`;
   });
-
-  html += `</table>
-    <p><b>Total Hours: ${calcTotalHours(data.days)}</b></p>
-    <div id="clockBox" class="clock"></div>`;
+  html += `</table><p><b>Total Hours: ${calcTotalHours(data.days)}</b></p>
+  <div id="clockBox" style="margin-top:10px;font-size:14px;color:#0070ff;"></div>`;
   box.innerHTML = html;
 }
 
 /* ============================================================
-   ⏰ CLOCK & HOURS
+   🕓 CLOCK & HOURS
    ============================================================ */
-function calcLiveHours(shift,hours) {
-  if (!shift) return 0;
-  if (shift.includes("-")) return hours || 0;
-  const match = shift.match(/(\d{1,2})(?::(\d{2}))?/);
-  if (!match) return hours || 0;
-  const startHour = parseInt(match[1],10);
-  const startMin = parseInt(match[2] || "0",10);
-  const now = new Date();
-  const start = new Date();
-  start.setHours(startHour);
-  start.setMinutes(startMin);
-  let diff = (now - start)/3600000;
-  if (diff < 0) diff += 24;
+function calcLiveHours(shift,hours){
+  if(!shift)return 0;
+  if(shift.includes("-"))return hours||0;
+  const m=shift.match(/(\d{1,2})(?::(\d{2}))?/);
+  if(!m)return hours||0;
+  const h=parseInt(m[1],10),min=parseInt(m[2]||"0",10);
+  const now=new Date(),start=new Date();
+  start.setHours(h);start.setMinutes(min);
+  let diff=(now-start)/3600000;if(diff<0)diff+=24;
   return Math.round(diff*10)/10;
 }
-function calcTotalHours(days) {
-  let total = 0;
-  for (const d of days) total += calcLiveHours(d.shift,d.hours);
-  return total.toFixed(1);
+function calcTotalHours(days){
+  return days.reduce((s,d)=>s+calcLiveHours(d.shift,d.hours),0).toFixed(1);
 }
-function startClock() {
-  if (clockTimer) clearInterval(clockTimer);
-  const box = document.getElementById("clockBox");
-  function tick(){
-    const now = new Date();
-    box.textContent = "🕒 " + now.toLocaleTimeString([],{
-      hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true
-    });
-  }
-  tick();
-  clockTimer = setInterval(tick,1000);
+function startClock(){
+  if(clockTimer)clearInterval(clockTimer);
+  const box=document.getElementById("clockBox");
+  const tick=()=>{const n=new Date();
+    box.textContent="🕒 "+n.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true});};
+  tick();clockTimer=setInterval(tick,1000);
 }
 
 /* ============================================================
    👋 DASHBOARD
    ============================================================ */
-function showWelcome(name, role) {
-  document.getElementById("login").style.display = "none";
-  document.getElementById("welcome").style.display = "block";
-  document.getElementById("welcomeName").textContent = name;
-  document.getElementById("welcomeRole").textContent = role;
-
-  if (role === "manager" || role === "supervisor") {
-    addTeamButton();
-  }
+function showWelcome(name,role){
+  document.getElementById("login").style.display="none";
+  document.getElementById("welcome").style.display="block";
+  document.getElementById("welcomeName").textContent=name;
+  document.getElementById("welcomeRole").textContent=role;
+  if(role==="manager"||role==="supervisor") addTeamButton();
 }
 
-/* ============================================================
-   👥 TEAM OVERVIEW — Floating White/Blue Table
-   ============================================================ */
+// ============================================================
+// 👥 TEAM OVERVIEW — Blue Glass Floating Grid Edition (v4.8)
+// ============================================================
+
+let directoryVisible = false;
+
+// 🧩 Add floating “Team Overview” button
 function addTeamButton() {
   if (document.getElementById("teamBtn")) return;
-  const btn = document.createElement("button");
+
+  const btn = document.createElement("div");
   btn.id = "teamBtn";
-  btn.className = "team-btn";
+  btn.className = "team-box-btn";
   btn.textContent = "Team Overview";
   btn.onclick = toggleTeamOverview;
   document.body.appendChild(btn);
 }
 
-let directoryVisible = false;
+// Toggle open/close
 function toggleTeamOverview() {
   if (directoryVisible) {
-    document.getElementById("directoryWrapper")?.remove();
+    document.querySelectorAll(".team-grid").forEach(e => e.remove());
     directoryVisible = false;
-    return;
+  } else {
+    loadEmployeeDirectory();
+    directoryVisible = true;
   }
-  loadEmployeeDirectory();
-  directoryVisible = true;
 }
 
+// Load employee list
 async function loadEmployeeDirectory() {
   try {
     const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
     const data = await res.json();
     if (!data.ok) return;
-    renderDirectoryTable(data.directory);
+    renderDirectoryGrid(data.directory);
   } catch (err) {
     console.error("Error loading directory:", err);
   }
 }
 
-function renderDirectoryTable(list) {
-  document.getElementById("directoryWrapper")?.remove();
-  const wrapper = document.createElement("div");
-  wrapper.id = "directoryWrapper";
-  wrapper.className = "directory-wrapper";
+// 📊 Render multiple floating tables (auto-split by 8 employees each)
+function renderDirectoryGrid(list) {
+  // Remove old
+  document.querySelectorAll(".team-grid").forEach(e => e.remove());
 
-  let html = `
-    <h3 style="margin-top:0;margin-bottom:10px;color:#0070ff;">Team Overview</h3>
-    <table class="directory-table">
-      <tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Status</th><th></th></tr>
-  `;
-  list.forEach(emp => {
-    const active = emp.status === "active";
-    html += `
-      <tr class="${active ? "active-row" : "inactive-row"}">
-        <td><b>${emp.name}</b></td>
-        <td>${emp.role}</td>
-        <td>${emp.email}</td>
-        <td>${emp.phone || ""}</td>
-        <td style="color:${active ? "#00b37d" : "#888"};">${emp.status}</td>
-        <td><button class="open-btn" onclick="openEmployeeCard('${emp.email}','${emp.name}','${emp.role}','${emp.phone}')">Open</button></td>
-      </tr>`;
-  });
-  html += "</table>";
-  wrapper.innerHTML = html;
-  document.body.appendChild(wrapper);
-}
+  const chunkSize = 8;
+  for (let i = 0; i < list.length; i += chunkSize) {
+    const group = list.slice(i, i + chunkSize);
 
-async function openEmployeeCard(email,name,role,phone){
-  try {
-    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
-    const data = await res.json();
-    if (!data.ok) return alert("No schedule found for this employee.");
+    const grid = document.createElement("div");
+    grid.className = "team-grid glass";
 
-    const modal = document.createElement("div");
-    modal.className = "employee-modal";
-    modal.innerHTML = `
-      <div class="modal-header">
-        <span class="modal-close" onclick="this.parentElement.parentElement.remove()">×</span>
-        <h3>${name}</h3>
-        <p>${role||""}</p>
-        <p>${phone||""}</p>
-      </div>
-      <table class="schedule-mini">
-        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-        ${data.days.map(d=>`<tr><td>${d.name}</td><td>${d.shift}</td><td>${d.hours}</td></tr>`).join("")}
-      </table>
-      <p class="total">Total Hours: <b>${data.total}</b></p>
+    let html = `
+      <div class="grid-header">Team Overview</div>
+      <table class="directory-table">
+        <tr><th>Name</th><th>Role</th><th>Hours</th><th></th></tr>
     `;
-    document.body.appendChild(modal);
-  } catch(err) {
-    console.error("Error opening card:", err);
+
+    group.forEach(emp => {
+      const active = emp.status === "active";
+      html += `
+        <tr class="${active ? "active-row" : "inactive-row"}">
+          <td><b>${emp.name}</b></td>
+          <td>${emp.role}</td>
+          <td>${emp.hours || 0}</td>
+          <td><button class="open-btn" onclick="openEmployeeCard('${emp.email}','${emp.name}','${emp.role}','${emp.phone}')">Open</button></td>
+        </tr>`;
+    });
+
+    html += "</table>";
+    grid.innerHTML = html;
+    document.body.appendChild(grid);
   }
 }
 
 /* ============================================================
    🚪 LOGOUT & SETTINGS
    ============================================================ */
-function logoutUser(){
-  currentUser=null;
-  scheduleData=null;
-  if(clockTimer)clearInterval(clockTimer);
+function logoutUser() {
+  // 🧹 Clear saved session
   localStorage.removeItem("acwUser");
-  document.getElementById("login").style.display="block";
-  document.getElementById("welcome").style.display="none";
-  document.getElementById("email").value="";
-  document.getElementById("password").value="";
+
+  currentUser = null;
+  scheduleData = null;
+
+  if (clockTimer) clearInterval(clockTimer);
+
+  document.getElementById("login").style.display = "block";
+  document.getElementById("welcome").style.display = "none";
+  document.getElementById("email").value = "";
+  document.getElementById("password").value = "";
 }
-function openSettings(){document.getElementById("settingsModal").style.display="block";}
-function closeSettings(){document.getElementById("settingsModal").style.display="none";}
+
+function openSettings() {
+  document.getElementById("settingsModal").style.display = "block";
+}
+
+function closeSettings() {
+  document.getElementById("settingsModal").style.display = "none";
+}
 
 /* ============================================================
-   📲 INSTALL APP BUTTON
+   📲 INSTALL APP PROMPT — Blue Glass Edition (iOS & Android)
    ============================================================ */
 let deferredPrompt;
-window.addEventListener("beforeinstallprompt", e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  showInstallButton();
+window.addEventListener("beforeinstallprompt",e=>{
+  e.preventDefault();deferredPrompt=e;showInstallButton();
 });
-
-function showInstallButton() {
-  if (document.getElementById("installBtn")) return;
-  const btn = document.createElement("button");
-  btn.id = "installBtn";
-  btn.className = "install-btn";
-  btn.textContent = "Add App";
-  btn.onclick = async () => {
-    if (deferredPrompt) {
+function showInstallButton(){
+  if(document.getElementById("installBtn"))return;
+  const btn=document.createElement("button");
+  btn.id="installBtn";btn.className="install-btn";btn.innerHTML="📲";
+  btn.onclick=async()=>{
+    if(deferredPrompt){
       deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
-      deferredPrompt = null;
-      btn.remove();
-    } else {
+      const{outcome}=await deferredPrompt.userChoice;
+      console.log("User response to install:",outcome);
+      deferredPrompt=null;btn.remove();
+    }else{
       alert("Add this app to your Home Screen from Safari’s share menu.");
     }
   };
   document.body.appendChild(btn);
 }
 
-console.log("✅ ACW-App v4.8.2 — White-Blue Stable Build Loaded");
+console.log("✅ ACW Blue Glass v4.7 — Full Build Loaded");
