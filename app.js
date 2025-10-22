@@ -1,5 +1,5 @@
 /* ============================================================
-   🧠 ACW-App v4.7.4 — Blue Glass White Edition (Stable Clean Build)
+   🧠 ACW-App v4.8.3 — Blue Glass+ Edition (Stable Modern Build)
    Johan A. Giraldo (JAG15) & Sky — Oct 2025
    ============================================================ */
 
@@ -55,10 +55,8 @@ async function showWelcome(name, role) {
   document.getElementById("welcomeName").innerHTML = `<b>${name}</b>`;
   document.getElementById("welcomeRole").textContent = role;
 
-  // Solo managers o supervisores ven el botón "Team View"
   if (["manager", "supervisor"].includes(role.toLowerCase())) addTeamButton();
 
-  // 🔍 Buscar teléfono desde Employees list
   try {
     const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
     const data = await res.json();
@@ -70,13 +68,14 @@ async function showWelcome(name, role) {
 
       if (match && match.phone) {
         setTimeout(() => {
-          const existing = document.querySelector(".user-phone");
-          if (existing) existing.remove();
-
-          // Teléfono clickeable con efecto azul
-          const phoneHTML = `<p class="user-phone">📞 <a href="tel:${match.phone}" style="color:#0078ff;text-decoration:none;font-weight:600;">${match.phone}</a></p>`;
-          const nameEl = document.getElementById("welcomeName");
-          if (nameEl) nameEl.insertAdjacentHTML("afterend", phoneHTML);
+          document.querySelector(".user-phone")?.remove();
+          const phoneHTML = `
+            <p class="user-phone">📞 
+              <a href="tel:${match.phone}" style="color:#0078ff;text-decoration:none;font-weight:600;">
+                ${match.phone}
+              </a>
+            </p>`;
+          document.getElementById("welcomeName")?.insertAdjacentHTML("afterend", phoneHTML);
         }, 300);
       }
     }
@@ -86,7 +85,7 @@ async function showWelcome(name, role) {
 }
 
 /* ============================================================
-   📅 LOAD SCHEDULE — with Auto Live Timer (v4.7.5)
+   📅 LOAD SCHEDULE — with Auto Live Timer
    ============================================================ */
 async function loadSchedule(email) {
   const schedDiv = document.getElementById("schedule");
@@ -95,24 +94,14 @@ async function loadSchedule(email) {
   try {
     const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
     const data = await res.json();
+    if (!data.ok || !data.days) throw new Error("No schedule found");
 
-    if (!data.ok || !data.days) {
-      schedDiv.innerHTML = `<p style="color:#c00;">No schedule found for this week.</p>`;
-      return;
-    }
-
-    // 🧾 Construir la tabla principal
     let html = `
       <table>
-        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-    `;
-
+        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
     data.days.forEach(d => {
-      const isToday = new Date()
-        .toLocaleString("en-US", { weekday: "short" })
-        .toLowerCase()
+      const isToday = new Date().toLocaleString("en-US", { weekday: "short" }).toLowerCase()
         .includes(d.name.slice(0, 3).toLowerCase());
-
       html += `
         <tr class="${isToday ? "today" : ""}">
           <td>${d.name}</td>
@@ -120,44 +109,26 @@ async function loadSchedule(email) {
           <td>${d.hours || "0"}</td>
         </tr>`;
     });
-
-    html += `
-      </table>
-      <p class="total">Total Hours: <b>${data.total || 0}</b></p>
-    `;
-
+    html += `</table><p class="total">Total Hours: <b>${data.total || 0}</b></p>`;
     schedDiv.innerHTML = html;
 
-    // ⏱️ Activar cronómetro 1 segundo después de mostrar la tabla
-    setTimeout(() => {
-      if (data.ok && data.days) {
-        startLiveTimer(data.days, Number(data.total || 0));
-      }
-    }, 1000);
-
+    setTimeout(() => startLiveTimer(data.days, Number(data.total || 0)), 1000);
   } catch (err) {
-    console.error("Error loading schedule:", err);
-    schedDiv.innerHTML = `<p style="color:#c00;">Error loading schedule. Please try again later.</p>`;
+    schedDiv.innerHTML = `<p style="color:#c00;">❌ ${err.message}</p>`;
   }
 }
 
 /* ============================================================
    ⚙️ SETTINGS + REFRESH
    ============================================================ */
-function openSettings() {
-  document.getElementById("settingsModal").style.display = "block";
-}
-function closeSettings() {
-  document.getElementById("settingsModal").style.display = "none";
-}
+function openSettings() { document.getElementById("settingsModal").style.display = "block"; }
+function closeSettings() { document.getElementById("settingsModal").style.display = "none"; }
+
 function refreshApp() {
-  closeSettings?.();
+  closeSettings();
   if ("caches" in window) caches.keys().then(names => names.forEach(n => caches.delete(n)));
   const btn = document.querySelector(".settings-section button:first-child");
-  if (btn) {
-    btn.innerHTML = "⏳ Updating...";
-    btn.style.opacity = "0.7";
-  }
+  if (btn) { btn.innerHTML = "⏳ Updating..."; btn.style.opacity = "0.7"; }
   setTimeout(() => window.location.reload(true), 1200);
 }
 function logoutUser() {
@@ -180,7 +151,7 @@ window.addEventListener("load", () => {
 });
 
 /* ============================================================
-   ⏱️ LIVE HOURS — Blue Glass White Edition (Stable)
+   ⏱️ LIVE HOURS — Blue Glass White Edition
    ============================================================ */
 function startLiveTimer(days, total) {
   try {
@@ -192,21 +163,15 @@ function startLiveTimer(days, total) {
     if (!startStr || !endStr) return;
 
     const startTime = parseTime(startStr);
-    const now = new Date();
-
-    const diffHrs = (now - startTime) / (1000 * 60 * 60);
-    let liveHrs = Math.max(0, diffHrs.toFixed(2));
-
-    updateTotalDisplay(total + Number(liveHrs));
-    showLiveHours(liveHrs);
-
-    setInterval(() => {
-      const now2 = new Date();
-      const diff2 = (now2 - startTime) / (1000 * 60 * 60);
-      liveHrs = Math.max(0, diff2.toFixed(2));
+    const update = () => {
+      const now = new Date();
+      const diff = (now - startTime) / 36e5;
+      const liveHrs = Math.max(0, diff.toFixed(2));
       updateTotalDisplay(total + Number(liveHrs));
       showLiveHours(liveHrs);
-    }, 60000);
+    };
+    update();
+    setInterval(update, 60000);
   } catch (err) {
     console.warn("⏱️ Live hours not active:", err);
   }
@@ -217,13 +182,9 @@ function showLiveHours(hours) {
   if (!liveEl) {
     liveEl = document.createElement("p");
     liveEl.className = "live-hours";
-    liveEl.style.fontSize = "1.2em";
-    liveEl.style.color = "#0070ff";
-    liveEl.style.marginTop = "6px";
-    liveEl.style.textShadow = "0 0 10px rgba(0,120,255,0.4)";
+    liveEl.style = "font-size:1.2em;color:#0070ff;margin-top:6px;text-shadow:0 0 10px rgba(0,120,255,0.4)";
     document.querySelector("#schedule")?.appendChild(liveEl);
   }
-
   const color = hours > 9 ? "#e60000" : "#0070ff";
   liveEl.innerHTML = `Live Shift: <b style="color:${color}">${hours}</b> h ⏱️`;
 }
@@ -233,77 +194,31 @@ function parseTime(str) {
   let [h, m] = time.split(":").map(Number);
   if (meridian?.toLowerCase() === "pm" && h !== 12) h += 12;
   if (meridian?.toLowerCase() === "am" && h === 12) h = 0;
-  const d = new Date();
-  d.setHours(h, m || 0, 0, 0);
+  const d = new Date(); d.setHours(h, m || 0, 0, 0);
   return d;
 }
-
 function updateTotalDisplay(value) {
-  const totalEl = document.querySelector(".total");
-  if (totalEl)
-    totalEl.innerHTML = `Total Hours: <b>${value.toFixed(2)}</b> ⏱️`;
+  document.querySelector(".total")?.innerHTML = `Total Hours: <b>${value.toFixed(2)}</b> ⏱️`;
 }
 
 /* ============================================================
-   👋 SHOW WELCOME DASHBOARD — with delayed phone render
-   ============================================================ */
-async function showWelcome(name, role) {
-  document.getElementById("login").style.display = "none";
-  document.getElementById("welcome").style.display = "block";
-  document.getElementById("welcomeName").innerHTML = `<b>${name}</b>`;
-  document.getElementById("welcomeRole").textContent = role;
-
-  // Solo managers o supervisores ven el botón "Team View"
-  if (role === "manager" || role === "supervisor") addTeamButton();
-
-  // 🔍 Buscar teléfono desde Employees list
-  try {
-    const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
-    const data = await res.json();
-
-    if (data.ok && data.directory) {
-      const match = data.directory.find(e =>
-        e.email?.toLowerCase() === (currentUser?.email || "").toLowerCase()
-      );
-
-      if (match && match.phone) {
-        setTimeout(() => {
-          const existing = document.querySelector(".user-phone");
-          if (existing) existing.remove();
-
-          // clickable + glow azul
-          const phoneHTML = `<p class="user-phone">📞 <a href="tel:${match.phone}" style="color:#0078ff;text-decoration:none;font-weight:600;">${match.phone}</a></p>`;
-          const nameEl = document.getElementById("welcomeName");
-          if (nameEl) nameEl.insertAdjacentHTML("afterend", phoneHTML);
-        }, 300);
-      }
-    }
-  } catch (err) {
-    console.warn("Could not load phone number:", err);
-  }
-}
-
-/* ============================================================
-   👥 TEAM VIEW — Paged + Employee Panels (safe drop-in)
+   👥 TEAM VIEW — Paged + Animated Panels (v4.8.3)
    ============================================================ */
 
-const TEAM_PAGE_SIZE = 8;       // empleados por página
-let __teamList = [];
-let __teamPage = 0;
+const TEAM_PAGE_SIZE = 8;
+let __teamList = [], __teamPage = 0;
 
 function addTeamButton() {
   if (document.getElementById("teamBtn")) return;
   const btn = document.createElement("button");
-  btn.id = "teamBtn";
-  btn.className = "team-btn";
-  btn.textContent = "Team View";
+  btn.id = "teamBtn"; btn.className = "team-btn"; btn.textContent = "Team View";
   btn.onclick = toggleTeamOverview;
   document.body.appendChild(btn);
 }
 
 function toggleTeamOverview() {
-  const wrapper = document.getElementById("directoryWrapper");
-  if (wrapper) { wrapper.remove(); return; }
+  const wrap = document.getElementById("directoryWrapper");
+  if (wrap) { wrap.classList.add("fade-out"); setTimeout(()=>wrap.remove(),200); return; }
   loadEmployeeDirectory();
 }
 
@@ -319,32 +234,30 @@ async function loadEmployeeDirectory() {
 }
 
 function renderTeamViewPage() {
-  // contenedor principal
   document.getElementById("directoryWrapper")?.remove();
 
   const box = document.createElement("div");
   box.id = "directoryWrapper";
-  box.className = "directory-wrapper tv-wrapper";
+  box.className = "directory-wrapper tv-wrapper fade-in";
+  const totalPages = Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE));
   box.innerHTML = `
     <div class="tv-head">
       <h3>Team View</h3>
-      <button class="tv-close" onclick="document.getElementById('directoryWrapper').remove()">✖️</button>
+      <button class="tv-close" onclick="closeTeamView()">✖️</button>
     </div>
 
     <div class="tv-pager">
       <button class="tv-nav" id="tvPrev" ${__teamPage===0?'disabled':''}>‹ Prev</button>
-      <span class="tv-index">Page ${__teamPage+1} / ${Math.max(1, Math.ceil(__teamList.length/TEAM_PAGE_SIZE))}</span>
-      <button class="tv-nav" id="tvNext" ${(__teamPage+1)>=Math.ceil(__teamList.length/TEAM_PAGE_SIZE)?'disabled':''}>Next ›</button>
+      <span class="tv-index">Page ${__teamPage+1} / ${totalPages}</span>
+      <button class="tv-nav" id="tvNext" ${(__teamPage+1)>=totalPages?'disabled':''}>Next ›</button>
     </div>
 
     <table class="directory-table tv-table">
       <tr><th>Name</th><th>Hours</th><th></th></tr>
       <tbody id="tvBody"></tbody>
-    </table>
-  `;
+    </table>`;
   document.body.appendChild(box);
 
-  // página actual
   const start = __teamPage * TEAM_PAGE_SIZE;
   const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
   const body = box.querySelector("#tvBody");
@@ -354,255 +267,130 @@ function renderTeamViewPage() {
       <td><b>${emp.name}</b></td>
       <td class="tv-hours">—</td>
       <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
-    </tr>
-  `).join("");
+    </tr>`).join("");
 
-  // navegación
-  box.querySelector("#tvPrev").onclick = () => { __teamPage=Math.max(0,__teamPage-1); renderTeamViewPage(); };
-  box.querySelector("#tvNext").onclick = () => { __teamPage=Math.min(Math.ceil(__teamList.length/TEAM_PAGE_SIZE)-1,__teamPage+1); renderTeamViewPage(); };
+  box.querySelector("#tvPrev").onclick = () => { __teamPage--; renderTeamViewPage(); };
+  box.querySelector("#tvNext").onclick = () => { __teamPage++; renderTeamViewPage(); };
 
-  // hidratar horas de la página (ligero, asincrónico)
   slice.forEach(async emp => {
     try {
       const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`);
       const d = await r.json();
       const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
-      if (!tr) return;
-      tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (d.total ?? 0) : "0";
+      if (tr) tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (d.total ?? 0) : "0";
     } catch(e){}
   });
 }
 
+function closeTeamView() {
+  const w = document.getElementById("directoryWrapper");
+  if (w) { w.classList.add("fade-out"); setTimeout(()=>w.remove(),200); }
+}
+
 /* ============================================================
-   🔍 Employee Panel — misma dimensión y estilo que tu tarjeta
+   🧩 EMPLOYEE PANEL (Modal)
    ============================================================ */
 async function openEmployeePanel(btnEl) {
   const tr = btnEl.closest("tr");
-  const email = tr.dataset.email;
-  const name  = tr.dataset.name;
-  const role  = tr.dataset.role || "";
-  const phone = tr.dataset.phone || "";
+  const email = tr.dataset.email, name = tr.dataset.name, role = tr.dataset.role, phone = tr.dataset.phone;
 
   const modalId = `emp-${email.replace(/[@.]/g,'_')}`;
   if (document.getElementById(modalId)) return;
 
-  // fetch horario
-  let data = null;
+  let data;
   try {
     const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
     data = await res.json();
     if (!data.ok) throw new Error("No schedule");
-  } catch(e) {
-    alert("No schedule found for this employee.");
-    return;
+  } catch {
+    alert("No schedule found for this employee."); return;
   }
 
-  // modal
   const m = document.createElement("div");
-  m.className = "employee-modal emp-panel";
-  m.id = modalId;
+  m.className = "employee-modal emp-panel fade-in"; m.id = modalId;
   m.innerHTML = buildEmployeePanelHTML({name, role, phone, data});
   document.body.appendChild(m);
-
-  // animación
-  requestAnimationFrame(()=>{ m.classList.add("in"); });
-
-  // ⏱️ cronómetro vivo dentro del modal
   startLiveTimerForModal(modalId, data);
-
-  // acciones
-  m.querySelector(".emp-close").onclick = () => m.remove();
-  m.querySelector(".emp-refresh").onclick = () => checkForUpdatesInModal(m);
+  m.querySelector(".emp-close").onclick = () => closeEmployeePanel(m);
+  m.querySelector(".emp-refresh").onclick = () => refreshEmployeePanel(m);
 }
 
 function buildEmployeePanelHTML({name, role, phone, data}) {
   const rows = (data.days||[]).map(d => `
-    <tr>
-      <td>${d.name}</td>
-      <td>${d.shift || '-'}</td>
-      <td>${d.hours || 0}</td>
-    </tr>`).join("");
-
+    <tr><td>${d.name}</td><td>${d.shift||'-'}</td><td>${d.hours||0}</td></tr>`).join("");
   return `
     <div class="emp-header">
       <button class="emp-close">×</button>
       <h3>${name}</h3>
-      ${phone ? `<p class="emp-phone">📞 <a href="tel:${phone}">${phone}</a></p>` : ``}
-      <p class="emp-role">${role || ""}</p>
+      ${phone ? `<p class="emp-phone">📞 <a href="tel:${phone}">${phone}</a></p>` : ""}
+      <p class="emp-role">${role||""}</p>
     </div>
-
     <table class="schedule-mini">
-      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-      ${rows}
+      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>${rows}
     </table>
-
-    <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g,'_')}">${data.total || 0}</b></p>
-    <p class="live-hours" id="lh-${name.replace(/\s+/g,'_')}"></p>
-
-    <div class="modal-footer">
-      <button class="emp-refresh">⚙️ Check for Updates</button>
-    </div>
-  `;
+    <p class="total">Total Hours: <b>${data.total||0}</b></p>
+    <p class="live-hours"></p>
+    <div class="modal-footer"><button class="emp-refresh">⚙️ Check for Updates</button></div>`;
 }
 
-/* ============================================================
-   ⏱️ Live timer por-modal (no toca tu tablero principal)
-   ============================================================ */
-function startLiveTimerForModal(modalId, sched) {
-  const modal = document.getElementById(modalId);
-  if (!modal || !sched?.days) return;
+function closeEmployeePanel(m) { m.classList.add("fade-out"); setTimeout(()=>m.remove(),200); }
 
-  const todayName = new Date().toLocaleString("en-US", { weekday: "long" });
-  const today = sched.days.find(d => (d.name||"").toLowerCase() === todayName.toLowerCase());
-  if (!today || !today.shift || /off/i.test(today.shift)) return;
-
-  const parts = (today.shift||"").split("-");
-  if (parts.length < 1) return;
-
-  const start = parseShiftTime(parts[0]);
-  if (!start) return;
-
-  const totEl = modal.querySelector(".total b");
-  const liveEl = modal.querySelector(".live-hours");
-  const base = Number(totEl?.textContent || 0);
-
-  const update = () => {
-    const diff = Math.max(0, (Date.now() - start.getTime()) / 36e5);
-    const live = Math.round(diff*100)/100;
-    if (totEl) totEl.textContent = (base + live).toFixed(2);
-    if (liveEl) liveEl.innerHTML = `Live shift: <b>${live.toFixed(2)}</b> h ⏱️`;
-  };
-
-  update();
-  const iv = setInterval(()=>{
-    if (!document.body.contains(modal)) return clearInterval(iv);
-    update();
-  }, 60000);
-}
-
-function parseShiftTime(raw) {
-  // admite "7:30", "7:30 am", "7.30", "7"
-  const s = raw.trim().toLowerCase().replace('.',':');
-  const mMer = s.match(/(am|pm)$/);
-  const time = s.replace(/\s?(am|pm)$/,'');
-  let [h, m] = time.split(':').map(n=>parseInt(n,10));
-  if (isNaN(h)) return null;
-  if (isNaN(m)) m = 0;
-  if (mMer && mMer[1]==='pm' && h!==12) h+=12;
-  if (mMer && mMer[1]==='am' && h===12) h=0;
-  const d = new Date(); d.setHours(h,m,0,0); return d;
-}
-
-/* ============================================================
-   🔄 Refresh en modal (no molesta a nadie)
-   ============================================================ */
-function checkForUpdatesInModal(modalEl){
-  try{
-    if ("caches" in window) caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));
-  }catch(e){}
-  modalEl.classList.add("flash");
-  setTimeout(()=>window.location.reload(true), 900);
-}
-
-
-/* ============================================================
-   🧩 TEAM VIEW 2.0 — Interactive Employee View (v4.8)
-   ============================================================ */
-function renderDirectory(list) {
-  const box = document.createElement("div");
-  box.id = "directoryWrapper";
-  box.className = "directory-wrapper";
-  box.innerHTML = `
-    <span class="directory-close" onclick="closeTeamView()">✖️</span>
-    <h3>Team View</h3>
-    <div class="employee-grid">
-      ${list
-        .map(
-          (emp) => `
-        <div class="employee-card">
-          <h4>${emp.name}</h4>
-          <p class="hours">Hours: <b>${emp.totalHours || "0"}</b></p>
-          <button class="open-btn" onclick="openEmployeeView('${emp.email}')">Open</button>
-        </div>`
-        )
-        .join("")}
-    </div>`;
-  document.body.appendChild(box);
-}
-
-/* 🔹 Modal flotante individual */
-async function openEmployeeView(email) {
-  try {
-    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
-    const data = await res.json();
-
-    if (!data.ok || !data.days) {
-      alert("No schedule found for this employee.");
-      return;
-    }
-
-    const modal = document.createElement("div");
-    modal.className = "employee-modal";
-    modal.innerHTML = `
-      <div class="employee-modal-content">
-        <span class="modal-close" onclick="this.closest('.employee-modal').remove()">✖️</span>
-        <h3>${data.name || "Employee"}</h3>
-        <button class="refresh-mini" onclick="reloadEmployeeView('${email}', this)">⚙️ Check for Updates</button>
-        <table>
-          <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-          ${data.days
-            .map(
-              (d) => `
-            <tr>
-              <td>${d.name}</td>
-              <td>${d.shift || "-"}</td>
-              <td>${d.hours || "0"}</td>
-            </tr>`
-            )
-            .join("")}
-        </table>
-        <p class="total">Total Hours: <b>${data.total || 0}</b></p>
-      </div>`;
-    document.body.appendChild(modal);
-  } catch (err) {
-    console.error("Error opening employee view:", err);
-  }
-}
-
-/* 🔁 Recarga el horario dentro del modal */
-async function reloadEmployeeView(email, btn) {
+async function refreshEmployeePanel(m) {
+  const btn = m.querySelector(".emp-refresh");
   btn.innerHTML = "⏳ Updating...";
   try {
+    const name = m.querySelector(".emp-header h3").textContent;
+    const email = __teamList.find(e => e.name === name)?.email;
+    if (!email) throw new Error("Missing email");
     const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
     const data = await res.json();
-
-    if (!data.ok) throw new Error("No schedule found");
-
-    const modal = btn.closest(".employee-modal-content");
-    const table = modal.querySelector("table");
-    const total = modal.querySelector(".total");
-
-    table.innerHTML = `
+    if (!data.ok) throw new Error();
+    m.querySelector(".schedule-mini").innerHTML = `
       <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-      ${data.days
-        .map(
-          (d) => `
-        <tr>
-          <td>${d.name}</td>
-          <td>${d.shift || "-"}</td>
-          <td>${d.hours || "0"}</td>
-        </tr>`
-        )
-        .join("")}
-    `;
-    total.innerHTML = `Total Hours: <b>${data.total || 0}</b>`;
-  } catch (err) {
+      ${data.days.map(d=>`<tr><td>${d.name}</td><td>${d.shift||'-'}</td><td>${d.hours||0}</td></tr>`).join("")}`;
+    m.querySelector(".total b").textContent = data.total || 0;
+  } catch {
     alert("❌ Error updating schedule");
   } finally {
     btn.innerHTML = "⚙️ Check for Updates";
   }
 }
 
-function closeTeamView() {
-  document.getElementById("directoryWrapper")?.remove();
+/* ============================================================
+   ⏱️ LIVE TIMER FOR MODALS
+   ============================================================ */
+function startLiveTimerForModal(modalId, sched) {
+  const modal = document.getElementById(modalId);
+  if (!modal || !sched?.days) return;
+  const todayName = new Date().toLocaleString("en-US", { weekday: "long" });
+  const today = sched.days.find(d => (d.name||"").toLowerCase() === todayName.toLowerCase());
+  if (!today || !today.shift || /off/i.test(today.shift)) return;
+  const [startStr] = today.shift.split("-");
+  const start = parseShiftTime(startStr);
+  const totEl = modal.querySelector(".total b");
+  const liveEl = modal.querySelector(".live-hours");
+  const base = Number(totEl?.textContent || 0);
+  const update = () => {
+    const diff = Math.max(0, (Date.now() - start) / 36e5);
+    const live = diff.toFixed(2);
+    totEl.textContent = (base + Number(live)).toFixed(2);
+    liveEl.innerHTML = `Live shift: <b>${live}</b> h ⏱️`;
+  };
+  update();
+  const iv = setInterval(()=> {
+    if (!document.body.contains(modal)) return clearInterval(iv);
+    update();
+  }, 60000);
+}
+
+function parseShiftTime(str) {
+  const s = str.trim().toLowerCase().replace('.',':');
+  const mer = s.match(/(am|pm)$/);
+  const time = s.replace(/\s?(am|pm)$/,'');
+  let [h,m] = time.split(':').map(Number);
+  if (isNaN(h)) return null;
+  if (isNaN(m)) m=0;
+  if (mer && mer[1]==='pm' && h!==12) h+=12;
+  if (mer && mer[1]==='am' && h===12) h=0;
+  const d=new Date(); d.setHours(h,m,0,0); return d;
 }
