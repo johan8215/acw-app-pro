@@ -165,7 +165,7 @@ window.addEventListener("load", () => {
 });
 
 /* ============================================================
-   ⏱️ LIVE HOURS INDICATOR — Dynamic total updater
+   ⏱️ LIVE HOURS — Blue Glass White Edition (Stable)
    ============================================================ */
 function startLiveTimer(days, total) {
   try {
@@ -196,6 +196,23 @@ function startLiveTimer(days, total) {
     console.warn("⏱️ Live hours not active:", err);
   }
 }
+
+function showLiveHours(hours) {
+  let liveEl = document.querySelector(".live-hours");
+  if (!liveEl) {
+    liveEl = document.createElement("p");
+    liveEl.className = "live-hours";
+    liveEl.style.fontSize = "1.2em";
+    liveEl.style.color = "#0070ff";
+    liveEl.style.marginTop = "6px";
+    liveEl.style.textShadow = "0 0 10px rgba(0,120,255,0.4)";
+    document.querySelector("#schedule")?.appendChild(liveEl);
+  }
+
+  const color = hours > 9 ? "#e60000" : "#0070ff";
+  liveEl.innerHTML = `Live Shift: <b style="color:${color}">${hours}</b> h ⏱️`;
+}
+
 function parseTime(str) {
   const [time, meridian] = str.trim().split(" ");
   let [h, m] = time.split(":").map(Number);
@@ -205,27 +222,23 @@ function parseTime(str) {
   d.setHours(h, m || 0, 0, 0);
   return d;
 }
+
 function updateTotalDisplay(value) {
   const totalEl = document.querySelector(".total");
-  if (totalEl) totalEl.innerHTML = `Total Hours: <b>${value.toFixed(2)}</b>`;
+  if (totalEl)
+    totalEl.innerHTML = `Total Hours: <b>${value.toFixed(2)}</b> ⏱️`;
 }
-function showLiveHours(hours) {
-  let liveEl = document.querySelector(".live-hours");
-  if (!liveEl) {
-    liveEl = document.createElement("p");
-    liveEl.className = "live-hours";
-    document.querySelector("#schedule")?.appendChild(liveEl);
-  }
-  const color = hours > 9 ? "#e60000" : "#0070ff";
-  liveEl.innerHTML = `Live shift: <b style="color:${color}">${hours}</b> h ⏱️`;
-}
+
 const originalLoadSchedule = loadSchedule;
 loadSchedule = async function (email) {
   await originalLoadSchedule(email);
   try {
-    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
+    const res = await fetch(
+      `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`
+    );
     const data = await res.json();
-    if (data.ok && data.days) startLiveTimer(data.days, Number(data.total || 0));
+    if (data.ok && data.days)
+      setTimeout(() => startLiveTimer(data.days, Number(data.total || 0)), 800);
   } catch (e) {
     console.warn("Live timer skipped:", e);
   }
