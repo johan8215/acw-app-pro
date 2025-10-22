@@ -304,3 +304,122 @@ footer {
 .team-btn:hover {
   background: #ff3333;
 }
+/* ========== 🧩 Team Overview Clean Edition ========== */
+.directory-wrapper {
+  position: fixed;
+  top: 100px;
+  right: 40px;
+  width: 360px;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: rgba(255,255,255,0.96);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+  z-index: 9999;
+  backdrop-filter: blur(10px);
+}
+
+.directory-header {
+  margin-top: 0;
+  text-align: center;
+  font-weight: 700;
+  color: #c70000;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.employee-card {
+  background: #fafafa;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+.employee-card:hover {
+  transform: scale(1.02);
+}
+
+.card-name {
+  font-weight: 700;
+  color: #111;
+  font-size: 15px;
+}
+.card-role {
+  color: #555;
+  font-size: 13px;
+}
+.card-email {
+  color: #777;
+  font-size: 12px;
+  margin: 3px 0 8px;
+}
+.card-btn {
+  background: #e60000;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.card-btn:hover {
+  background: #ff3333;
+}
+
+/* 🔍 Modal details */
+.employee-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255,255,255,0.97);
+  border-radius: 14px;
+  width: 420px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 20px;
+  box-shadow: 0 10px 45px rgba(0,0,0,0.4);
+  z-index: 10000;
+  text-align: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #e60000;
+}
+.modal-header p {
+  margin: 2px 0;
+  color: #444;
+  font-size: 13px;
+}
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-size: 22px;
+  color: #555;
+  cursor: pointer;
+}
+
+.schedule-mini {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+.schedule-mini th {
+  background: #f4f4f4;
+  color: #111;
+  padding: 6px;
+}
+.schedule-mini td {
+  padding: 6px;
+  border-bottom: 1px solid #ddd;
+}
+.total {
+  margin-top: 10px;
+  color: #111;
+}
