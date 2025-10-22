@@ -66,13 +66,17 @@ async function showWelcome(name, role) {
       const match = data.directory.find(e =>
         e.email?.toLowerCase() === (currentUser?.email || "").toLowerCase()
       );
-      if (match && match.phone) {
-        const existing = document.querySelector(".user-phone");
-        if (existing) existing.remove();
-        const phoneHTML = `<p class="user-phone">📞 ${match.phone}</p>`;
-        const schedDiv = document.getElementById("schedule");
-        schedDiv.insertAdjacentHTML("beforebegin", phoneHTML);
-      }
+     if (match && match.phone) {
+  const existing = document.querySelector(".user-phone");
+  if (existing) existing.remove();
+
+  const phoneHTML = `<p class="user-phone">📞 ${match.phone}</p>`;
+
+  // Inserta justo debajo del nombre en vez de antes del schedule
+  const nameEl = document.getElementById("welcomeName");
+  if (nameEl)
+    nameEl.insertAdjacentHTML("afterend", phoneHTML);
+}
     }
   } catch (err) {
     console.warn("Could not load phone number:", err);
