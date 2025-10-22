@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Allston Car Wash – ACW Blue Glass</title>
+  <title>Allston Car Wash – ACW Blue Glass White Edition</title>
 
   <!-- 📱 PWA META -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#001a33">
+  <meta name="theme-color" content="#ffffff">
 
   <!-- 🎨 Styles -->
   <link rel="stylesheet" href="style.css">
@@ -29,7 +29,6 @@
     <p id="welcomeRole"></p>
     <div id="schedule"></div>
     <p id="clock" class="clock"></p>
-    <p id="totalHours" class="total"></p>
   </div>
 
   <!-- ⚙️ SETTINGS MODAL -->
@@ -42,10 +41,10 @@
     </div>
   </div>
 
- <footer class="hud bottom-center">
-  Powered by <b>JAG15</b> | Allston Car Wash © 2025<br>
-  <small>v4.7.1 — Blue Glass Hybrid Stable Edition</small>
-</footer>
+  <footer class="hud bottom-center">
+    Powered by <b>JAG15</b> | Allston Car Wash © 2025<br>
+    <small>v4.7.2 — Blue Glass White Edition</small>
+  </footer>
 
   <!-- 🧠 CORE SCRIPTS -->
   <script src="./config.js"></script>
@@ -54,33 +53,10 @@
   <!-- 🧩 SERVICE WORKER -->
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('./service-worker.js')
+      navigator.serviceWorker.register('./service-worker.js')
         .then(() => console.log('✅ ACW Service Worker registered'))
         .catch(err => console.warn('SW registration failed:', err));
     }
   </script>
-
-  <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./service-worker.js').then(reg => {
-    console.log("✅ SW registered:", reg.scope);
-    // Ask for updates every 30s
-    setInterval(() => {
-      if (reg.active) reg.active.postMessage("checkForUpdate");
-    }, 30000);
-  });
-
-  // Receive update signal from service worker
-  navigator.serviceWorker.addEventListener("message", event => {
-    if (event.data?.type === "UPDATE_AVAILABLE") {
-      if (confirm("🔄 New version available — Reload now?")) {
-        window.location.reload(true);
-      }
-    }
-  });
-}
-</script>
-
 </body>
 </html>
