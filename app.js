@@ -144,50 +144,108 @@ function addTeamButton() {
 }
 
 // ============================================================
-// 👥 TEAM OVERVIEW SYSTEM — v4.7 Blue Glass English Edition
+// 👥 TEAM OVERVIEW — Blue Glass Floating Table (Toggle Mode)
 // ============================================================
+
+let directoryVisible = false;
+
+// Create floating toggle button 👥
+function addTeamButton() {
+  if (document.getElementById("teamBtn")) return;
+
+  const btn = document.createElement("button");
+  btn.id = "teamBtn";
+  btn.className = "team-btn";
+  btn.innerHTML = "👥";
+  btn.title = "Team Overview";
+  btn.onclick = toggleTeamOverview;
+  document.body.appendChild(btn);
+}
+
+// Toggle open/close floating directory
+function toggleTeamOverview() {
+  if (directoryVisible) {
+    document.getElementById("directoryWrapper")?.remove();
+    directoryVisible = false;
+    return;
+  }
+  loadEmployeeDirectory();
+  directoryVisible = true;
+}
+
+// Load directory data
 async function loadEmployeeDirectory() {
   try {
     const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
     const data = await res.json();
     if (!data.ok) return;
-    renderDirectoryCards(data.directory);
+    renderDirectoryTable(data.directory);
   } catch (err) {
     console.error("Error loading directory:", err);
   }
 }
 
-function renderDirectoryCards(list) {
-  const old = document.getElementById("directoryWrapper");
-  if (old) old.remove();
+// Render floating table (Blue Glass style)
+function renderDirectoryTable(list) {
+  document.getElementById("directoryWrapper")?.remove(); // remove old
 
   const wrapper = document.createElement("div");
   wrapper.id = "directoryWrapper";
-  wrapper.className = "directory-wrapper";
+  wrapper.className = "directory-wrapper blue-glass";
 
-  const header = document.createElement("div");
-  header.className = "directory-header-bar";
-  header.innerHTML = `
-    <h3>Team Overview</h3>
-    <button class="close-all-btn" onclick="closeAllEmployeeCards()">Close All</button>
+  let html = `
+    <div class="directory-header-bar">
+      <h3>Team Overview</h3>
+      <button class="close-all-btn" onclick="toggleTeamOverview()">×</button>
+    </div>
+    <table class="directory-table">
+      <tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Status</th><th></th></tr>
   `;
-  wrapper.appendChild(header);
 
   list.forEach(emp => {
-    const card = document.createElement("div");
-    card.className = "employee-card";
-    card.innerHTML = `
-      <div class="card-main">
-        <div class="card-name">${emp.name}</div>
-        <div class="card-role">${emp.role || ""}</div>
-        <div class="card-email">${emp.email}</div>
-        <button class="card-btn" onclick="openEmployeeCard('${emp.email}', '${emp.name}', '${emp.role}', '${emp.phone || ""}')">Open</button>
-      </div>
-    `;
-    wrapper.appendChild(card);
+    const active = emp.status === "active";
+    html += `
+      <tr class="${active ? "active-row" : "inactive-row"}">
+        <td><b>${emp.name}</b></td>
+        <td>${emp.role}</td>
+        <td>${emp.email}</td>
+        <td>${emp.phone || ""}</td>
+        <td style="color:${active ? "#00ffb2" : "#999"};">${emp.status}</td>
+        <td><button class="open-btn" onclick="openEmployeeCard('${emp.email}', '${emp.name}', '${emp.role}', '${emp.phone}')">Open</button></td>
+      </tr>`;
   });
 
+  html += "</table>";
+  wrapper.innerHTML = html;
   document.body.appendChild(wrapper);
+}
+
+// 🔍 Employee detail modal (same size as main panel)
+async function openEmployeeCard(email, name, role, phone) {
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
+    const data = await res.json();
+    if (!data.ok) return alert("No schedule found for this employee.");
+
+    const modal = document.createElement("div");
+    modal.className = "employee-modal main-glass";
+    modal.innerHTML = `
+      <div class="modal-header">
+        <span class="modal-close" onclick="this.parentElement.parentElement.remove()">×</span>
+        <h3>${name}</h3>
+        <p>${role || ""}</p>
+        <p>${phone || ""}</p>
+      </div>
+      <table class="schedule-mini">
+        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+        ${data.days.map(d => `<tr><td>${d.name}</td><td>${d.shift}</td><td>${d.hours}</td></tr>`).join("")}
+      </table>
+      <p class="total">Total Hours: <b>${data.total}</b></p>
+    `;
+    document.body.appendChild(modal);
+  } catch (err) {
+    console.error("Error opening employee card:", err);
+  }
 }
 
 // 🔍 Open employee details in a floating window (fully working & animated)
