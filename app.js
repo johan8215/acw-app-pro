@@ -37,47 +37,37 @@ async function loginUser() {
 }
 
 function renderSchedule(data) {
-  const container = document.getElementById("schedule");
-  if (!data || !data.days) {
-    container.innerHTML = "<p>No schedule data found.</p>";
+  const box = document.getElementById("schedule");
+  if (!data || !data.ok) {
+    box.innerHTML = `<p style="color:#ff9999;">No schedule found</p>`;
     return;
   }
 
-  // 🔧 fallback para nombres de día
-  const fallbackDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
+  const FALLBACK = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
   let html = `
-    <h2>${data.name}</h2>
-    <p class="role">${data.role}</p>
-    <p>Week: ${data.week}</p>
-    <table>
-      <thead>
-        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-      </thead>
-      <tbody>
+    <h4>Week: ${data.week}</h4>
+    <table class="schedule-table">
+      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
   `;
 
-  data.days.forEach((day, i) => {
-    const dayName = day.day || fallbackDays[i] || "-";
-    const shift = day.shift || "-";
-    const hours = day.hours || 0;
+  (data.days || []).forEach((d, i) => {
+    const dayName = d.name || FALLBACK[i];
+    const shift = d.shift || "-";
+    const hours = d.hours || 0;
 
-    html += `
-      <tr>
-        <td>${dayName}</td>
-        <td>${shift}</td>
-        <td>${hours}</td>
-      </tr>
-    `;
+    html += `<tr>
+      <td>${dayName}</td>
+      <td>${shift}</td>
+      <td>${hours}</td>
+    </tr>`;
   });
 
-  html += `
-      </tbody>
-    </table>
-    <p class="total">Total Hours: <b>${data.total}</b></p>
-  `;
+  html += `</table><p><b>Total Hours: ${data.total}</b></p>`;
+  html += `<div id="clockBox" style="margin-top:10px;font-size:14px;color:#0070ff;"></div>`;
+  box.innerHTML = html;
 
-  container.innerHTML = html;
+  // 🕒 start live clock
+  startClock();
 }
 
 // 🧮 CALCULATE LIVE HOURS (if shift ends with ".")
