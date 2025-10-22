@@ -726,7 +726,7 @@ footer {
 .install-btn {
   position: fixed;
   bottom: 26px;
-  right: 92px; /* 👥 está en 22px, este queda justo al lado */
+  right: 92px;
   background: rgba(0, 255, 180, 0.85);
   border: none;
   border-radius: 50%;
@@ -742,6 +742,25 @@ footer {
 .install-btn:hover {
   background: rgba(0, 255, 200, 1);
   transform: scale(1.05);
+}
+.install-btn::after {
+  content: "Add to Home Screen";
+  position: absolute;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%) scale(0.9);
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+.install-btn:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
 }
 /* ===========================================================
    👥 TEAM OVERVIEW — Floating Blue Glass Table
