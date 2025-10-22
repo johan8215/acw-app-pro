@@ -1,17 +1,15 @@
 {
   "name": "Allston Car Wash",
-  "short_name": "ACW",
-  "description": "Allston Car Wash Employee App",
-  "start_url": "./index.html",
+  "short_name": "ACW App",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b2b5f",
-  "theme_color": "#0b2b5f",
+  "background_color": "#ffffff",
+  "theme_color": "#0078ff",
   "icons": [
     {
-      "src": "./acw-icon-512.png",
+      "src": "/acw-icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ]
 }
