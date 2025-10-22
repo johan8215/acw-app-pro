@@ -1,24 +1,12 @@
 /* ============================================================
-   🧠 ACW-App v4.7 — Blue Glass Hybrid Edition
+   🧠 ACW-App v4.7.1 — Blue Glass Hybrid + Auto-Update Popup
    Johan A. Giraldo (JAG15) & Sky | Allston Car Wash © 2025
    ============================================================ */
 
 /* ------------------------------------------------------------
-   🧩 Force Update on Every Activation (iOS 26 friendly)
+   ⚙️ Force Refresh Cache (iOS 26 compatible)
    ------------------------------------------------------------ */
-self.addEventListener("activate", event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
-  );
-  console.log("🔁 ACW-App v4.7 activated — all caches cleared.");
-});
-
-/* ------------------------------------------------------------
-   🌐 Cache Network Fallback for offline use
-   ------------------------------------------------------------ */
-const CACHE_NAME = "acw-v47-blue-glass";
+const CACHE_NAME = "acw-v471-blue-glass";
 const ASSETS = [
   "./",
   "./index.html",
@@ -28,17 +16,28 @@ const ASSETS = [
   "./manifest.json"
 ];
 
+// 🧩 Install → precache
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(ASSETS))
       .then(() => self.skipWaiting())
   );
-  console.log("📦 ACW-App assets pre-cached.");
+  console.log("📦 ACW-App v4.7.1 installed and pre-cached.");
+});
+
+// 🔁 Activate → clear old caches
+self.addEventListener("activate", event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
+  console.log("🔁 ACW-App v4.7.1 activated — old caches removed.");
 });
 
 /* ------------------------------------------------------------
-   ⚙️ Fetch Handler → Always Serve Fresh Then Cache
+   🌐 Fetch → Network First, Cache Fallback
    ------------------------------------------------------------ */
 self.addEventListener("fetch", event => {
   event.respondWith(
@@ -53,6 +52,17 @@ self.addEventListener("fetch", event => {
 });
 
 /* ------------------------------------------------------------
-   🧭 Version Tag for Debugging
+   🚨 Auto-Update Popup (for Safari/iPad)
    ------------------------------------------------------------ */
-console.log("✅ ACW-App Service Worker v4.7 — Blue Glass Hybrid Loaded");
+self.addEventListener("message", event => {
+  if (event.data === "checkForUpdate") {
+    fetch("./manifest.json", { cache: "no-store" })
+      .then(() => {
+        event.source.postMessage({ type: "UPDATE_AVAILABLE" });
+      })
+      .catch(err => console.warn("Update check failed:", err));
+  }
+});
+
+// 📜 Version Tag
+console.log("✅ ACW-App Service Worker v4.7.1 — Auto-Update Ready");
