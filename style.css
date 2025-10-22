@@ -290,3 +290,23 @@ table {
   margin-top: 8px;
   text-shadow: 0 0 10px rgba(0,136,255,0.3);
 }
+
+/* ---------- TABLE SPACING FIX ---------- */
+table {
+  margin: 0 auto;
+  width: 95%;
+  border-collapse: separate;
+  border-spacing: 20px 8px; /* ← separa columnas y filas */
+  text-align: center;
+  font-size: 18px;
+}
+
+th {
+  padding-bottom: 4px;
+  color: #000;
+  letter-spacing: 0.5px;
+}
+
+td {
+  padding: 6px 10px;
+}
