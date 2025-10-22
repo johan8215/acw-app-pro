@@ -195,3 +195,32 @@ function logoutUser() {
   localStorage.removeItem("acwUser");
   location.reload();
 }
+   /* ============================================================
+   ⚙️ SETTINGS + LOGOUT (refresh edition)
+   ============================================================ */
+
+function openSettings() {
+  document.getElementById("settingsModal").style.display = "block";
+}
+
+function closeSettings() {
+  document.getElementById("settingsModal").style.display = "none";
+}
+
+function logoutUser() {
+  localStorage.removeItem("acwUser");
+  closeSettings();
+  // Refresca completamente la app para nuevo login o nueva versión
+  window.location.reload(true);
+}
+
+function refreshApp() {
+  closeSettings();
+  setTimeout(() => {
+    window.location.reload(true);
+  }, 300);
+}
+
+
+
+   
