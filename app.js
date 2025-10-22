@@ -284,58 +284,6 @@ async function showWelcome(name, role) {
 }
 
 /* ============================================================
-   👥 TEAM VIEW — Button Logic
-   ============================================================ */
-function addTeamButton() {
-  if (document.getElementById("teamBtn")) return;
-  const btn = document.createElement("button");
-  btn.id = "teamBtn";
-  btn.className = "team-btn";
-  btn.textContent = "Team View";
-  btn.onclick = toggleTeamOverview;
-  document.body.appendChild(btn);
-}
-
-function toggleTeamOverview() {
-  const wrapper = document.getElementById("directoryWrapper");
-  if (wrapper) return wrapper.remove();
-  loadEmployeeDirectory();
-}
-
-async function loadEmployeeDirectory() {
-  const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
-  const data = await res.json();
-  if (!data.ok) return;
-  renderDirectory(data.directory);
-}
-
-/* ============================================================
-   🧩 TEAM VIEW ENHANCED — with Close button (modern)
-   ============================================================ */
-function renderDirectory(list) {
-  const box = document.createElement("div");
-  box.id = "directoryWrapper";
-  box.className = "directory-wrapper";
-  box.innerHTML = `
-    <span class="directory-close" onclick="closeTeamView()">✖️</span>
-    <h3>Team View</h3>
-    <table class="directory-table">
-      <tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th></tr>
-      ${list.map(emp => `
-        <tr>
-          <td>${emp.name}</td>
-          <td>${emp.role}</td>
-          <td>${emp.email}</td>
-          <td>${emp.phone || ""}</td>
-        </tr>`).join("")}
-    </table>`;
-  document.body.appendChild(box);
-}
-function closeTeamView() {
-  document.getElementById("directoryWrapper")?.remove();
-}
-
-/* ============================================================
    🧩 TEAM VIEW 2.0 — Interactive Employee View (v4.8)
    ============================================================ */
 function renderDirectory(list) {
