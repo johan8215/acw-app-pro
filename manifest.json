@@ -1,22 +1,17 @@
 {
   "name": "Allston Car Wash",
-  "short_name": "ACW App",
-  "description": "Allston Car Wash Employee App — Stable Blue Glass Edition",
+  "short_name": "ACW",
+  "description": "Allston Car Wash Employee App",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#001a33",
-  "orientation": "portrait",
+  "background_color": "#0b2b5f",
+  "theme_color": "#0b2b5f",
   "icons": [
     {
-      "src": "https://jag15.com/assets/acw-icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "https://jag15.com/assets/acw-icon-512.png",
+      "src": "./icons/acw-icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
