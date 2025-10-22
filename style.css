@@ -310,3 +310,11 @@ th {
 td {
   padding: 6px 10px;
 }
+
+.user-phone {
+  color: #0078ff;
+  font-weight: 600;
+  font-size: 17px;
+  margin: 6px 0 10px 0;
+  text-shadow: 0 0 8px rgba(0,120,255,0.25);
+}
