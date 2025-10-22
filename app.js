@@ -129,74 +129,80 @@ function showWelcome(name,role){
   if(role==="manager"||role==="supervisor") addTeamButton();
 }
 
-/* ============================================================
-   👥 TEAM OVERVIEW SYSTEM — Blue Glass Edition
-   ============================================================ */
-let directoryVisible=false;
-function addTeamButton(){
-  if(document.getElementById("teamBtn"))return;
-  const btn=document.createElement("button");
-  btn.id="teamBtn";btn.className="team-btn";btn.innerHTML="👥";
-  btn.title="Team Overview";btn.onclick=toggleTeamOverview;
+// ============================================================
+// 👥 TEAM OVERVIEW — Blue Glass Floating Grid Edition (v4.8)
+// ============================================================
+
+let directoryVisible = false;
+
+// 🧩 Add floating “Team Overview” button
+function addTeamButton() {
+  if (document.getElementById("teamBtn")) return;
+
+  const btn = document.createElement("div");
+  btn.id = "teamBtn";
+  btn.className = "team-box-btn";
+  btn.textContent = "Team Overview";
+  btn.onclick = toggleTeamOverview;
   document.body.appendChild(btn);
 }
-function toggleTeamOverview(){
-  if(directoryVisible){document.getElementById("directoryWrapper")?.remove();directoryVisible=false;return;}
-  loadEmployeeDirectory();directoryVisible=true;
+
+// Toggle open/close
+function toggleTeamOverview() {
+  if (directoryVisible) {
+    document.querySelectorAll(".team-grid").forEach(e => e.remove());
+    directoryVisible = false;
+  } else {
+    loadEmployeeDirectory();
+    directoryVisible = true;
+  }
 }
-async function loadEmployeeDirectory(){
-  try{
-    const res=await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
-    const data=await res.json();
-    if(!data.ok)return;
-    renderDirectoryTable(data.directory);
-  }catch(err){console.error("Error loading directory:",err);}
+
+// Load employee list
+async function loadEmployeeDirectory() {
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
+    const data = await res.json();
+    if (!data.ok) return;
+    renderDirectoryGrid(data.directory);
+  } catch (err) {
+    console.error("Error loading directory:", err);
+  }
 }
-function renderDirectoryTable(list){
-  document.getElementById("directoryWrapper")?.remove();
-  const wrapper=document.createElement("div");
-  wrapper.id="directoryWrapper";wrapper.className="directory-wrapper blue-glass";
-  let html=`<div class="directory-header-bar">
-    <h3>Team Overview</h3>
-    <button class="close-all-btn" onclick="toggleTeamOverview()">×</button>
-  </div>
-  <table class="directory-table">
-  <tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Status</th><th></th></tr>`;
-  list.forEach(emp=>{
-    const active=emp.status==="active";
-    html+=`<tr class="${active?"active-row":"inactive-row"}">
-      <td><b>${emp.name}</b></td>
-      <td>${emp.role}</td>
-      <td>${emp.email}</td>
-      <td>${emp.phone||""}</td>
-      <td style="color:${active?"#00ffb2":"#999"};">${emp.status}</td>
-      <td><button class="open-btn"
-      onclick="openEmployeeCard('${emp.email}','${emp.name}','${emp.role}','${emp.phone||""}')">Open</button></td>
-    </tr>`;
-  });
-  html+="</table>";wrapper.innerHTML=html;document.body.appendChild(wrapper);
-}
-async function openEmployeeCard(email,name,role,phone){
-  try{
-    const res=await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
-    const data=await res.json();if(!data.ok)return alert("No schedule found for this employee.");
-    const id=`modal-${email.replace(/[@.]/g,"_")}`;
-    if(document.getElementById(id))return;
-    const modal=document.createElement("div");
-    modal.className="employee-modal main-glass";modal.id=id;
-    modal.innerHTML=`<div class="modal-header">
-      <span class="modal-close" onclick="this.parentElement.parentElement.remove()">×</span>
-      <h3>${name}</h3><p>${role||""}</p><p>${phone||""}</p>
-    </div>
-    <table class="schedule-mini">
-      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-      ${data.days.map(d=>`<tr><td>${d.name}</td><td>${d.shift}</td><td>${d.hours}</td></tr>`).join("")}
-    </table>
-    <p class="total">Total Hours: <b>${data.total}</b></p>`;
-    document.body.appendChild(modal);
-    modal.style.opacity="0";modal.style.transform="translateY(30px)";
-    setTimeout(()=>{modal.style.opacity="1";modal.style.transform="translateY(0)";},50);
-  }catch(err){console.error("Error opening employee card:",err);}
+
+// 📊 Render multiple floating tables (auto-split by 8 employees each)
+function renderDirectoryGrid(list) {
+  // Remove old
+  document.querySelectorAll(".team-grid").forEach(e => e.remove());
+
+  const chunkSize = 8;
+  for (let i = 0; i < list.length; i += chunkSize) {
+    const group = list.slice(i, i + chunkSize);
+
+    const grid = document.createElement("div");
+    grid.className = "team-grid glass";
+
+    let html = `
+      <div class="grid-header">Team Overview</div>
+      <table class="directory-table">
+        <tr><th>Name</th><th>Role</th><th>Hours</th><th></th></tr>
+    `;
+
+    group.forEach(emp => {
+      const active = emp.status === "active";
+      html += `
+        <tr class="${active ? "active-row" : "inactive-row"}">
+          <td><b>${emp.name}</b></td>
+          <td>${emp.role}</td>
+          <td>${emp.hours || 0}</td>
+          <td><button class="open-btn" onclick="openEmployeeCard('${emp.email}','${emp.name}','${emp.role}','${emp.phone}')">Open</button></td>
+        </tr>`;
+    });
+
+    html += "</table>";
+    grid.innerHTML = html;
+    document.body.appendChild(grid);
+  }
 }
 
 /* ============================================================
