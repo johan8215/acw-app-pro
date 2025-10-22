@@ -175,3 +175,48 @@ footer {
   from { transform: scale(0.8); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
+.floating-directory {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 16px;
+  padding: 16px;
+  max-height: 60vh;
+  width: 430px;
+  overflow-y: auto;
+  color: #fff;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.45);
+  font-size: 14px;
+  z-index: 99;
+}
+
+.floating-directory table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.floating-directory th {
+  color: #00b0ff;
+  text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.floating-directory td {
+  padding: 6px 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.open-btn {
+  background: #c00;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.open-btn:hover {
+  background: #ff3333;
+}
