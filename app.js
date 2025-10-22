@@ -56,7 +56,7 @@ async function showWelcome(name, role) {
   document.getElementById("welcomeRole").textContent = role;
 
   // Solo managers o supervisores ven el botón "Team View"
-  if (role === "manager" || role === "supervisor") addTeamButton();
+  if (["manager", "supervisor"].includes(role.toLowerCase())) addTeamButton();
 
   // 🔍 Buscar teléfono desde Employees list
   try {
