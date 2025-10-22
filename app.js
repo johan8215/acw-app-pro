@@ -1,5 +1,5 @@
 /* ============================================================
-   🧠 ACW-App v4.7.3 — Blue Glass White Edition
+   🧠 ACW-App v4.7.4 — Blue Glass White Edition (Stable Clean Build)
    Johan A. Giraldo (JAG15) & Sky — Oct 2025
    ============================================================ */
 
@@ -26,7 +26,9 @@ async function loginUser() {
     btn.style.boxShadow = "0 0 20px rgba(0,136,255,0.8)";
     diag.textContent = "Connecting to Allston Car Wash servers ☀️";
 
-    const res = await fetch(`${CONFIG.BASE_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
+    const res = await fetch(
+      `${CONFIG.BASE_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
+    );
     const data = await res.json();
     if (!data.ok) throw new Error("Invalid email or password.");
 
@@ -125,86 +127,28 @@ async function loadSchedule(email) {
 }
 
 /* ============================================================
-   👥 TEAM VIEW
-   ============================================================ */
-function addTeamButton() {
-  if (document.getElementById("teamBtn")) return;
-  const btn = document.createElement("button");
-  btn.id = "teamBtn";
-  btn.className = "team-btn";
-  btn.textContent = "Team View";
-  btn.onclick = toggleTeamOverview;
-  document.body.appendChild(btn);
-}
-
-function toggleTeamOverview() {
-  const wrapper = document.getElementById("directoryWrapper");
-  if (wrapper) return wrapper.remove();
-  loadEmployeeDirectory();
-}
-
-async function loadEmployeeDirectory() {
-  const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
-  const data = await res.json();
-  if (!data.ok) return;
-  renderDirectory(data.directory);
-}
-
-function renderDirectory(list) {
-  const box = document.createElement("div");
-  box.id = "directoryWrapper";
-  box.className = "directory-wrapper";
-  box.innerHTML = `
-    <h3>Team View</h3>
-    <table class="directory-table">
-      <tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th></tr>
-      ${list.map(emp => `
-        <tr>
-          <td>${emp.name}</td>
-          <td>${emp.role}</td>
-          <td>${emp.email}</td>
-          <td>${emp.phone || ""}</td>
-        </tr>`).join("")}
-    </table>`;
-  document.body.appendChild(box);
-}
-
-/* ============================================================
    ⚙️ SETTINGS + REFRESH
    ============================================================ */
 function openSettings() {
   document.getElementById("settingsModal").style.display = "block";
 }
-
 function closeSettings() {
   document.getElementById("settingsModal").style.display = "none";
 }
-
-/* 🔄 Check for Updates */
 function refreshApp() {
   closeSettings?.();
-  if ("caches" in window) {
-    caches.keys().then(names => {
-      for (let name of names) caches.delete(name);
-    });
-  }
+  if ("caches" in window) caches.keys().then(names => names.forEach(n => caches.delete(n)));
   const btn = document.querySelector(".settings-section button:first-child");
   if (btn) {
     btn.innerHTML = "⏳ Updating...";
     btn.style.opacity = "0.7";
   }
-  setTimeout(() => {
-    window.location.reload(true);
-  }, 1200);
+  setTimeout(() => window.location.reload(true), 1200);
 }
-
-/* 🚪 Logout limpia sesión y refresca app */
 function logoutUser() {
   localStorage.removeItem("acwUser");
   closeSettings();
-  setTimeout(() => {
-    window.location.reload(true);
-  }, 600);
+  setTimeout(() => window.location.reload(true), 600);
 }
 
 /* ============================================================
@@ -226,9 +170,7 @@ window.addEventListener("load", () => {
 function startLiveTimer(days, total) {
   try {
     const todayName = new Date().toLocaleString("en-US", { weekday: "long" });
-    const today = days.find(
-      (d) => d.name.toLowerCase() === todayName.toLowerCase()
-    );
+    const today = days.find(d => d.name.toLowerCase() === todayName.toLowerCase());
     if (!today || !today.shift || today.shift.includes("OFF")) return;
 
     const [startStr, endStr] = today.shift.split("-");
@@ -243,7 +185,6 @@ function startLiveTimer(days, total) {
     updateTotalDisplay(total + Number(liveHrs));
     showLiveHours(liveHrs);
 
-    // Actualiza cada minuto
     setInterval(() => {
       const now2 = new Date();
       const diff2 = (now2 - startTime) / (1000 * 60 * 60);
@@ -255,7 +196,6 @@ function startLiveTimer(days, total) {
     console.warn("⏱️ Live hours not active:", err);
   }
 }
-
 function parseTime(str) {
   const [time, meridian] = str.trim().split(" ");
   let [h, m] = time.split(":").map(Number);
@@ -265,14 +205,10 @@ function parseTime(str) {
   d.setHours(h, m || 0, 0, 0);
   return d;
 }
-
 function updateTotalDisplay(value) {
   const totalEl = document.querySelector(".total");
-  if (totalEl) {
-    totalEl.innerHTML = `Total Hours: <b>${value.toFixed(2)}</b>`;
-  }
+  if (totalEl) totalEl.innerHTML = `Total Hours: <b>${value.toFixed(2)}</b>`;
 }
-
 function showLiveHours(hours) {
   let liveEl = document.querySelector(".live-hours");
   if (!liveEl) {
@@ -280,26 +216,16 @@ function showLiveHours(hours) {
     liveEl.className = "live-hours";
     document.querySelector("#schedule")?.appendChild(liveEl);
   }
-
-  // 🟥 Si pasa la hora de salida → texto rojo
   const color = hours > 9 ? "#e60000" : "#0070ff";
   liveEl.innerHTML = `Live shift: <b style="color:${color}">${hours}</b> h ⏱️`;
 }
-
-// Integrar automáticamente con tu loadSchedule actual
 const originalLoadSchedule = loadSchedule;
 loadSchedule = async function (email) {
   await originalLoadSchedule(email);
   try {
-    const res = await fetch(
-      `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(
-        email
-      )}`
-    );
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
     const data = await res.json();
-    if (data.ok && data.days) {
-      startLiveTimer(data.days, Number(data.total || 0));
-    }
+    if (data.ok && data.days) startLiveTimer(data.days, Number(data.total || 0));
   } catch (e) {
     console.warn("Live timer skipped:", e);
   }
@@ -317,21 +243,16 @@ function renderDirectory(list) {
     <h3>Team View</h3>
     <table class="directory-table">
       <tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th></tr>
-      ${list
-        .map(
-          (emp) => `
+      ${list.map(emp => `
         <tr>
           <td>${emp.name}</td>
           <td>${emp.role}</td>
           <td>${emp.email}</td>
           <td>${emp.phone || ""}</td>
-        </tr>`
-        )
-        .join("")}
+        </tr>`).join("")}
     </table>`;
   document.body.appendChild(box);
 }
-
 function closeTeamView() {
   document.getElementById("directoryWrapper")?.remove();
 }
