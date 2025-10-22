@@ -30,6 +30,10 @@ async function loginUser() {
     currentUser = data;
     diag.textContent = "";
     showWelcome(data.name, data.role);
+
+    if (data.role === "manager" || data.role === "supervisor") {
+  loadEmployeeDirectory();
+}
     await loadSchedule(email);
   } catch (err) {
     diag.textContent = err.message;
