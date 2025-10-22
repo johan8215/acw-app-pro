@@ -334,3 +334,105 @@ function renderDirectory(list) {
 function closeTeamView() {
   document.getElementById("directoryWrapper")?.remove();
 }
+
+/* ============================================================
+   🧩 TEAM VIEW 2.0 — Interactive Employee View (v4.8)
+   ============================================================ */
+function renderDirectory(list) {
+  const box = document.createElement("div");
+  box.id = "directoryWrapper";
+  box.className = "directory-wrapper";
+  box.innerHTML = `
+    <span class="directory-close" onclick="closeTeamView()">✖️</span>
+    <h3>Team View</h3>
+    <div class="employee-grid">
+      ${list
+        .map(
+          (emp) => `
+        <div class="employee-card">
+          <h4>${emp.name}</h4>
+          <p class="hours">Hours: <b>${emp.totalHours || "0"}</b></p>
+          <button class="open-btn" onclick="openEmployeeView('${emp.email}')">Open</button>
+        </div>`
+        )
+        .join("")}
+    </div>`;
+  document.body.appendChild(box);
+}
+
+/* 🔹 Modal flotante individual */
+async function openEmployeeView(email) {
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
+    const data = await res.json();
+
+    if (!data.ok || !data.days) {
+      alert("No schedule found for this employee.");
+      return;
+    }
+
+    const modal = document.createElement("div");
+    modal.className = "employee-modal";
+    modal.innerHTML = `
+      <div class="employee-modal-content">
+        <span class="modal-close" onclick="this.closest('.employee-modal').remove()">✖️</span>
+        <h3>${data.name || "Employee"}</h3>
+        <button class="refresh-mini" onclick="reloadEmployeeView('${email}', this)">⚙️ Check for Updates</button>
+        <table>
+          <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+          ${data.days
+            .map(
+              (d) => `
+            <tr>
+              <td>${d.name}</td>
+              <td>${d.shift || "-"}</td>
+              <td>${d.hours || "0"}</td>
+            </tr>`
+            )
+            .join("")}
+        </table>
+        <p class="total">Total Hours: <b>${data.total || 0}</b></p>
+      </div>`;
+    document.body.appendChild(modal);
+  } catch (err) {
+    console.error("Error opening employee view:", err);
+  }
+}
+
+/* 🔁 Recarga el horario dentro del modal */
+async function reloadEmployeeView(email, btn) {
+  btn.innerHTML = "⏳ Updating...";
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
+    const data = await res.json();
+
+    if (!data.ok) throw new Error("No schedule found");
+
+    const modal = btn.closest(".employee-modal-content");
+    const table = modal.querySelector("table");
+    const total = modal.querySelector(".total");
+
+    table.innerHTML = `
+      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+      ${data.days
+        .map(
+          (d) => `
+        <tr>
+          <td>${d.name}</td>
+          <td>${d.shift || "-"}</td>
+          <td>${d.hours || "0"}</td>
+        </tr>`
+        )
+        .join("")}
+    `;
+    total.innerHTML = `Total Hours: <b>${data.total || 0}</b>`;
+  } catch (err) {
+    alert("❌ Error updating schedule");
+  } finally {
+    btn.innerHTML = "⚙️ Check for Updates";
+  }
+}
+
+function closeTeamView() {
+  document.getElementById("directoryWrapper")?.remove();
+}
