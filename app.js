@@ -203,15 +203,28 @@ async function openEmployeeCard(email,name,role,phone){
    🚪 LOGOUT & SETTINGS
    ============================================================ */
 function logoutUser() {
+  // 🧹 Clear saved session
   localStorage.removeItem("acwUser");
+
   currentUser = null;
   scheduleData = null;
+
   if (clockTimer) clearInterval(clockTimer);
+
   document.getElementById("login").style.display = "block";
   document.getElementById("welcome").style.display = "none";
   document.getElementById("email").value = "";
   document.getElementById("password").value = "";
 }
+
+function openSettings() {
+  document.getElementById("settingsModal").style.display = "block";
+}
+
+function closeSettings() {
+  document.getElementById("settingsModal").style.display = "none";
+}
+
 /* ============================================================
    📲 INSTALL APP PROMPT — Blue Glass Edition (iOS & Android)
    ============================================================ */
