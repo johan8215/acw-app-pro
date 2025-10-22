@@ -86,7 +86,7 @@ async function showWelcome(name, role) {
 }
 
 /* ============================================================
-   📅 LOAD SCHEDULE
+   📅 LOAD SCHEDULE — with Auto Live Timer (v4.7.5)
    ============================================================ */
 async function loadSchedule(email) {
   const schedDiv = document.getElementById("schedule");
@@ -101,6 +101,7 @@ async function loadSchedule(email) {
       return;
     }
 
+    // 🧾 Construir la tabla principal
     let html = `
       <table>
         <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
@@ -126,6 +127,14 @@ async function loadSchedule(email) {
     `;
 
     schedDiv.innerHTML = html;
+
+    // ⏱️ Activar cronómetro 1 segundo después de mostrar la tabla
+    setTimeout(() => {
+      if (data.ok && data.days) {
+        startLiveTimer(data.days, Number(data.total || 0));
+      }
+    }, 1000);
+
   } catch (err) {
     console.error("Error loading schedule:", err);
     schedDiv.innerHTML = `<p style="color:#c00;">Error loading schedule. Please try again later.</p>`;
