@@ -131,6 +131,82 @@ function showWelcome(name, role) {
   document.getElementById("welcome").style.display = "block";
   document.getElementById("welcomeName").textContent = name;
   document.getElementById("welcomeRole").textContent = role;
+
+  // ✅ Solo managers y supervisores ven el botón
+  if (role === "manager" || role === "supervisor") {
+    addTeamButton();
+  }
+}
+
+// 🧩 Crea botón flotante “Team Overview”
+function addTeamButton() {
+  // Evita duplicados
+  if (document.getElementById("teamBtn")) return;
+
+  const btn = document.createElement("button");
+  btn.id = "teamBtn";
+  btn.className = "team-btn";
+  btn.textContent = "Team Overview";
+  btn.onclick = toggleDirectory;
+  document.body.appendChild(btn);
+}
+
+// 📋 Alterna mostrar/ocultar directorio
+let directoryVisible = false;
+function toggleDirectory() {
+  const box = document.getElementById("directoryBox");
+  if (directoryVisible) {
+    if (box) box.remove();
+    directoryVisible = false;
+  } else {
+    loadEmployeeDirectory();
+    directoryVisible = true;
+  }
+}
+
+// 👥 Cargar directorio desde backend
+async function loadEmployeeDirectory() {
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
+    const data = await res.json();
+    if (!data.ok) return;
+    renderDirectory(data.directory);
+  } catch (err) {
+    console.error("Error loading directory:", err);
+  }
+}
+
+// 🧾 Mostrar directorio con estilo
+function renderDirectory(list) {
+  const box = document.createElement("div");
+  box.className = "floating-directory glass";
+  box.id = "directoryBox";
+
+  let html = `<h3>Employee Directory</h3>
+  <table class="directory-table">
+  <tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Status</th><th></th></tr>`;
+
+  list.forEach(emp => {
+    const active = emp.status === "active";
+    html += `
+      <tr class="${active ? "active-row" : "inactive-row"}">
+        <td><b>${emp.name}</b></td>
+        <td>${emp.role}</td>
+        <td>${emp.email}</td>
+        <td>${emp.phone || ""}</td>
+        <td>${emp.status}</td>
+        <td><button class="open-btn" onclick="openEmployee('${emp.email}')">Open</button></td>
+      </tr>`;
+  });
+
+  html += "</table>";
+  box.innerHTML = html;
+  document.body.appendChild(box);
+}
+
+// 🔓 Simulación de abrir detalle (puedes conectar luego)
+function openEmployee(email) {
+  alert("Open details for: " + email);
 }
 
 // 🚪 LOGOUT
