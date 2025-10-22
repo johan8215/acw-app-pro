@@ -1,11 +1,25 @@
 /* ============================================================
-   ⚙️ ACW-App Service Worker — v4.6.9 Blue Glass Edition
-   Enables offline mode and caching
-   Johan A. Giraldo (JAG15) | Oct 2025
-============================================================ */
+   🧠 ACW-App v4.7 — Blue Glass Hybrid Edition
+   Johan A. Giraldo (JAG15) & Sky | Allston Car Wash © 2025
+   ============================================================ */
 
-const CACHE_NAME = "acw-app-v4.6.9";
-const FILES_TO_CACHE = [
+/* ------------------------------------------------------------
+   🧩 Force Update on Every Activation (iOS 26 friendly)
+   ------------------------------------------------------------ */
+self.addEventListener("activate", event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
+  console.log("🔁 ACW-App v4.7 activated — all caches cleared.");
+});
+
+/* ------------------------------------------------------------
+   🌐 Cache Network Fallback for offline use
+   ------------------------------------------------------------ */
+const CACHE_NAME = "acw-v47-blue-glass";
+const ASSETS = [
   "./",
   "./index.html",
   "./style.css",
@@ -14,44 +28,31 @@ const FILES_TO_CACHE = [
   "./manifest.json"
 ];
 
-// ✅ Install and cache files
-self.addEventListener("install", (e) => {
-  console.log("💾 Installing ACW service worker...");
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(FILES_TO_CACHE))
+self.addEventListener("install", event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(ASSETS))
+      .then(() => self.skipWaiting())
   );
-  self.skipWaiting();
+  console.log("📦 ACW-App assets pre-cached.");
 });
 
-// ✅ Activate and clear old caches
-self.addEventListener("activate", (e) => {
-  e.waitUntil(
-    caches.keys().then((keyList) => {
-      return Promise.all(
-        keyList.map((key) => {
-          if (key !== CACHE_NAME) {
-            console.log("🧹 Removing old cache:", key);
-            return caches.delete(key);
-          }
-        })
-      );
-    })
-  );
-  self.clients.claim();
-});
-
-// ✅ Serve from cache (fallback to network)
-self.addEventListener("fetch", (e) => {
-  e.respondWith(
-    caches.match(e.request).then((response) => {
-      return (
-        response ||
-        fetch(e.request).catch(() =>
-          new Response("Offline mode — check your connection.")
-        )
-      );
-    })
+/* ------------------------------------------------------------
+   ⚙️ Fetch Handler → Always Serve Fresh Then Cache
+   ------------------------------------------------------------ */
+self.addEventListener("fetch", event => {
+  event.respondWith(
+    fetch(event.request)
+      .then(response => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
 
-console.log("✅ ACW Service Worker loaded — v4.6.9");
+/* ------------------------------------------------------------
+   🧭 Version Tag for Debugging
+   ------------------------------------------------------------ */
+console.log("✅ ACW-App Service Worker v4.7 — Blue Glass Hybrid Loaded");
