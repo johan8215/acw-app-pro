@@ -1,39 +1,33 @@
 /* ============================================================
-   🎨 ACW-App v4.6.9 — Stable Blue Glass Edition
-   Johan A. Giraldo (JAG15) | Allston Car Wash © 2025
+   🎨 ACW-App v4.8 — Blue Glass Edition (Final)
+   Johan A. Giraldo (JAG15) & Sky — Oct 2025
 ============================================================ */
 
 /* ---------- Base ---------- */
 body {
   font-family: 'Segoe UI', Roboto, sans-serif;
-  background: #ffffff;
+  background: radial-gradient(circle at 30% 20%, #0c2b55 0%, #081a33 40%, #071425 70%, #050e1b 100%) fixed;
+  color: #eef5ff;
   margin: 0;
   padding: 0;
   text-align: center;
-  color: #222;
 }
 
-/* ---------- Glass Container ---------- */
+/* ---------- Containers ---------- */
 .container {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 14px;
   padding: 40px 50px;
   margin: 70px auto;
   max-width: 420px;
-  box-shadow: 0 0 35px rgba(0, 120, 255, 0.35); /* 🔵 Blue shadow */
+  box-shadow: 0 20px 45px rgba(0,0,0,0.45);
+  backdrop-filter: blur(12px);
   transition: all 0.4s ease;
 }
 
-/* ---------- Headings ---------- */
 h1, h2 {
-  color: #c00;
-  margin-bottom: 10px;
-}
-
-.role {
-  color: #444;
-  font-weight: bold;
-  margin-top: -5px;
+  color: #7dd1ff;
   margin-bottom: 10px;
 }
 
@@ -43,13 +37,15 @@ input {
   width: 80%;
   margin: 10px auto;
   padding: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid rgba(255,255,255,0.25);
   border-radius: 6px;
   font-size: 15px;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
 }
 
 button {
-  background: #c00;
+  background: rgba(0,136,255,0.8);
   color: white;
   border: none;
   border-radius: 6px;
@@ -59,10 +55,7 @@ button {
   font-size: 15px;
   transition: background 0.2s ease;
 }
-
-button:hover {
-  background: #a00;
-}
+button:hover { background: rgba(0,156,255,1); }
 
 /* ---------- Table ---------- */
 table {
@@ -71,56 +64,41 @@ table {
   margin: 20px 0;
   font-size: 15px;
 }
-
 th {
-  color: #c00;
-  border-bottom: 2px solid #c00;
+  color: #7dd1ff;
+  border-bottom: 2px solid rgba(255,255,255,0.15);
   padding: 8px;
 }
-
 td {
   padding: 8px 6px;
-  border-bottom: 1px solid #ddd;
-}
-
-tr.today td {
-  background: rgba(0, 120, 255, 0.05);
-  font-weight: bold;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
 /* ---------- Totals & Clock ---------- */
 .total {
   margin-top: 10px;
   font-weight: bold;
-  color: #c00;
+  color: #00d4ff;
 }
-
 .clock {
   margin-top: 6px;
-  color: #0070ff;
+  color: #7dd1ff;
   font-size: 0.9em;
-}
-
-/* ---------- Error Text ---------- */
-.error {
-  color: #c00;
-  margin-top: 10px;
-  font-size: 13px;
 }
 
 /* ---------- Footer ---------- */
 footer {
   margin-top: 40px;
   font-size: 0.85em;
-  color: #444;
+  color: #88a9ff;
 }
 
-/* ---------- Settings Button ---------- */
+/* ---------- ⚙️ Settings ---------- */
 .gear-btn {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background: #c00;
+  background: rgba(0,136,255,0.8);
   color: white;
   font-size: 22px;
   border: none;
@@ -128,12 +106,11 @@ footer {
   width: 46px;
   height: 46px;
   cursor: pointer;
-  box-shadow: 0 0 25px rgba(0, 120, 255, 0.4);
+  box-shadow: 0 0 25px rgba(0,150,255,0.5);
   transition: all 0.3s ease;
 }
-
 .gear-btn:hover {
-  background: #a00;
+  background: rgba(0,156,255,1);
   transform: rotate(25deg);
 }
 
@@ -142,562 +119,143 @@ footer {
   display: none;
   position: fixed;
   z-index: 99;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.35);
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.35);
 }
-
 .modal-content {
-  background: rgba(255, 255, 255, 0.97);
+  background: rgba(255,255,255,0.1);
   margin: 15% auto;
   padding: 30px;
   border-radius: 14px;
   width: 320px;
-  box-shadow: 0 0 30px rgba(0, 120, 255, 0.4);
+  box-shadow: 0 0 30px rgba(0,150,255,0.4);
   animation: popIn 0.3s ease;
+  color: #fff;
+  backdrop-filter: blur(10px);
 }
-
 .close {
-  color: #c00;
+  color: #7dd1ff;
   float: right;
   font-size: 22px;
   font-weight: bold;
   cursor: pointer;
 }
+.close:hover { color: #00baff; }
 
-.close:hover {
-  color: #900;
-}
-
+/* ---------- Animations ---------- */
 @keyframes popIn {
   from { transform: scale(0.8); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
-.floating-directory {
+
+/* ===========================================================
+   💠 TEAM OVERVIEW — Blue Glass Floating Grid Edition
+   =========================================================== */
+
+.team-box-btn {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 16px;
-  padding: 16px;
-  max-height: 60vh;
-  width: 430px;
-  overflow-y: auto;
-  color: #fff;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.45);
-  font-size: 14px;
-  z-index: 99;
-}
-
-.floating-directory table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.floating-directory th {
-  color: #00b0ff;
-  text-align: left;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
-.floating-directory td {
-  padding: 6px 4px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-
-.open-btn {
-  background: #c00;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 4px 10px;
-  cursor: pointer;
-}
-.open-btn:hover {
-  background: #ff3333;
-}
-/* ========== 🧩 Floating Directory Styles ========== */
-.floating-directory {
-  position: fixed;
-  top: 100px;
-  right: 40px;
-  width: 420px;
-  max-height: 75vh;
-  overflow-y: auto;
-  background: rgba(255,255,255,0.95);
+  bottom: 90px;
+  right: 30px;
+  padding: 12px 22px;
+  background: rgba(0,70,150,0.75);
+  border: 1px solid rgba(0,180,255,0.7);
   border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
-  z-index: 9999;
+  color: #eaf5ff;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 0 25px rgba(0,150,255,0.4);
   backdrop-filter: blur(8px);
-  color: #111;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.team-box-btn:hover {
+  background: rgba(0,100,200,0.85);
+  box-shadow: 0 0 35px rgba(0,180,255,0.7);
 }
 
-.floating-directory h3 {
-  margin-top: 0;
+/* Floating grid */
+.team-grid {
+  position: fixed;
+  top: 80px;
+  right: 30px;
+  width: 320px;
+  background: rgba(10,25,50,0.8);
+  border: 1px solid rgba(0,150,255,0.3);
+  border-radius: 14px;
+  box-shadow: 0 0 30px rgba(0,150,255,0.3);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  margin-bottom: 16px;
+  padding: 10px;
+  z-index: 2000;
+  animation: fadeIn 0.4s ease;
+}
+.grid-header {
   text-align: center;
-  font-weight: 700;
-  color: #e60000;
+  font-weight: bold;
+  padding: 6px;
+  color: #7dd1ff;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
 }
-
 .directory-table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 13px;
 }
-
-.directory-table th {
-  background: #f4f4f4;
-  color: #111;
-  padding: 6px;
+.directory-table th, .directory-table td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
 }
-
-.directory-table td {
-  padding: 6px;
-  text-align: center;
-  border-bottom: 1px solid #ddd;
-}
-
-.active-row {
-  background: #e6ffe9;
-}
-
-.inactive-row {
-  background: #f8f8f8;
-  opacity: 0.7;
-}
-
+.directory-table th { color: #00baff; }
+.active-row td { color: #eaf5ff; }
+.inactive-row td { color: #888; }
 .open-btn {
-  background: #e60000;
-  color: white;
+  background: rgba(0,136,255,0.7);
   border: none;
-  border-radius: 6px;
-  padding: 4px 10px;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.open-btn:hover {
-  background: #ff3333;
-}
-
-/* 🧭 Floating Button */
-.team-btn {
-  position: fixed;
-  top: 25px;
-  right: 40px;
-  background: #e60000;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  z-index: 10000;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-}
-
-.team-btn:hover {
-  background: #ff3333;
-}
-/* ========== 🧩 Team Overview Clean Edition ========== */
-.directory-wrapper {
-  position: fixed;
-  top: 100px;
-  right: 40px;
-  width: 360px;
-  max-height: 70vh;
-  overflow-y: auto;
-  background: rgba(255,255,255,0.96);
-  border-radius: 14px;
-  padding: 16px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
-  z-index: 9999;
-  backdrop-filter: blur(10px);
-}
-
-.directory-header {
-  margin-top: 0;
-  text-align: center;
-  font-weight: 700;
-  color: #c70000;
-  border-bottom: 2px solid #eee;
-  padding-bottom: 8px;
-  margin-bottom: 10px;
-}
-
-.employee-card {
-  background: #fafafa;
-  border: 1px solid #eee;
-  border-radius: 10px;
-  padding: 12px;
-  margin-bottom: 10px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-  transition: transform 0.2s;
-}
-.employee-card:hover {
-  transform: scale(1.02);
-}
-
-.card-name {
-  font-weight: 700;
-  color: #111;
-  font-size: 15px;
-}
-.card-role {
-  color: #555;
-  font-size: 13px;
-}
-.card-email {
-  color: #777;
-  font-size: 12px;
-  margin: 3px 0 8px;
-}
-.card-btn {
-  background: #e60000;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
-  cursor: pointer;
-  font-size: 13px;
-}
-.card-btn:hover {
-  background: #ff3333;
-}
-
-/* 🔍 Modal details */
-.employee-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(255,255,255,0.97);
-  border-radius: 14px;
-  width: 420px;
-  max-height: 80vh;
-  overflow-y: auto;
-  padding: 20px;
-  box-shadow: 0 10px 45px rgba(0,0,0,0.4);
-  z-index: 10000;
-  text-align: center;
-}
-
-.modal-header h3 {
-  margin: 0;
-  color: #e60000;
-}
-.modal-header p {
-  margin: 2px 0;
-  color: #444;
-  font-size: 13px;
-}
-.modal-close {
-  position: absolute;
-  top: 12px;
-  right: 16px;
-  font-size: 22px;
-  color: #555;
-  cursor: pointer;
-}
-
-.schedule-mini {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-.schedule-mini th {
-  background: #f4f4f4;
-  color: #111;
-  padding: 6px;
-}
-.schedule-mini td {
-  padding: 6px;
-  border-bottom: 1px solid #ddd;
-}
-.total {
-  margin-top: 10px;
-  color: #111;
-}
-/* ========== 🧩 Team Overview Clean Edition ========== */
-.directory-wrapper {
-  position: fixed;
-  top: 100px;
-  right: 40px;
-  width: 360px;
-  max-height: 70vh;
-  overflow-y: auto;
-  background: rgba(255,255,255,0.96);
-  border-radius: 14px;
-  padding: 14px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
-  z-index: 9999;
-  backdrop-filter: blur(10px);
-}
-
-/* Header con botón Close All */
-.directory-header-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.directory-header-bar h3 {
-  color: #c70000;
-  margin: 0;
-}
-.close-all-btn {
-  background: #444;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 5px 10px;
-  font-size: 12px;
-  cursor: pointer;
-}
-.close-all-btn:hover {
-  background: #000;
-}
-
-/* Tarjetas individuales */
-.employee-card {
-  background: #fafafa;
-  border: 1px solid #eee;
-  border-radius: 10px;
-  padding: 10px;
-  margin-bottom: 10px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-  transition: transform 0.2s;
-}
-.employee-card:hover {
-  transform: scale(1.02);
-}
-
-.card-name {
-  font-weight: 700;
-  color: #111;
-  font-size: 15px;
-}
-.card-role {
-  color: #555;
-  font-size: 13px;
-}
-.card-email {
-  color: #777;
-  font-size: 12px;
-  margin: 3px 0 8px;
-}
-.card-btn {
-  background: #e60000;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
-  cursor: pointer;
-  font-size: 13px;
-}
-.card-btn:hover {
-  background: #ff3333;
-}
-
-/* Ventanas flotantes con horario */
-.employee-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(255,255,255,0.97);
-  border-radius: 14px;
-  width: 420px;
-  max-height: 80vh;
-  overflow-y: auto;
-  padding: 20px;
-  box-shadow: 0 10px 45px rgba(0,0,0,0.4);
-  z-index: 10000;
-  text-align: center;
-}
-
-.modal-header h3 {
-  margin: 0;
-  color: #e60000;
-}
-.modal-header p {
-  margin: 2px 0;
-  color: #444;
-  font-size: 13px;
-}
-.modal-close {
-  position: absolute;
-  top: 12px;
-  right: 16px;
-  font-size: 22px;
-  color: #555;
-  cursor: pointer;
-}
-
-.schedule-mini {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-.schedule-mini th {
-  background: #f4f4f4;
-  color: #111;
-  padding: 6px;
-}
-.schedule-mini td {
-  padding: 6px;
-  border-bottom: 1px solid #ddd;
-}
-.total {
-  margin-top: 10px;
-  color: #111;
-}
-/* ===========================================================
-   🧊 TEAM OVERVIEW STYLES — Blue Glass Edition
-   =========================================================== */
-
-.team-btn {
-  position: fixed;
-  bottom: 26px;
-  right: 22px;
-  background: rgba(0, 136, 255, 0.85);
-  border: none;
-  border-radius: 50%;
   color: #fff;
-  width: 58px;
-  height: 58px;
-  font-size: 26px;
+  border-radius: 6px;
+  padding: 4px 8px;
   cursor: pointer;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  transition: all 0.3s ease;
+  transition: 0.25s;
 }
-.team-btn:hover {
-  background: rgba(0, 156, 255, 1);
-  transform: scale(1.05);
-}
-.team-btn::before {
-  content: "👥";
-}
+.open-btn:hover { background: rgba(0,156,255,1); }
 
-/* Directory */
-.directory-wrapper {
+/* Modal */
+.employee-modal {
   position: fixed;
   top: 12%;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0,30,70,0.9);
+  border: 1px solid rgba(0,150,255,0.4);
+  border-radius: 14px;
+  color: #fff;
+  width: 80%;
+  max-width: 800px;
+  box-shadow: 0 0 45px rgba(0,150,255,0.5);
   backdrop-filter: blur(12px);
-  padding: 18px 22px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  max-width: 90%;
-  max-height: 70%;
-  overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  color: #eaf2ff;
-  z-index: 999;
-  animation: fadeIn 0.4s ease;
-}
-.directory-header-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.directory-header-bar h3 {
-  margin: 0;
-  font-size: 20px;
-  color: #fff;
-}
-.close-all-btn {
-  background: rgba(255,255,255,0.2);
-  color: #fff;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.close-all-btn:hover {
-  background: rgba(255,255,255,0.35);
-}
-
-.employee-card {
-  background: rgba(255,255,255,0.08);
-  padding: 10px 14px;
-  margin: 6px 0;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.15);
-  transition: all 0.2s ease;
-}
-.employee-card:hover {
-  background: rgba(255,255,255,0.14);
-  transform: scale(1.01);
-}
-.card-main {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: #e8f0ff;
-}
-.card-btn {
-  background: rgba(0,136,255,0.8);
-  border: none;
-  color: white;
-  padding: 6px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.card-btn:hover {
-  background: rgba(0,156,255,1);
-}
-
-/* Employee modal */
-.employee-modal {
-  position: fixed;
-  top: 12%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(15,25,55,0.9);
-  border: 1px solid rgba(255,255,255,0.25);
-  padding: 18px 22px;
-  border-radius: 12px;
-  color: #fff;
-  z-index: 2000;
-  max-width: 90%;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-  backdrop-filter: blur(10px);
-  transition: all 0.4s ease;
+  padding: 20px;
+  z-index: 3000;
+  animation: fadeIn 0.3s ease;
 }
 .modal-header {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  margin-bottom: 10px;
 }
 .modal-close {
   position: absolute;
-  top: 6px;
-  right: 10px;
+  top: 10px;
+  right: 18px;
   font-size: 22px;
+  color: #7dd1ff;
   cursor: pointer;
-}
-.schedule-mini {
-  width: 100%;
-  border-collapse: collapse;
-}
-.schedule-mini th, .schedule-mini td {
-  padding: 6px 8px;
-  border-bottom: 1px solid rgba(255,255,255,0.15);
 }
 .modal-footer {
   text-align: center;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 .close-btn {
   background: rgba(255,255,255,0.15);
@@ -710,24 +268,19 @@ footer {
 .close-btn:hover {
   background: rgba(255,255,255,0.3);
 }
-
-/* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.flash {
-  box-shadow: 0 0 15px #00bfff !important;
-}
-/* ===========================================================
-   📲 INSTALL BUTTON STYLE — Blue Glass Edition
-   =========================================================== */
 
+/* ===========================================================
+   📲 INSTALL BUTTON — Blue Glass Edition
+   =========================================================== */
 .install-btn {
   position: fixed;
-  bottom: 26px;
-  right: 92px;
-  background: rgba(0, 255, 180, 0.85);
+  bottom: 30px;
+  right: 120px;
+  background: rgba(0,255,200,0.85);
   border: none;
   border-radius: 50%;
   color: #fff;
@@ -736,11 +289,11 @@ footer {
   font-size: 28px;
   cursor: pointer;
   backdrop-filter: blur(8px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
   transition: all 0.3s ease;
 }
 .install-btn:hover {
-  background: rgba(0, 255, 200, 1);
+  background: rgba(0,255,220,1);
   transform: scale(1.05);
 }
 .install-btn::after {
@@ -749,7 +302,7 @@ footer {
   bottom: 70px;
   left: 50%;
   transform: translateX(-50%) scale(0.9);
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0,0,0,0.75);
   color: #fff;
   padding: 6px 10px;
   border-radius: 6px;
@@ -761,63 +314,4 @@ footer {
 .install-btn:hover::after {
   opacity: 1;
   transform: translateX(-50%) scale(1);
-}
-/* ===========================================================
-   👥 TEAM OVERVIEW — Floating Blue Glass Table
-   =========================================================== */
-.directory-wrapper.blue-glass {
-  position: fixed;
-  top: 12%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  max-width: 800px;
-  background: rgba(0, 40, 90, 0.85);
-  box-shadow: 0 0 40px rgba(0, 128, 255, 0.4);
-  backdrop-filter: blur(10px);
-  border-radius: 14px;
-  padding: 20px;
-  z-index: 1000;
-  animation: fadeIn 0.4s ease;
-}
-.directory-table {
-  width: 100%;
-  border-collapse: collapse;
-  color: #eaf5ff;
-}
-.directory-table th {
-  color: #7dd1ff;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  padding: 6px;
-  text-align: left;
-}
-.directory-table td {
-  padding: 6px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-}
-.open-btn {
-  background: rgba(0,136,255,0.7);
-  border: none;
-  color: #fff;
-  padding: 4px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.open-btn:hover {
-  background: rgba(0,156,255,0.9);
-}
-.employee-modal.main-glass {
-  position: fixed;
-  top: 14%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  max-width: 800px;
-  background: rgba(0, 30, 70, 0.9);
-  box-shadow: 0 0 50px rgba(0, 150, 255, 0.5);
-  backdrop-filter: blur(12px);
-  border-radius: 14px;
-  padding: 20px;
-  color: #eaf5ff;
-  z-index: 2000;
 }
