@@ -220,6 +220,21 @@ function refreshApp() {
     window.location.reload(true);
   }, 300);
 }
+   /* ============================================================
+   🔄 MANUAL REFRESH FOR UPDATE
+   ============================================================ */
+function refreshApp() {
+  closeSettings?.();
+  // Forzar recarga completa del build (sin cache)
+  if ("caches" in window) {
+    caches.keys().then(names => {
+      for (let name of names) caches.delete(name);
+    });
+  }
+  setTimeout(() => {
+    window.location.reload(true);
+  }, 500);
+}
 
 
 
