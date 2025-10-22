@@ -40,15 +40,20 @@
     <p id="clock" class="clock"></p>
   </div>
 
-  <!-- ⚙️ SETTINGS MODAL -->
-  <button id="settingsBtn" class="gear-btn" onclick="openSettings()">⚙️</button>
-  <div id="settingsModal" class="modal">
-    <div class="modal-content glass">
-      <span class="close" onclick="closeSettings()">×</span>
-      <h3>⚙️ Settings</h3>
-      <button onclick="logoutUser()">Log Out</button>
+<!-- ⚙️ SETTINGS MODAL -->
+<button id="settingsBtn" class="gear-btn" onclick="openSettings()">⚙️</button>
+
+<div id="settingsModal" class="modal">
+  <div class="modal-content glass">
+    <span class="close" onclick="closeSettings()">×</span>
+    <h3>⚙️ Settings</h3>
+
+    <div class="settings-section">
+      <button onclick="refreshApp()">🔄 Check for Updates</button>
+      <button onclick="logoutUser()">🚪 Log Out</button>
     </div>
   </div>
+</div>
 
   <footer class="hud bottom-center">
     Powered by <b>JAG15</b> | Allston Car Wash © 2025<br>
