@@ -149,3 +149,43 @@ function closeSettings() {
 }
 
 console.log("✅ ACW Blue Glass v4.6.9 — app.js restored & fixed");
+
+// 👥 MANAGER DIRECTORY MODULE
+async function loadEmployeeDirectory() {
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
+    const data = await res.json();
+    if (!data.ok) return;
+    renderDirectory(data.directory);
+  } catch (err) {
+    console.error("Error loading directory:", err);
+  }
+}
+
+function renderDirectory(list) {
+  const box = document.createElement("div");
+  box.className = "floating-directory glass";
+  box.id = "directoryBox";
+
+  let html = `<h3>Employee Directory</h3><table><tr>
+    <th>Name</th><th>Role</th><th>Email</th><th>Hours</th><th>Status</th><th></th>
+  </tr>`;
+
+  list.forEach(emp => {
+    const statusColor = emp.status === "active" ? "#00e676" : "#777";
+    const glow = emp.status === "active" ? "0 0 10px rgba(0,255,100,0.5)" : "none";
+    html += `
+      <tr style="box-shadow:${glow}">
+        <td><b>${emp.name}</b><br><small>${emp.phone || ""}</small></td>
+        <td>${emp.role}</td>
+        <td>${emp.email}</td>
+        <td>${emp.hours || "0"}</td>
+        <td style="color:${statusColor};font-weight:bold;">${emp.status}</td>
+        <td><button class="open-btn" onclick="openEmployee('${emp.email}')">Open</button></td>
+      </tr>`;
+  });
+
+  html += "</table>";
+  box.innerHTML = html;
+  document.body.appendChild(box);
+}
