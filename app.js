@@ -1,54 +1,13 @@
 /* ============================================================
-   🧠 ACW-App v4.7.2 — Blue Glass White Edition
+   🧠 ACW-App v4.7.3 — Blue Glass White Edition
    Johan A. Giraldo (JAG15) & Sky — Oct 2025
    ============================================================ */
 
 let currentUser = null;
 let scheduleData = null;
 
-/* 🔐 LOGIN */
-async function loginUser() {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
-  const diag = document.getElementById("diag");
-  const btn = document.querySelector("#login button");
-
-  if (!email || !password) {
-    diag.textContent = "Please enter your email and password.";
-    return;
-  }
-
-  /* ============================================================
-   👋 SHOW WELCOME DASHBOARD — with phone from Employees sheet
-   ============================================================ */
-function showWelcome(name, role) {
-  // Oculta login y muestra dashboard
-  document.getElementById("login").style.display = "none";
-  document.getElementById("welcome").style.display = "block";
-
-  // Asigna el nombre y rol
-  document.getElementById("welcomeName").innerHTML = `<b>${name}</b>`;
-  document.getElementById("welcomeRole").textContent = role;
-
-  // 📞 Mostrar teléfono dinámico desde currentUser
-  const schedDiv = document.getElementById("schedule");
-  const phone = currentUser?.phone || "(no phone)";
-  const phoneHTML = `<p class="user-phone">📞 ${phone}</p>`;
-
-  // Evita duplicados si se recarga
-  const existing = document.querySelector(".user-phone");
-  if (existing) existing.remove();
-
-  schedDiv.insertAdjacentHTML("beforebegin", phoneHTML);
-
-  // Solo managers o supervisores ven el botón "Team View"
-  if (role === "manager" || role === "supervisor") {
-    addTeamButton();
-  }
-}
-
 /* ============================================================
-   🔐 LOGIN FUNCTION (completa y corregida)
+   🔐 LOGIN
    ============================================================ */
 async function loginUser() {
   const email = document.getElementById("email").value.trim();
@@ -69,7 +28,6 @@ async function loginUser() {
 
     const res = await fetch(`${CONFIG.BASE_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
     const data = await res.json();
-
     if (!data.ok) throw new Error("Invalid email or password.");
 
     currentUser = data;
@@ -77,7 +35,6 @@ async function loginUser() {
     diag.textContent = "✅ Welcome, " + data.name + "!";
     showWelcome(data.name, data.role);
     await loadSchedule(email);
-
   } catch (err) {
     diag.textContent = "❌ " + err.message;
   } finally {
@@ -87,19 +44,41 @@ async function loginUser() {
   }
 }
 
-/* Restore session on reload */
-window.addEventListener("load", () => {
-  const saved = localStorage.getItem("acwUser");
-  if (saved) {
-    const user = JSON.parse(saved);
-    currentUser = user;
-    showWelcome(user.name, user.role);
-    loadSchedule(user.email);
-  }
-});
-   
 /* ============================================================
-   📅 LOAD SCHEDULE — Blue Glass White Edition
+   👋 SHOW WELCOME DASHBOARD — (fetch phone from Employees)
+   ============================================================ */
+async function showWelcome(name, role) {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("welcome").style.display = "block";
+  document.getElementById("welcomeName").innerHTML = `<b>${name}</b>`;
+  document.getElementById("welcomeRole").textContent = role;
+
+  // Solo managers o supervisores ven el botón "Team View"
+  if (role === "manager" || role === "supervisor") addTeamButton();
+
+  // 🔍 Buscar teléfono desde Employees list
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
+    const data = await res.json();
+    if (data.ok && data.directory) {
+      const match = data.directory.find(e =>
+        e.email?.toLowerCase() === (currentUser?.email || "").toLowerCase()
+      );
+      if (match && match.phone) {
+        const existing = document.querySelector(".user-phone");
+        if (existing) existing.remove();
+        const phoneHTML = `<p class="user-phone">📞 ${match.phone}</p>`;
+        const schedDiv = document.getElementById("schedule");
+        schedDiv.insertAdjacentHTML("beforebegin", phoneHTML);
+      }
+    }
+  } catch (err) {
+    console.warn("Could not load phone number:", err);
+  }
+}
+
+/* ============================================================
+   📅 LOAD SCHEDULE
    ============================================================ */
 async function loadSchedule(email) {
   const schedDiv = document.getElementById("schedule");
@@ -114,7 +93,6 @@ async function loadSchedule(email) {
       return;
     }
 
-    // 🧮 Build the schedule table dynamically
     let html = `
       <table>
         <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
@@ -140,14 +118,15 @@ async function loadSchedule(email) {
     `;
 
     schedDiv.innerHTML = html;
-
   } catch (err) {
     console.error("Error loading schedule:", err);
     schedDiv.innerHTML = `<p style="color:#c00;">Error loading schedule. Please try again later.</p>`;
   }
 }
 
-/* 🧩 TEAM VIEW BUTTON */
+/* ============================================================
+   👥 TEAM VIEW
+   ============================================================ */
 function addTeamButton() {
   if (document.getElementById("teamBtn")) return;
   const btn = document.createElement("button");
@@ -190,53 +169,8 @@ function renderDirectory(list) {
   document.body.appendChild(box);
 }
 
-/* 🔓 LOGOUT */
-function logoutUser() {
-  localStorage.removeItem("acwUser");
-  location.reload();
-}
-   /* ============================================================
-   ⚙️ SETTINGS + LOGOUT (refresh edition)
-   ============================================================ */
-
-function openSettings() {
-  document.getElementById("settingsModal").style.display = "block";
-}
-
-function closeSettings() {
-  document.getElementById("settingsModal").style.display = "none";
-}
-
-function logoutUser() {
-  localStorage.removeItem("acwUser");
-  closeSettings();
-  // Refresca completamente la app para nuevo login o nueva versión
-  window.location.reload(true);
-}
-
-function refreshApp() {
-  closeSettings();
-  setTimeout(() => {
-    window.location.reload(true);
-  }, 300);
-}
-   /* ============================================================
-   🔄 MANUAL REFRESH FOR UPDATE
-   ============================================================ */
-function refreshApp() {
-  closeSettings?.();
-  // Forzar recarga completa del build (sin cache)
-  if ("caches" in window) {
-    caches.keys().then(names => {
-      for (let name of names) caches.delete(name);
-    });
-  }
-  setTimeout(() => {
-    window.location.reload(true);
-  }, 500);
-}
 /* ============================================================
-   ⚙️ SETTINGS + MANUAL UPDATE REFRESH
+   ⚙️ SETTINGS + REFRESH
    ============================================================ */
 function openSettings() {
   document.getElementById("settingsModal").style.display = "block";
@@ -246,25 +180,19 @@ function closeSettings() {
   document.getElementById("settingsModal").style.display = "none";
 }
 
-/* 🔄 Check for Updates (manual refresh) */
+/* 🔄 Check for Updates */
 function refreshApp() {
   closeSettings?.();
-
-  // Limpia caché local (para que Vercel entregue el nuevo build)
   if ("caches" in window) {
     caches.keys().then(names => {
       for (let name of names) caches.delete(name);
     });
   }
-
-  // Animación temporal del botón
   const btn = document.querySelector(".settings-section button:first-child");
   if (btn) {
     btn.innerHTML = "⏳ Updating...";
     btn.style.opacity = "0.7";
   }
-
-  // Recargar después de un breve delay
   setTimeout(() => {
     window.location.reload(true);
   }, 1200);
@@ -279,5 +207,15 @@ function logoutUser() {
   }, 600);
 }
 
-
-   
+/* ============================================================
+   ♻️ RESTORE SESSION
+   ============================================================ */
+window.addEventListener("load", () => {
+  const saved = localStorage.getItem("acwUser");
+  if (saved) {
+    const user = JSON.parse(saved);
+    currentUser = user;
+    showWelcome(user.name, user.role);
+    loadSchedule(user.email);
+  }
+});
