@@ -73,6 +73,55 @@ window.addEventListener("load", () => {
   }
 });
 
+/* ============================================================
+   📅 LOAD SCHEDULE — Blue Glass White Edition
+   ============================================================ */
+async function loadSchedule(email) {
+  const schedDiv = document.getElementById("schedule");
+  schedDiv.innerHTML = `<p style="color:#007bff;font-weight:500;">Loading your shift...</p>`;
+
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
+    const data = await res.json();
+
+    if (!data.ok || !data.days) {
+      schedDiv.innerHTML = `<p style="color:#c00;">No schedule found for this week.</p>`;
+      return;
+    }
+
+    // 🧮 Build the schedule table dynamically
+    let html = `
+      <table>
+        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+    `;
+
+    data.days.forEach(d => {
+      const isToday = new Date()
+        .toLocaleString("en-US", { weekday: "short" })
+        .toLowerCase()
+        .includes(d.name.slice(0, 3).toLowerCase());
+
+      html += `
+        <tr class="${isToday ? "today" : ""}">
+          <td>${d.name}</td>
+          <td>${d.shift || "-"}</td>
+          <td>${d.hours || "0"}</td>
+        </tr>`;
+    });
+
+    html += `
+      </table>
+      <p class="total">Total Hours: <b>${data.total || 0}</b></p>
+    `;
+
+    schedDiv.innerHTML = html;
+
+  } catch (err) {
+    console.error("Error loading schedule:", err);
+    schedDiv.innerHTML = `<p style="color:#c00;">Error loading schedule. Please try again later.</p>`;
+  }
+}
+
 /* 🧩 TEAM VIEW BUTTON */
 function addTeamButton() {
   if (document.getElementById("teamBtn")) return;
