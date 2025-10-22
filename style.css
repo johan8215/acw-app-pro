@@ -743,3 +743,62 @@ footer {
   background: rgba(0, 255, 200, 1);
   transform: scale(1.05);
 }
+/* ===========================================================
+   👥 TEAM OVERVIEW — Floating Blue Glass Table
+   =========================================================== */
+.directory-wrapper.blue-glass {
+  position: fixed;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  max-width: 800px;
+  background: rgba(0, 40, 90, 0.85);
+  box-shadow: 0 0 40px rgba(0, 128, 255, 0.4);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  padding: 20px;
+  z-index: 1000;
+  animation: fadeIn 0.4s ease;
+}
+.directory-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: #eaf5ff;
+}
+.directory-table th {
+  color: #7dd1ff;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding: 6px;
+  text-align: left;
+}
+.directory-table td {
+  padding: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.open-btn {
+  background: rgba(0,136,255,0.7);
+  border: none;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.open-btn:hover {
+  background: rgba(0,156,255,0.9);
+}
+.employee-modal.main-glass {
+  position: fixed;
+  top: 14%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  max-width: 800px;
+  background: rgba(0, 30, 70, 0.9);
+  box-shadow: 0 0 50px rgba(0, 150, 255, 0.5);
+  backdrop-filter: blur(12px);
+  border-radius: 14px;
+  padding: 20px;
+  color: #eaf5ff;
+  z-index: 2000;
+}
