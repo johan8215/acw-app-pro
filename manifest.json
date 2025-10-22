@@ -8,7 +8,7 @@
   "theme_color": "#0b2b5f",
   "icons": [
     {
-      "src": "./icons/acw-icon-512.png",
+      "src": "./acw-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
