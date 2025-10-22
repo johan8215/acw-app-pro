@@ -62,5 +62,26 @@
     }
   </script>
 
+  <script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./service-worker.js').then(reg => {
+    console.log("✅ SW registered:", reg.scope);
+    // Ask for updates every 30s
+    setInterval(() => {
+      if (reg.active) reg.active.postMessage("checkForUpdate");
+    }, 30000);
+  });
+
+  // Receive update signal from service worker
+  navigator.serviceWorker.addEventListener("message", event => {
+    if (event.data?.type === "UPDATE_AVAILABLE") {
+      if (confirm("🔄 New version available — Reload now?")) {
+        window.location.reload(true);
+      }
+    }
+  });
+}
+</script>
+
 </body>
 </html>
