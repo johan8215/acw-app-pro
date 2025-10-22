@@ -385,57 +385,223 @@ function closeTeamView() {
   document.getElementById("directoryWrapper")?.remove();
 }
 
-/* ===== Team View (paginado) ===== */
-.tv-wrapper { max-width: 860px; }
-.tv-head { display:flex; align-items:center; justify-content:center; position:relative; }
-.tv-head h3 { margin:0; font-size:22px; color:#c00; text-shadow:0 0 8px rgba(0,136,255,.35); }
-.tv-close {
-  position:absolute; right:8px; top:0; border:none; background:transparent;
-  font-size:22px; color:#0078ff; cursor:pointer;
+/* ============================================================
+   👥 TEAM VIEW — Paged + Employee Panels (safe drop-in)
+   ============================================================ */
+
+const TEAM_PAGE_SIZE = 8;       // empleados por página
+let __teamList = [];
+let __teamPage = 0;
+
+function addTeamButton() {
+  if (document.getElementById("teamBtn")) return;
+  const btn = document.createElement("button");
+  btn.id = "teamBtn";
+  btn.className = "team-btn";
+  btn.textContent = "Team View";
+  btn.onclick = toggleTeamOverview;
+  document.body.appendChild(btn);
 }
-.tv-close:hover { color:#e60000; transform:scale(1.1); }
 
-.tv-pager { display:flex; align-items:center; justify-content:center; gap:12px; margin:10px 0 6px; }
-.tv-nav {
-  background:#fff; color:#0078ff; border:1px solid rgba(0,120,255,.3);
-  padding:6px 10px; border-radius:8px; cursor:pointer;
-  box-shadow:0 4px 16px rgba(0,120,255,.25);
+function toggleTeamOverview() {
+  const wrapper = document.getElementById("directoryWrapper");
+  if (wrapper) { wrapper.remove(); return; }
+  loadEmployeeDirectory();
 }
-.tv-nav[disabled]{ opacity:.4; cursor:not-allowed; }
-.tv-index { color:#555; font-weight:600; }
 
-.tv-table th { color:#0078ff; border-bottom:2px solid rgba(0,120,255,.2); }
-.tv-table td { padding:10px 6px; }
-
-.open-btn {
-  background:#e60000; color:#fff; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;
+async function loadEmployeeDirectory() {
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
+    const data = await res.json();
+    if (!data.ok) return;
+    __teamList = data.directory || [];
+    __teamPage = 0;
+    renderTeamViewPage();
+  } catch(e){ console.warn(e); }
 }
-.open-btn:hover { background:#ff3333; }
 
-/* ===== Employee Panel (igual tamaño a tu tarjeta) ===== */
-.employee-modal.emp-panel {
-  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -46%) scale(.98);
-  width: 420px; max-width: 90vw; background: rgba(255,255,255,.97);
-  border-radius: 14px; padding: 20px; box-shadow: 0 0 45px rgba(0,128,255,.35); z-index: 10000;
-  opacity: 0; transition: all .25s ease;
+function renderTeamViewPage() {
+  // contenedor principal
+  document.getElementById("directoryWrapper")?.remove();
+
+  const box = document.createElement("div");
+  box.id = "directoryWrapper";
+  box.className = "directory-wrapper tv-wrapper";
+  box.innerHTML = `
+    <div class="tv-head">
+      <h3>Team View</h3>
+      <button class="tv-close" onclick="document.getElementById('directoryWrapper').remove()">✖️</button>
+    </div>
+
+    <div class="tv-pager">
+      <button class="tv-nav" id="tvPrev" ${__teamPage===0?'disabled':''}>‹ Prev</button>
+      <span class="tv-index">Page ${__teamPage+1} / ${Math.max(1, Math.ceil(__teamList.length/TEAM_PAGE_SIZE))}</span>
+      <button class="tv-nav" id="tvNext" ${(__teamPage+1)>=Math.ceil(__teamList.length/TEAM_PAGE_SIZE)?'disabled':''}>Next ›</button>
+    </div>
+
+    <table class="directory-table tv-table">
+      <tr><th>Name</th><th>Hours</th><th></th></tr>
+      <tbody id="tvBody"></tbody>
+    </table>
+  `;
+  document.body.appendChild(box);
+
+  // página actual
+  const start = __teamPage * TEAM_PAGE_SIZE;
+  const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
+  const body = box.querySelector("#tvBody");
+
+  body.innerHTML = slice.map(emp => `
+    <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role||''}" data-phone="${emp.phone||''}">
+      <td><b>${emp.name}</b></td>
+      <td class="tv-hours">—</td>
+      <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
+    </tr>
+  `).join("");
+
+  // navegación
+  box.querySelector("#tvPrev").onclick = () => { __teamPage=Math.max(0,__teamPage-1); renderTeamViewPage(); };
+  box.querySelector("#tvNext").onclick = () => { __teamPage=Math.min(Math.ceil(__teamList.length/TEAM_PAGE_SIZE)-1,__teamPage+1); renderTeamViewPage(); };
+
+  // hidratar horas de la página (ligero, asincrónico)
+  slice.forEach(async emp => {
+    try {
+      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`);
+      const d = await r.json();
+      const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
+      if (!tr) return;
+      tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (d.total ?? 0) : "0";
+    } catch(e){}
+  });
 }
-.employee-modal.emp-panel.in { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
-.emp-header { text-align:center; position:relative; }
-.emp-close {
-  position:absolute; right:8px; top:0; border:none; background:transparent; font-size:22px; color:#777; cursor:pointer;
+/* ============================================================
+   🔍 Employee Panel — misma dimensión y estilo que tu tarjeta
+   ============================================================ */
+async function openEmployeePanel(btnEl) {
+  const tr = btnEl.closest("tr");
+  const email = tr.dataset.email;
+  const name  = tr.dataset.name;
+  const role  = tr.dataset.role || "";
+  const phone = tr.dataset.phone || "";
+
+  const modalId = `emp-${email.replace(/[@.]/g,'_')}`;
+  if (document.getElementById(modalId)) return;
+
+  // fetch horario
+  let data = null;
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
+    data = await res.json();
+    if (!data.ok) throw new Error("No schedule");
+  } catch(e) {
+    alert("No schedule found for this employee.");
+    return;
+  }
+
+  // modal
+  const m = document.createElement("div");
+  m.className = "employee-modal emp-panel";
+  m.id = modalId;
+  m.innerHTML = buildEmployeePanelHTML({name, role, phone, data});
+  document.body.appendChild(m);
+
+  // animación
+  requestAnimationFrame(()=>{ m.classList.add("in"); });
+
+  // ⏱️ cronómetro vivo dentro del modal
+  startLiveTimerForModal(modalId, data);
+
+  // acciones
+  m.querySelector(".emp-close").onclick = () => m.remove();
+  m.querySelector(".emp-refresh").onclick = () => checkForUpdatesInModal(m);
 }
-.emp-close:hover { color:#000; }
-.emp-phone a { color:#0078ff; text-decoration:none; font-weight:600; }
-.emp-phone a:hover { text-decoration:underline; }
 
-.modal-footer { text-align:center; margin-top:12px; }
-.emp-refresh {
-  background:#fff; color:#0078ff; border:1px solid rgba(0,120,255,.3); border-radius:8px;
-  padding:8px 12px; cursor:pointer; box-shadow:0 4px 16px rgba(0,120,255,.25);
+function buildEmployeePanelHTML({name, role, phone, data}) {
+  const rows = (data.days||[]).map(d => `
+    <tr>
+      <td>${d.name}</td>
+      <td>${d.shift || '-'}</td>
+      <td>${d.hours || 0}</td>
+    </tr>`).join("");
+
+  return `
+    <div class="emp-header">
+      <button class="emp-close">×</button>
+      <h3>${name}</h3>
+      ${phone ? `<p class="emp-phone">📞 <a href="tel:${phone}">${phone}</a></p>` : ``}
+      <p class="emp-role">${role || ""}</p>
+    </div>
+
+    <table class="schedule-mini">
+      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+      ${rows}
+    </table>
+
+    <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g,'_')}">${data.total || 0}</b></p>
+    <p class="live-hours" id="lh-${name.replace(/\s+/g,'_')}"></p>
+
+    <div class="modal-footer">
+      <button class="emp-refresh">⚙️ Check for Updates</button>
+    </div>
+  `;
 }
-.emp-refresh:hover { background:#f7fbff; }
 
-.employee-modal .schedule-mini { width:100%; border-collapse:collapse; margin-top:10px; }
-.employee-modal .schedule-mini th { background:#f5f7fb; color:#111; padding:6px; }
-.employee-modal .schedule-mini td { border-bottom:1px solid #e9eef6; padding:6px; }
+/* ============================================================
+   ⏱️ Live timer por-modal (no toca tu tablero principal)
+   ============================================================ */
+function startLiveTimerForModal(modalId, sched) {
+  const modal = document.getElementById(modalId);
+  if (!modal || !sched?.days) return;
+
+  const todayName = new Date().toLocaleString("en-US", { weekday: "long" });
+  const today = sched.days.find(d => (d.name||"").toLowerCase() === todayName.toLowerCase());
+  if (!today || !today.shift || /off/i.test(today.shift)) return;
+
+  const parts = (today.shift||"").split("-");
+  if (parts.length < 1) return;
+
+  const start = parseShiftTime(parts[0]);
+  if (!start) return;
+
+  const totEl = modal.querySelector(".total b");
+  const liveEl = modal.querySelector(".live-hours");
+  const base = Number(totEl?.textContent || 0);
+
+  const update = () => {
+    const diff = Math.max(0, (Date.now() - start.getTime()) / 36e5);
+    const live = Math.round(diff*100)/100;
+    if (totEl) totEl.textContent = (base + live).toFixed(2);
+    if (liveEl) liveEl.innerHTML = `Live shift: <b>${live.toFixed(2)}</b> h ⏱️`;
+  };
+
+  update();
+  const iv = setInterval(()=>{
+    if (!document.body.contains(modal)) return clearInterval(iv);
+    update();
+  }, 60000);
+}
+
+function parseShiftTime(raw) {
+  // admite "7:30", "7:30 am", "7.30", "7"
+  const s = raw.trim().toLowerCase().replace('.',':');
+  const mMer = s.match(/(am|pm)$/);
+  const time = s.replace(/\s?(am|pm)$/,'');
+  let [h, m] = time.split(':').map(n=>parseInt(n,10));
+  if (isNaN(h)) return null;
+  if (isNaN(m)) m = 0;
+  if (mMer && mMer[1]==='pm' && h!==12) h+=12;
+  if (mMer && mMer[1]==='am' && h===12) h=0;
+  const d = new Date(); d.setHours(h,m,0,0); return d;
+}
+
+/* ============================================================
+   🔄 Refresh en modal (no molesta a nadie)
+   ============================================================ */
+function checkForUpdatesInModal(modalEl){
+  try{
+    if ("caches" in window) caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));
+  }catch(e){}
+  modalEl.classList.add("flash");
+  setTimeout(()=>window.location.reload(true), 900);
+}
