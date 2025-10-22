@@ -170,40 +170,72 @@ async function loadEmployeeDirectory() {
     const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
     const data = await res.json();
     if (!data.ok) return;
-    renderDirectory(data.directory);
+    renderDirectoryCards(data.directory);
   } catch (err) {
     console.error("Error loading directory:", err);
   }
 }
 
-// 🧾 Mostrar directorio con estilo
-function renderDirectory(list) {
-  const box = document.createElement("div");
-  box.className = "floating-directory glass";
-  box.id = "directoryBox";
+// 📋 Renderiza empleados en mini-tarjetas flotantes
+function renderDirectoryCards(list) {
+  const wrapper = document.createElement("div");
+  wrapper.id = "directoryWrapper";
+  wrapper.className = "directory-wrapper";
 
-  let html = `<h3>Employee Directory</h3>
-  <table class="directory-table">
-  <tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Status</th><th></th></tr>`;
+  const header = document.createElement("h3");
+  header.textContent = "Team Overview";
+  header.className = "directory-header";
+  wrapper.appendChild(header);
 
   list.forEach(emp => {
-    const active = emp.status === "active";
-    html += `
-      <tr class="${active ? "active-row" : "inactive-row"}">
-        <td><b>${emp.name}</b></td>
-        <td>${emp.role}</td>
-        <td>${emp.email}</td>
-        <td>${emp.phone || ""}</td>
-        <td>${emp.status}</td>
-        <td><button class="open-btn" onclick="openEmployee('${emp.email}')">Open</button></td>
-      </tr>`;
+    const card = document.createElement("div");
+    card.className = "employee-card";
+    card.innerHTML = `
+      <div class="card-main">
+        <div class="card-name">${emp.name}</div>
+        <div class="card-role">${emp.role || ""}</div>
+        <div class="card-email">${emp.email}</div>
+        <button class="card-btn" onclick="openEmployeeCard('${emp.email}')">Open</button>
+      </div>
+    `;
+    wrapper.appendChild(card);
   });
 
-  html += "</table>";
-  box.innerHTML = html;
-  document.body.appendChild(box);
+  document.body.appendChild(wrapper);
 }
 
+// 🔍 Abrir ventana con detalles individuales
+async function openEmployeeCard(email) {
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
+    const data = await res.json();
+    if (!data.ok) return alert("No schedule found for this user.");
+
+    // Crea ventana flotante
+    const modal = document.createElement("div");
+    modal.className = "employee-modal glass";
+
+    let html = `
+      <div class="modal-header">
+        <span class="modal-close" onclick="this.parentElement.parentElement.remove()">×</span>
+        <h3>${data.name}</h3>
+        <p>${data.role || ""}</p>
+        <p>${data.phone || ""}</p>
+      </div>
+      <table class="schedule-mini">
+        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+    `;
+    data.days.forEach(d => {
+      html += `<tr><td>${d.name}</td><td>${d.shift}</td><td>${d.hours}</td></tr>`;
+    });
+    html += `</table><p class="total">Total Hours: <b>${data.total}</b></p>`;
+
+    modal.innerHTML = html;
+    document.body.appendChild(modal);
+  } catch (err) {
+    console.error("Error opening card:", err);
+  }
+}
 // 🔓 Simulación de abrir detalle (puedes conectar luego)
 function openEmployee(email) {
   alert("Open details for: " + email);
