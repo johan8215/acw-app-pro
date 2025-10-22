@@ -190,20 +190,32 @@ function renderDirectoryCards(list) {
   document.body.appendChild(wrapper);
 }
 
+// 🔍 Open employee details in a floating window (fully working & animated)
 async function openEmployeeCard(email, name, role, phone) {
   try {
+    // Get schedule from backend
     const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
     const data = await res.json();
+
     if (!data.ok) {
       alert("No schedule found for this employee.");
       return;
     }
 
-    if (document.getElementById(`modal-${email.replace(/[@.]/g,"_")}`)) return;
+    // Prevent duplicates
+    const id = `modal-${email.replace(/[@.]/g, "_")}`;
+    const existing = document.getElementById(id);
+    if (existing) {
+      existing.scrollIntoView({ behavior: "smooth", block: "center" });
+      existing.classList.add("flash");
+      setTimeout(() => existing.classList.remove("flash"), 800);
+      return;
+    }
 
+    // Create floating modal
     const modal = document.createElement("div");
     modal.className = "employee-modal glass";
-    modal.id = `modal-${email.replace(/[@.]/g,"_")}`;
+    modal.id = id;
 
     let html = `
       <div class="modal-header">
@@ -215,20 +227,34 @@ async function openEmployeeCard(email, name, role, phone) {
       <table class="schedule-mini">
         <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
     `;
+
     (data.days || []).forEach(d => {
       html += `<tr><td>${d.name}</td><td>${d.shift}</td><td>${d.hours}</td></tr>`;
     });
-    html += `</table><p class="total">Total Hours: <b>${data.total}</b></p>`;
+
+    html += `
+      </table>
+      <p class="total">Total Hours: <b>${data.total}</b></p>
+      <div class="modal-footer">
+        <button class="close-btn" onclick="this.parentElement.parentElement.remove()">Close</button>
+      </div>
+    `;
+
     modal.innerHTML = html;
     document.body.appendChild(modal);
+
+    // Smooth fade-in animation
+    modal.style.opacity = "0";
+    modal.style.transform = "translateY(30px)";
+    setTimeout(() => {
+      modal.style.opacity = "1";
+      modal.style.transform = "translateY(0)";
+    }, 50);
+
   } catch (err) {
     console.error("Error opening employee card:", err);
+    alert("Something went wrong while loading this schedule.");
   }
-}
-
-function closeAllEmployeeCards() {
-  document.querySelectorAll(".employee-modal").forEach(m => m.remove());
-  document.querySelector("#directoryWrapper")?.remove();
 }
 
 // ============================================================
