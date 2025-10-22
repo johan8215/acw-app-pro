@@ -76,9 +76,9 @@ button:hover { background: #ff3333; }
   box-shadow: 0 0 25px rgba(0,136,255,0.6);
 }
 
-/* ===========================================================
+/* ============================================================
    👥 TEAM VIEW — Blue Glass White Edition (Centered)
-   =========================================================== */
+   ============================================================ */
 .directory-wrapper {
   position: fixed;
   top: 50%;
@@ -133,59 +133,70 @@ button:hover { background: #ff3333; }
 }
 
 /* ============================================================
-   📞 USER PHONE STYLE
+   📞 USER PHONE STYLE — Blue Glow
    ============================================================ */
 .user-phone {
-  color: #007bff;
-  font-weight: 500;
-  font-size: 13px;
+  color: #0078ff;
+  font-weight: 600;
+  font-size: 17px;
+  margin: 10px 0 16px 0;
   text-align: center;
-  margin-top: 6px;
-  margin-bottom: -6px;
   text-shadow: 0 0 8px rgba(0,120,255,0.25);
-}
-.settings-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 20px;
-  text-align: center;
+  opacity: 0;
+  animation: fadeIn 0.6s ease forwards;
 }
 
-.settings-section button {
-  background: #e60000;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px;
-  font-size: 15px;
-  cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-  transition: all 0.3s ease;
-}
-
-.settings-section button:hover {
-  background: #ff3333;
-  transform: scale(1.03);
-}
 /* ============================================================
-   ⏱️ LIVE HOURS INDICATOR
+   ⏱️ LIVE HOURS INDICATOR — Blue Glow
    ============================================================ */
 .live-hours {
-  margin-top: 6px;
+  margin-top: 14px;
   color: #007bff;
-  font-size: 0.9em;
-  text-shadow: 0 0 10px rgba(0,120,255,0.25);
-  animation: glowBlue 3s ease-in-out infinite alternate;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  text-shadow: 0 0 12px rgba(0,120,255,0.35);
+  animation: glowBlue 3s ease-in-out infinite alternate, fadeIn 0.8s ease forwards;
+  opacity: 0;
 }
 
 @keyframes glowBlue {
-  from { text-shadow: 0 0 5px rgba(0,120,255,0.2); }
-  to { text-shadow: 0 0 15px rgba(0,120,255,0.45); }
+  from { text-shadow: 0 0 5px rgba(0,120,255,0.25); }
+  to   { text-shadow: 0 0 18px rgba(0,120,255,0.5); }
 }
 
 /* ============================================================
-   ⚙️ FLOATING SETTINGS PANEL — Refined
+   🧾 TABLE & TOTAL — Spacing Adjustments
+   ============================================================ */
+table {
+  margin: 0 auto;
+  width: 95%;
+  border-collapse: separate;
+  border-spacing: 20px 10px;
+  text-align: center;
+  font-size: 18px;
+}
+
+th {
+  padding-bottom: 6px;
+  color: #000;
+  letter-spacing: 0.5px;
+}
+
+td {
+  padding: 8px 12px;
+}
+
+.total {
+  color: #e60000;
+  font-weight: bold;
+  font-size: 20px;
+  margin-top: 16px;
+  text-align: center;
+}
+
+/* ============================================================
+   ⚙️ SETTINGS PANEL
    ============================================================ */
 .modal {
   display: none;
@@ -224,12 +235,15 @@ button:hover { background: #ff3333; }
   cursor: pointer;
   margin-top: -10px;
 }
+.close:hover { color: #000; }
 
-.close:hover {
-  color: #000;
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+  text-align: center;
 }
-
-/* Settings section buttons */
 .settings-section button {
   background: #e60000;
   color: #fff;
@@ -244,7 +258,6 @@ button:hover { background: #ff3333; }
   box-shadow: 0 4px 15px rgba(0,0,0,0.15);
   transition: all 0.3s ease;
 }
-
 .settings-section button:hover {
   background: #ff3333;
   transform: scale(1.05);
@@ -264,57 +277,19 @@ button:hover { background: #ff3333; }
   text-shadow: 0 0 10px rgba(0,120,255,0.3);
   transition: transform 0.2s ease;
 }
-
 .directory-close:hover {
   transform: scale(1.2);
   color: #e60000;
 }
 
-table {
-  margin: 0 auto;
-  width: 95%;
-  text-align: center;
-  font-size: 18px;
+/* ============================================================
+   ✨ ANIMATIONS
+   ============================================================ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
-.total {
-  font-size: 20px;
-  margin-top: 12px;
-}
-
-.live-hours {
-  font-size: 18px;
-  color: #0078ff;
-  font-weight: 600;
-  text-align: center;
-  margin-top: 8px;
-  text-shadow: 0 0 10px rgba(0,136,255,0.3);
-}
-
-/* ---------- TABLE SPACING FIX ---------- */
-table {
-  margin: 0 auto;
-  width: 95%;
-  border-collapse: separate;
-  border-spacing: 20px 8px; /* ← separa columnas y filas */
-  text-align: center;
-  font-size: 18px;
-}
-
-th {
-  padding-bottom: 4px;
-  color: #000;
-  letter-spacing: 0.5px;
-}
-
-td {
-  padding: 6px 10px;
-}
-
-.user-phone {
-  color: #0078ff;
-  font-weight: 600;
-  font-size: 17px;
-  margin: 6px 0 10px 0;
-  text-shadow: 0 0 8px rgba(0,120,255,0.25);
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
 }
