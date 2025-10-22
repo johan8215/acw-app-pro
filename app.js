@@ -18,6 +18,24 @@ async function loginUser() {
     return;
   }
 
+   /* ============================================================
+   👋 SHOW WELCOME DASHBOARD
+   ============================================================ */
+function showWelcome(name, role) {
+  // Oculta login y muestra dashboard
+  document.getElementById("login").style.display = "none";
+  document.getElementById("welcome").style.display = "block";
+
+  // Asigna el nombre y rol
+  document.getElementById("welcomeName").textContent = name;
+  document.getElementById("welcomeRole").textContent = role;
+
+  // Solo managers o supervisores ven el botón "Team View"
+  if (role === "manager" || role === "supervisor") {
+    addTeamButton();
+  }
+}
+
   try {
     btn.disabled = true;
     btn.innerHTML = "⏳ Loading your shift…";
