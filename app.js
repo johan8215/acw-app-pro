@@ -309,32 +309,83 @@ function closeTeamView() {
   document.getElementById("directoryWrapper")?.remove();
 }
 /* ============================================================
-   🧩 TEAM VIEW ENHANCED — with Close button (modern)
+   ⏱️ LIVE HOURS INDICATOR — Dynamic total updater
    ============================================================ */
-function renderDirectory(list) {
-  const box = document.createElement("div");
-  box.id = "directoryWrapper";
-  box.className = "directory-wrapper";
-  box.innerHTML = `
-    <span class="directory-close" onclick="closeTeamView()">✖️</span>
-    <h3>Team View</h3>
-    <table class="directory-table">
-      <tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th></tr>
-      ${list
-        .map(
-          (emp) => `
-        <tr>
-          <td>${emp.name}</td>
-          <td>${emp.role}</td>
-          <td>${emp.email}</td>
-          <td>${emp.phone || ""}</td>
-        </tr>`
-        )
-        .join("")}
-    </table>`;
-  document.body.appendChild(box);
+function startLiveTimer(days, total) {
+  try {
+    const todayName = new Date().toLocaleString("en-US", { weekday: "long" });
+    const today = days.find(
+      (d) => d.name.toLowerCase() === todayName.toLowerCase()
+    );
+    if (!today || !today.shift || today.shift.includes("OFF")) return;
+
+    const [startStr, endStr] = today.shift.split("-");
+    if (!startStr || !endStr) return;
+
+    const startTime = parseTime(startStr);
+    const now = new Date();
+
+    const diffHrs = (now - startTime) / (1000 * 60 * 60);
+    let liveHrs = Math.max(0, diffHrs.toFixed(2));
+
+    updateTotalDisplay(total + Number(liveHrs));
+    showLiveHours(liveHrs);
+
+    // Actualiza cada minuto
+    setInterval(() => {
+      const now2 = new Date();
+      const diff2 = (now2 - startTime) / (1000 * 60 * 60);
+      liveHrs = Math.max(0, diff2.toFixed(2));
+      updateTotalDisplay(total + Number(liveHrs));
+      showLiveHours(liveHrs);
+    }, 60000);
+  } catch (err) {
+    console.warn("⏱️ Live hours not active:", err);
+  }
 }
 
-function closeTeamView() {
-  document.getElementById("directoryWrapper")?.remove();
+function parseTime(str) {
+  const [time, meridian] = str.trim().split(" ");
+  let [h, m] = time.split(":").map(Number);
+  if (meridian?.toLowerCase() === "pm" && h !== 12) h += 12;
+  if (meridian?.toLowerCase() === "am" && h === 12) h = 0;
+  const d = new Date();
+  d.setHours(h, m || 0, 0, 0);
+  return d;
 }
+
+function updateTotalDisplay(value) {
+  const totalEl = document.querySelector(".total");
+  if (totalEl) {
+    totalEl.innerHTML = `Total Hours: <b>${value.toFixed(2)}</b>`;
+  }
+}
+
+function showLiveHours(hours) {
+  let liveEl = document.querySelector(".live-hours");
+  if (!liveEl) {
+    liveEl = document.createElement("p");
+    liveEl.className = "live-hours";
+    document.querySelector("#schedule")?.appendChild(liveEl);
+  }
+  liveEl.innerHTML = `Live shift: <b>${hours}</b> h ⏱️`;
+}
+
+// Integrar automáticamente con tu loadSchedule actual
+const originalLoadSchedule = loadSchedule;
+loadSchedule = async function (email) {
+  await originalLoadSchedule(email);
+  try {
+    const res = await fetch(
+      `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(
+        email
+      )}`
+    );
+    const data = await res.json();
+    if (data.ok && data.days) {
+      startLiveTimer(data.days, Number(data.total || 0));
+    }
+  } catch (e) {
+    console.warn("Live timer skipped:", e);
+  }
+};
