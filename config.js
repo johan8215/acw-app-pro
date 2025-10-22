@@ -1,10 +1,13 @@
-// ============================================================
-// ⚙️ ACW-App Config — v4.6.9 Stable Blue Glass Edition
-// ============================================================
+/* ============================================================
+   ⚙️ CONFIG.JS — ACW-App v4.7.2 Blue Glass White Edition
+   Johan A. Giraldo (JAG15) | Oct 2025
+   ============================================================ */
 
 const CONFIG = {
-  BASE_URL: "https://script.google.com/macros/s/AKfycbwgwpnpeB9ZUxn241xITDlsTNSOdiDqNqh0fWpfX7QCiAPGjEWwTfnDD4si88fIEI7O/exec",
-  VERSION: "v4.6.9 — Stable Blue Glass Edition"
+  BASE_URL: "https://script.google.com/macros/s/AKfycbw-your-deployment-id/exec",
+  VERSION: "4.7.2",
+  APP_NAME: "ACW Blue Glass White Edition",
+  AUTHOR: "JAG15 & Sky"
 };
 
-console.log(`✅ ACW-App connected → ${CONFIG.VERSION}`);
+console.log(`✅ ${CONFIG.APP_NAME} ${CONFIG.VERSION} loaded`);
