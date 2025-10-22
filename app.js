@@ -69,6 +69,19 @@ function renderSchedule(data) {
   // 🕒 start live clock
   startClock();
 }
+function startClock() {
+  const el = document.getElementById("clockBox");
+  if (!el) return;
+  function tick() {
+    const now = new Date();
+    el.textContent = "🕒 " + now.toLocaleTimeString([], {
+      hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true
+    });
+  }
+  tick();
+  clearInterval(window.__acwClock);
+  window.__acwClock = setInterval(tick, 1000);
+}
 
 // 🧮 CALCULATE LIVE HOURS (if shift ends with ".")
 function calcLiveHours(shift, hours) {
