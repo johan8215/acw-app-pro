@@ -219,65 +219,6 @@ window.addEventListener("load", () => {
     loadSchedule(user.email);
   }
 });
-/* ============================================================
-   ⏱️ LIVE HOURS CALCULATOR — adds to total in real time
-   ============================================================ */
-function startLiveTimer(days, total) {
-  try {
-    const todayName = new Date().toLocaleString("en-US", { weekday: "long" });
-    const today = days.find(d => d.name.toLowerCase() === todayName.toLowerCase());
-    if (!today || !today.shift || today.shift.includes("OFF")) return;
-
-    const [startStr, endStr] = today.shift.split("-");
-    if (!startStr || !endStr) return;
-
-    const startTime = parseTime(startStr);
-    const now = new Date();
-
-    const diffHrs = (now - startTime) / (1000 * 60 * 60);
-    let liveHrs = Math.max(0, diffHrs.toFixed(2));
-
-    updateTotalDisplay(total + Number(liveHrs));
-
-    // Actualizar cada minuto
-    setInterval(() => {
-      const now2 = new Date();
-      const diff2 = (now2 - startTime) / (1000 * 60 * 60);
-      liveHrs = Math.max(0, diff2.toFixed(2));
-      updateTotalDisplay(total + Number(liveHrs));
-    }, 60000);
-  } catch (err) {
-    console.warn("⏱️ Live hours not active:", err);
-  }
-}
-
-function parseTime(str) {
-  const [time, meridian] = str.trim().split(" ");
-  let [h, m] = time.split(":").map(Number);
-  if (meridian?.toLowerCase() === "pm" && h !== 12) h += 12;
-  if (meridian?.toLowerCase() === "am" && h === 12) h = 0;
-  const d = new Date();
-  d.setHours(h, m || 0, 0, 0);
-  return d;
-}
-
-function updateTotalDisplay(value) {
-  const totalEl = document.querySelector(".total");
-  if (totalEl) {
-    totalEl.innerHTML = `Total Hours: <b>${value.toFixed(2)}</b> ⏱️`;
-  }
-}
-
-// Integrar con loadSchedule:
-const originalLoadSchedule = loadSchedule;
-loadSchedule = async function(email) {
-  await originalLoadSchedule(email);
-  const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
-  const data = await res.json();
-  if (data.ok && data.days) {
-    startLiveTimer(data.days, Number(data.total || 0));
-  }
-};
 
 /* ============================================================
    ⏱️ LIVE HOURS INDICATOR — Dynamic total updater
@@ -339,7 +280,10 @@ function showLiveHours(hours) {
     liveEl.className = "live-hours";
     document.querySelector("#schedule")?.appendChild(liveEl);
   }
-  liveEl.innerHTML = `Live shift: <b>${hours}</b> h ⏱️`;
+
+  // 🟥 Si pasa la hora de salida → texto rojo
+  const color = hours > 9 ? "#e60000" : "#0070ff";
+  liveEl.innerHTML = `Live shift: <b style="color:${color}">${hours}</b> h ⏱️`;
 }
 
 // Integrar automáticamente con tu loadSchedule actual
@@ -360,6 +304,7 @@ loadSchedule = async function (email) {
     console.warn("Live timer skipped:", e);
   }
 };
+
 /* ============================================================
    🧩 TEAM VIEW ENHANCED — with Close button (modern)
    ============================================================ */
