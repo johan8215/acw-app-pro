@@ -278,3 +278,38 @@ function closeSettings() {
 }
 
 console.log("✅ ACW Blue Glass v4.7 — app.js fully loaded & upgraded");
+
+// ============================================================
+// 📲 INSTALL APP PROMPT — Blue Glass Edition (iOS & Android)
+// ============================================================
+
+let deferredPrompt;
+
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallButton();
+});
+
+function showInstallButton() {
+  if (document.getElementById("installBtn")) return;
+
+  const btn = document.createElement("button");
+  btn.id = "installBtn";
+  btn.className = "install-btn";
+  btn.innerHTML = "📲";
+
+  btn.onclick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log("User response to install:", outcome);
+      deferredPrompt = null;
+      btn.remove();
+    } else {
+      alert("Add this app to your Home Screen from Safari’s share menu.");
+    }
+  };
+
+  document.body.appendChild(btn);
+}
