@@ -76,20 +76,60 @@ button:hover { background: #ff3333; }
   box-shadow: 0 0 25px rgba(0,136,255,0.6);
 }
 
-/* ---------- Floating Directory ---------- */
+/* ===========================================================
+   👥 TEAM VIEW — Blue Glass White Edition (Centered)
+   =========================================================== */
 .directory-wrapper {
   position: fixed;
-  top: 100px;
-  right: 40px;
-  background: rgba(255,255,255,0.96);
-  border-radius: 14px;
-  padding: 20px;
-  box-shadow: 0 0 35px rgba(0,136,255,0.35);
-  animation: fadeIn 0.8s ease;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 16px;
+  padding: 22px 28px;
+  width: 85%;
+  max-width: 800px;
+  max-height: 75vh;
+  overflow-y: auto;
+  box-shadow: 0 0 45px rgba(0, 128, 255, 0.35);
+  backdrop-filter: blur(10px);
+  color: #111;
+  text-align: center;
+  z-index: 9999;
+  animation: fadeIn 0.4s ease;
 }
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+
+.directory-wrapper h3 {
+  margin-top: 0;
+  font-size: 22px;
+  color: #c00;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(0, 136, 255, 0.4);
+}
+
+.directory-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14px;
+  font-size: 17px;
+  text-align: center;
+}
+
+.directory-table th {
+  color: #0078ff;
+  border-bottom: 2px solid rgba(0,120,255,0.2);
+  padding: 10px 6px;
+  background: rgba(0,120,255,0.05);
+}
+
+.directory-table td {
+  padding: 10px 6px;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.directory-table tr:hover {
+  background: rgba(0,120,255,0.08);
+  transition: background 0.2s ease;
 }
 
 /* ============================================================
