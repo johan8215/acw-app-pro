@@ -557,3 +557,165 @@ footer {
   margin-top: 10px;
   color: #111;
 }
+/* ===========================================================
+   🧊 TEAM OVERVIEW STYLES — Blue Glass Edition
+   =========================================================== */
+
+.team-btn {
+  position: fixed;
+  bottom: 26px;
+  right: 22px;
+  background: rgba(0, 136, 255, 0.85);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  width: 58px;
+  height: 58px;
+  font-size: 26px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease;
+}
+.team-btn:hover {
+  background: rgba(0, 156, 255, 1);
+  transform: scale(1.05);
+}
+.team-btn::before {
+  content: "👥";
+}
+
+/* Directory */
+.directory-wrapper {
+  position: fixed;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  padding: 18px 22px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 90%;
+  max-height: 70%;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  color: #eaf2ff;
+  z-index: 999;
+  animation: fadeIn 0.4s ease;
+}
+.directory-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.directory-header-bar h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #fff;
+}
+.close-all-btn {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.close-all-btn:hover {
+  background: rgba(255,255,255,0.35);
+}
+
+.employee-card {
+  background: rgba(255,255,255,0.08);
+  padding: 10px 14px;
+  margin: 6px 0;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.15);
+  transition: all 0.2s ease;
+}
+.employee-card:hover {
+  background: rgba(255,255,255,0.14);
+  transform: scale(1.01);
+}
+.card-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #e8f0ff;
+}
+.card-btn {
+  background: rgba(0,136,255,0.8);
+  border: none;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.card-btn:hover {
+  background: rgba(0,156,255,1);
+}
+
+/* Employee modal */
+.employee-modal {
+  position: fixed;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15,25,55,0.9);
+  border: 1px solid rgba(255,255,255,0.25);
+  padding: 18px 22px;
+  border-radius: 12px;
+  color: #fff;
+  z-index: 2000;
+  max-width: 90%;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+  backdrop-filter: blur(10px);
+  transition: all 0.4s ease;
+}
+.modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.modal-close {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  font-size: 22px;
+  cursor: pointer;
+}
+.schedule-mini {
+  width: 100%;
+  border-collapse: collapse;
+}
+.schedule-mini th, .schedule-mini td {
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+.modal-footer {
+  text-align: center;
+  margin-top: 12px;
+}
+.close-btn {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.close-btn:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.flash {
+  box-shadow: 0 0 15px #00bfff !important;
+}
