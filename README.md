@@ -1,28 +1,28 @@
-# 🧼 ACW-App-Pro v4.6.9 — Stable Blue Glass Edition
+# 💎 ACW App v4.7.2 — Blue Glass White Edition
 
-**Author:** Johan A. Giraldo (JAG15)  
-**Company:** Allston Car Wash — Boston, MA  
-**Version:** v4.6.9 — Stable Blue Glass Edition  
-**Date:** October 2025  
+A minimal, elegant PWA for **Allston Car Wash**.  
+Designed by **Johan A. Giraldo (JAG15)** & **Sky** — Oct 2025
 
 ---
 
-### 🧠 Description
-A lightweight, mobile-friendly **Progressive Web App (PWA)** built with  
-**HTML, CSS, and JavaScript**, connected live to a **Google Apps Script backend**.  
-Displays employee schedules, active hours, and real-time clock syncing.
+### 🎨 Style
+| Element | Color |
+|----------|--------|
+| Background | White glass |
+| Shadows | Electric blue |
+| Accents | ACW Red |
+| Text | #222 |
 
 ---
 
-### 🧩 Features
-✅ Secure login (Google Apps Script backend)  
-✅ Real-time schedule and hour tracking  
-✅ “Active Shift” live timer (e.g. `7:30.` = running ⏱️)  
-✅ Daily + weekly total hours  
-✅ Live clock refreshed every minute  
-✅ PWA: installable on iPhone / Android / desktop  
-✅ Blue Glass UI theme (white + red text + blue glow)  
+### ✨ Features
+✅ Animated login ("⏳ Loading your shift…")  
+✅ Floating **Team View** (top-right, white + blue shadow)  
+✅ Persistent session (auto re-login)  
+✅ Installable (📲 Add to Home Screen)  
+✅ No “new version” popups  
+✅ Responsive & clean for iPhone  
 
 ---
 
-### 🧱 File Structure
+### 📂 Structure
