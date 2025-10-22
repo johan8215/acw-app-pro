@@ -235,7 +235,49 @@ function refreshApp() {
     window.location.reload(true);
   }, 500);
 }
+/* ============================================================
+   ⚙️ SETTINGS + MANUAL UPDATE REFRESH
+   ============================================================ */
+function openSettings() {
+  document.getElementById("settingsModal").style.display = "block";
+}
 
+function closeSettings() {
+  document.getElementById("settingsModal").style.display = "none";
+}
+
+/* 🔄 Check for Updates (manual refresh) */
+function refreshApp() {
+  closeSettings?.();
+
+  // Limpia caché local (para que Vercel entregue el nuevo build)
+  if ("caches" in window) {
+    caches.keys().then(names => {
+      for (let name of names) caches.delete(name);
+    });
+  }
+
+  // Animación temporal del botón
+  const btn = document.querySelector(".settings-section button:first-child");
+  if (btn) {
+    btn.innerHTML = "⏳ Updating...";
+    btn.style.opacity = "0.7";
+  }
+
+  // Recargar después de un breve delay
+  setTimeout(() => {
+    window.location.reload(true);
+  }, 1200);
+}
+
+/* 🚪 Logout limpia sesión y refresca app */
+function logoutUser() {
+  localStorage.removeItem("acwUser");
+  closeSettings();
+  setTimeout(() => {
+    window.location.reload(true);
+  }, 600);
+}
 
 
    
