@@ -264,8 +264,20 @@ function updateTotalDisplay(value, active = false) {
   const totalEl = document.querySelector(".total");
   if (!totalEl) return;
 
-  const color = active ? "#33a0ff" : "#ffffff";
-  totalEl.innerHTML = `<span style="color:${color}">⚪ Total Hours: <b>${value.toFixed(1)}</b></span>`;
+  // Verificar si el valor es válido
+  if (isNaN(value) || value === null || value === undefined) {
+    console.warn("⚠️ Invalid total value, keeping previous total.");
+    return; // No actualizar si el valor no es válido
+  }
+
+  const current = totalEl.innerText.match(/[\d.]+/);
+  const currentVal = current ? parseFloat(current[0]) : 0;
+
+  // Solo actualizar si cambia realmente o si el texto está vacío
+  if (Math.abs(currentVal - value) > 0.01 || totalEl.textContent.trim() === "") {
+    const color = active ? "#33a0ff" : "#ffffff";
+    totalEl.innerHTML = `<span style="color:${color}">⚪ Total Hours: <b>${value.toFixed(1)}</b></span>`;
+  }
 }
 
 /* ============================================================
