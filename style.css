@@ -1458,3 +1458,96 @@ button:hover, .open-btn:hover, .emp-refresh:hover, .tv-nav:hover {
   color: #0078ff;
   opacity: 0.9;
 }
+
+/* ============================================================
+   🚘 ACW-App v5.1.3 — Allston Header + Centered Tables (JAG15)
+   ============================================================ */
+
+/* 🔹 Encabezado principal dentro del Employee Modal */
+.emp-header::before {
+  content: "🚘 Allston Car Wash — ";
+  display: block;
+  font-size: 17px;
+  font-weight: 600;
+  color: #0078ff;
+  margin-bottom: 8px;
+  text-shadow: 0 0 8px rgba(0,120,255,0.35);
+}
+
+/* 🔹 Nombre del empleado (mantiene estilo limpio) */
+.emp-header h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 4px;
+  text-shadow: 0 0 8px rgba(0,120,255,0.25);
+}
+
+/* 🔹 Teléfono y rol */
+.emp-phone {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0078ff;
+  margin: 2px 0 6px;
+  text-shadow: 0 0 8px rgba(0,120,255,0.25);
+}
+.emp-role {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+/* 🔹 Centrado total de tablas en Team View y Employee Modal */
+.directory-table,
+.schedule-mini {
+  margin: 0 auto;                /* centra horizontalmente */
+  text-align: center;            /* centra el contenido */
+  width: 100%;
+  max-width: 600px;              /* ancho uniforme igual al panel principal */
+  border-collapse: separate;
+  border-spacing: 18px 10px;
+}
+
+/* 🔹 Cabeceras */
+.directory-table th,
+.schedule-mini th {
+  background: rgba(0,120,255,0.08);
+  color: #0078ff;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 10px 8px;
+  border-bottom: 2px solid rgba(0,120,255,0.25);
+}
+
+/* 🔹 Celdas */
+.directory-table td,
+.schedule-mini td {
+  background: rgba(255,255,255,0.96);
+  color: #000;
+  padding: 10px 8px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  border-radius: 6px;
+}
+
+/* 🔹 Hover (igual que tu panel principal) */
+.directory-table tr:hover td,
+.schedule-mini tr:hover td {
+  background: rgba(0,120,255,0.06);
+  transition: background 0.25s ease;
+}
+
+/* 🔹 Ajuste de altura para que se vea equilibrado */
+.employee-modal.emp-panel {
+  padding-top: 46px;
+  padding-bottom: 56px;
+}
+
+/* 🔹 Cronómetro debajo del total */
+.live-hours {
+  display: block;
+  margin-top: 6px;
+  color: #0078ff;
+  font-size: 16px;
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(0,120,255,0.35);
+}
