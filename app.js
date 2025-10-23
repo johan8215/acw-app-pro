@@ -655,40 +655,54 @@ function enableModalLiveShift(modal, days) {
     if (!row) return;
     const cellHours = row.cells[2];
 
-    // Turno activo (ej. "7:30.")
-    if (shift.endsWith(".")) {
-      const startStr = shift.replace(".", "").trim();
-      const startTime = parseTime(startStr);
+   // Turno activo (ej. "7:30.")
+if (shift.endsWith(".")) {
+  const startStr = shift.replace(".", "").trim();
+  const startTime = parseTime(startStr);
 
-      const update = () => {
-        const now = new Date();
-        const diffHrs = Math.max(0, (now - startTime) / 36e5);
-        cellHours.innerHTML = `⏱️ ${diffHrs.toFixed(1)}h`;
-        cellHours.style.color = "#33a0ff";
-        cellHours.style.fontWeight = "600";
+  const update = () => {
+    const now = new Date();
+    const diffHrs = Math.max(0, (now - startTime) / 36e5);
+    cellHours.innerHTML = `⏱️ ${diffHrs.toFixed(1)}h`;
+    cellHours.style.color = "#33a0ff";
+    cellHours.style.fontWeight = "600";
 
-        // Mostrar 🟢 Working si aún no existe
-        if (!modal.querySelector(".emp-working")) {
-          const header = modal.querySelector(".emp-header h3");
-          const badge = document.createElement("span");
-          badge.className = "emp-working";
-          badge.textContent = "🟢 Working";
-          badge.style.display = "block";
-          badge.style.fontWeight = "600";
-          badge.style.color = "#33ff66";
-          badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
-          badge.style.marginBottom = "4px";
-          header.parentNode.insertBefore(badge, header);
-        }
-      };
-
-      update();
-      clearInterval(modal.liveTimer);
-      modal.liveTimer = setInterval(update, 60000);
+    // Mostrar 🟢 Working si aún no existe
+    if (!modal.querySelector(".emp-working")) {
+      const header = modal.querySelector(".emp-header h3");
+      const badge = document.createElement("span");
+      badge.className = "emp-working";
+      badge.textContent = "🟢 Working";
+      badge.style.display = "block";
+      badge.style.fontWeight = "600";
+      badge.style.color = "#33ff66";
+      badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
+      badge.style.marginBottom = "4px";
+      header.parentNode.insertBefore(badge, header);
     }
-  } catch (err) {
-    console.warn("Modal live tracker inactive:", err);
+  };
+
+  update();
+  clearInterval(modal.liveTimer);
+  modal.liveTimer = setInterval(update, 60000);
+} else {
+  // 🔚 Turno cerrado → mostrar horas totales y quitar "Working"
+  const parts = shift.split("-");
+  if (parts.length === 2) {
+    const startStr = parts[0].trim();
+    const endStr = parts[1].trim();
+    const startTime = parseTime(startStr);
+    const endTime = parseTime(endStr);
+    const diffHrs = Math.max(0, (endTime - startTime) / 36e5);
+    cellHours.innerHTML = `${diffHrs.toFixed(1)}h`;
+    cellHours.style.color = "#999";
+    cellHours.style.fontWeight = "500";
   }
+
+  // Eliminar 🟢 Working si existía
+  const badge = modal.querySelector(".emp-working");
+  if (badge) badge.remove();
+}
 }
 
 /* ============================================================
