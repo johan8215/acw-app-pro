@@ -230,6 +230,9 @@ function startLiveTimer(days, total) {
     updateTotalDisplay(total, false);
     showLiveHours(diffHrs, false);
     removeOnlineBadge();
+     // Mostrar también ⏱️ dentro de la tabla principal (o modal)
+const tableEl = document.querySelector("#schedule table") || document.querySelector(".schedule-mini");
+if (tableEl) injectLiveHoursInTable(days, tableEl);
   } catch (err) {
     console.warn("⏱️ Live shift inactive:", err);
   }
