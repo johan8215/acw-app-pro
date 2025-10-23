@@ -375,6 +375,7 @@ function renderTeamViewPage() {
 
 /* ============================================================
    🧩 Employee Modal — Full Rebuild (v4.9.4 Stable Clone)
+   + ⏱️ Live Shift Integration (v2.3 Instant Total)
    ============================================================ */
 async function openEmployeePanel(btnEl) {
   const tr = btnEl.closest("tr");
@@ -415,7 +416,7 @@ async function openEmployeePanel(btnEl) {
         ${data.days
           .map(
             (d) => `
-          <tr>
+          <tr data-day="${d.name.slice(0,3)}" data-shift="${d.shift}">
             <td>${d.name}</td>
             <td>${d.shift || "-"}</td>
             <td>${d.hours || 0}</td>
@@ -436,18 +437,16 @@ async function openEmployeePanel(btnEl) {
   m.querySelector(".emp-close").onclick = () => m.remove();
   m.querySelector(".emp-refresh").onclick = () => checkForUpdatesInModal(m);
 
-  // Activar cronómetro ⏱️
-  startLiveTimerForModal(modalId, data);
-}
-
-// Detectar si el empleado tiene un shift activo hoy
-const today = new Date();
-const currentDay = today.toLocaleString('en-US', { weekday: 'short' });
-const rowToday = modal.querySelector(`tr[data-day="${currentDay}"]`);
-if (rowToday) {
-  const shift = rowToday.dataset.shift || rowToday.cells[1]?.textContent || '';
-  const [startStr, endStr] = shift.split('-').map(s => s.trim());
-  if (startStr && endStr) startLiveShift(modal, startStr, endStr, modal.querySelector('.total'));
+  /* === Detectar si el empleado tiene un shift activo hoy === */
+  const today = new Date();
+  const currentDay = today.toLocaleString("en-US", { weekday: "short" }); // "Mon", "Tue", etc.
+  const rowToday = m.querySelector(`tr[data-day^="${currentDay}"]`);
+  if (rowToday) {
+    const shift = rowToday.dataset.shift || rowToday.cells[1]?.textContent || "";
+    const [startStr, endStr] = shift.split("-").map(s => s.trim());
+    if (startStr && endStr)
+      startLiveShift(m, startStr, endStr, m.querySelector(".total"));
+  }
 }
 
 /* ============================================================
@@ -459,49 +458,44 @@ if (rowToday) {
 function startLiveShift(modalEl, startStr, endStr, totalCell) {
   if (!startStr || !endStr || !modalEl) return;
 
-  // Convierte formato tipo "7:30" o "8" en horas decimales
   const parseHour = t => {
-    const [h, m = 0] = t.toString().split(':').map(Number);
+    const [h, m = 0] = t.toString().split(":").map(Number);
     return h + (m / 60);
   };
 
   const start = parseHour(startStr);
   const end   = parseHour(endStr);
 
-  const clockEl = modalEl.querySelector('.live-hours');
-  const totalEl = modalEl.querySelector('.total');
+  const clockEl = modalEl.querySelector(".live-hours");
+  const totalEl = modalEl.querySelector(".total");
 
-  // Limpia intervalos previos
   if (window.liveShiftTimer) clearInterval(window.liveShiftTimer);
 
   function updateTimer() {
     const now = new Date();
     const current = now.getHours() + now.getMinutes() / 60;
     if (current < start || current > end) {
-      // fuera de rango -> detener
-      if (clockEl) clockEl.textContent = '';
+      if (clockEl) clockEl.textContent = "";
       clearInterval(window.liveShiftTimer);
       return;
     }
 
-    const elapsed = current - start; // horas trabajadas hasta ahora
+    const elapsed = current - start;
     const hrs = Math.floor(elapsed);
     const mins = Math.floor((elapsed - hrs) * 60);
 
-    // Actualiza cronómetro
     if (clockEl) {
       clockEl.textContent = `⏱️ Live Shift (${hrs}h ${mins}m)`;
-      clockEl.style.opacity = '1';
+      clockEl.style.opacity = "1";
     }
 
-    // Actualiza total instantáneo
     const baseTotal = Number(totalCell.dataset.base || totalCell.textContent || 0);
     const newTotal = (baseTotal + elapsed).toFixed(1);
     if (totalEl) totalEl.textContent = `Total Hours: ${newTotal}`;
   }
 
-  updateTimer();                         // primera ejecución inmediata
-  window.liveShiftTimer = setInterval(updateTimer, 60 * 1000); // cada minuto
+  updateTimer();
+  window.liveShiftTimer = setInterval(updateTimer, 60 * 1000);
 }
 
 /* ============================================================
