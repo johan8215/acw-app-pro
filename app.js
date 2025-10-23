@@ -598,6 +598,24 @@ async function openEmployeePanel(btnEl) {
   `;
   document.body.appendChild(m);
 
+   /* === LIVE FIX: prevent total hours from disappearing === */
+setTimeout(() => {
+  const totalEl = m.querySelector(".total b");
+  if (totalEl && totalEl.textContent.trim() === "") {
+    totalEl.textContent = data.total || 0;
+  }
+}, 800);
+
+/* Forzar persistencia visual del total */
+const totalEl = m.querySelector(".total b");
+if (totalEl) {
+  const totalValue = totalEl.textContent;
+  const observer = new MutationObserver(() => {
+    if (totalEl.textContent.trim() === "") totalEl.textContent = totalValue;
+  });
+  observer.observe(totalEl, { childList: true, characterData: true, subtree: true });
+}
+
   requestAnimationFrame(() => m.classList.add("in"));
 
   // Eventos
