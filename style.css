@@ -512,8 +512,7 @@ td {
 }
 
 /* ============================================================
-   💎 ACW Employee Panel v4.8.6 — Perfect Visual Match
-   Johan A. Giraldo (JAG15) | Allston Car Wash © 2025
+   💎 ACW-App v4.8.8 — JAG15 Panel Perfect Match
    ============================================================ */
 
 .employee-modal.emp-panel {
@@ -523,10 +522,10 @@ td {
   transform: translate(-50%, -50%);
   width: 420px;
   max-width: 90vw;
-  background: #ffffff;
+  background: #fff;
   border-radius: 14px;
-  box-shadow: 0 0 35px rgba(0, 120, 255, 0.35);
-  padding: 40px 50px;
+  box-shadow: 0 0 35px rgba(0,120,255,0.35);
+  padding: 42px 48px 48px 48px;
   text-align: center;
   font-family: 'Segoe UI', Roboto, sans-serif;
   color: #111;
@@ -535,22 +534,8 @@ td {
 
 /* ===== Header ===== */
 .emp-header {
-  position: relative;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
-.emp-close {
-  position: absolute;
-  right: 0;
-  top: 0;
-  background: transparent;
-  border: none;
-  font-size: 22px;
-  color: #777;
-  cursor: pointer;
-  transition: color 0.25s ease;
-}
-.emp-close:hover { color: #e60000; }
-
 .emp-header h3 {
   font-size: 18px;
   font-weight: 700;
@@ -558,6 +543,7 @@ td {
   margin: 0;
 }
 .emp-phone {
+  display: block;
   margin-top: 4px;
   color: #0078ff;
   font-size: 16px;
@@ -570,43 +556,43 @@ td {
 .emp-phone a:hover { text-decoration: underline; }
 
 .emp-role {
-  font-size: 14px;
   color: #777;
+  font-size: 14px;
   margin-top: 2px;
 }
 
-/* ===== Table (identical to your main one) ===== */
+/* ===== Table ===== */
 .employee-modal .schedule-mini {
   width: 100%;
   border-collapse: separate;
   border-spacing: 20px 10px;
   text-align: center;
   font-size: 18px;
-  margin-top: 10px;
+  margin-top: 14px;
 }
 .employee-modal .schedule-mini th {
   color: #000;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid rgba(0,120,255,0.2);
+  border-bottom: 2px solid rgba(0,120,255,0.25);
   padding-bottom: 6px;
 }
 .employee-modal .schedule-mini td {
+  color: #111;
   padding: 8px 12px;
   border-bottom: 1px solid rgba(0,0,0,0.08);
 }
 
-/* ===== Totals ===== */
+/* ===== Total & Button ===== */
 .total {
   color: #e60000;
   font-weight: bold;
   font-size: 20px;
-  margin-top: 16px;
+  margin-top: 20px;
   text-align: center;
 }
-
-/* ===== Check for Updates Button ===== */
 .emp-refresh {
-  margin-top: 18px;
+  display: inline-block;
+  margin-top: 16px;
   background: #0078ff;
   color: #fff;
   border: none;
@@ -616,12 +602,25 @@ td {
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 4px 16px rgba(0,120,255,0.3);
-  transition: all 0.3s ease;
+  transition: background 0.3s ease;
 }
 .emp-refresh:hover { background: #0096ff; }
 
-/* ===== Animation ===== */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translate(-50%, -48%) scale(.96); }
-  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+/* ===== Close Button (X) ===== */
+.emp-close {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  color: #777;
+  cursor: pointer;
+}
+.emp-close:hover { color: #e60000; }
+
+/* ===== Remove old pseudo icons ===== */
+.user-phone::before, .emp-phone::before {
+  content: none !important;
+  display: none !important;
 }
