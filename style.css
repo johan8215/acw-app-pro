@@ -946,3 +946,17 @@ td {
 .emp-close:hover {
   background: #e60000;
 }
+
+/* ============================================================
+   ⚙️ ACW-App v5.0 — Global Footer Injection (Safe)
+   ============================================================ */
+
+window.addEventListener("load", () => {
+  // Si ya existe, no se duplica
+  if (!document.querySelector(".footer")) {
+    const footer = document.createElement("footer");
+    footer.className = "footer";
+    footer.innerHTML = "Powered by <b>JAG15</b> | Allston Car Wash © 2025";
+    document.body.appendChild(footer);
+  }
+});
