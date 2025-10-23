@@ -186,8 +186,8 @@ window.addEventListener("load", () => {
 function startLiveTimer(days, total) {
   try {
     // Buscar el día actual
-    const todayName = new Date().toLocaleString("en-US", { weekday: "long" });
-    const today = days.find(d => d.name.toLowerCase() === todayName.toLowerCase());
+    const todayName = new Date().toLocaleString("en-US", { weekday: "short" }).slice(0,3).toLowerCase();
+   const today = days.find(d => d.name.slice(0,3).toLowerCase() === todayName);
     if (!today || !today.shift || /off/i.test(today.shift)) return;
 
     const shift = today.shift.trim();
