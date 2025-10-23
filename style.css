@@ -1793,3 +1793,134 @@ button:hover, .open-btn:hover, .emp-refresh:hover, .tv-nav:hover {
   color: #0078ff;
   text-shadow: 0 0 10px rgba(0,120,255,0.35);
 }
+
+/* ============================================================
+   🧩 ACW-App v5.1.7 — Employee Modal perfectly aligned to Team View
+   Johan A. Giraldo (JAG15) | Allston Car Wash © 2025
+   ============================================================ */
+
+/* Igual que Team View: centrado absoluto y proporción exacta */
+.employee-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+}
+
+/* Caja interna (idéntica a Team View y panel principal) */
+.employee-modal .emp-box {
+  background: rgba(255,255,255,0.96);
+  border-radius: 18px;
+  width: 85%;
+  max-width: 800px;
+  padding: 40px 50px;
+  box-shadow: 0 0 45px rgba(0, 120, 255, 0.35);
+  color: #111;
+  text-align: center;
+  margin: 0 auto;
+}
+
+/* Encabezado igual que Team View */
+.emp-header::before {
+  content: "🚘 Allston Car Wash — ";
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0078ff;
+  text-shadow: 0 0 10px rgba(0,120,255,0.35);
+  margin-bottom: 4px;
+}
+
+.emp-header h3 {
+  margin: 0;
+  font-size: 22px;
+  color: #000;
+  font-weight: 700;
+}
+
+.emp-phone a {
+  color: #0078ff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.emp-role {
+  color: #777;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+
+/* Tabla centrada y con las mismas proporciones del panel principal */
+.employee-modal .schedule-mini {
+  margin: 0 auto;
+  width: 95%;
+  border-collapse: separate;
+  border-spacing: 20px 10px;
+  text-align: center;
+  font-size: 18px;
+}
+.employee-modal .schedule-mini th {
+  background: rgba(0,120,255,0.05);
+  color: #0078ff;
+  border-bottom: 2px solid rgba(0,120,255,0.2);
+  border-radius: 6px;
+  padding: 6px;
+}
+.employee-modal .schedule-mini td {
+  padding: 6px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+/* Totales y cronómetro */
+.employee-modal .total {
+  color: #e60000;
+  font-weight: 700;
+  margin-top: 14px;
+  font-size: 18px;
+}
+.employee-modal .live-hours {
+  color: #0078ff;
+  font-weight: 600;
+  margin-top: 6px;
+  font-size: 16px;
+}
+
+/* Botón y footer iguales */
+.emp-refresh {
+  background: #0078ff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  margin-top: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0,120,255,0.35);
+  transition: all 0.3s ease;
+}
+.emp-refresh:hover {
+  background: #0096ff;
+  transform: translateY(-2px);
+}
+
+.employee-modal::after {
+  content: "Powered by JAG15 | Allston Car Wash © 2025";
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 600;
+  color: #0078ff;
+  text-shadow: 0 0 10px rgba(0,120,255,0.35);
+}
+
