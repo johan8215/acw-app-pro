@@ -714,3 +714,16 @@ button.signin-btn:hover {
   from { opacity: 0; transform: translateY(-2px); }
   to   { opacity: 0.9; transform: translateY(0); }
 }
+
+.tv-hours {
+  transition: all 0.4s ease;
+}
+.tv-hours.glow {
+  text-shadow: 0 0 10px rgba(51,255,102,0.7), 0 0 20px rgba(51,255,102,0.4);
+  animation: pulseGlow 1.8s infinite ease-in-out;
+}
+@keyframes pulseGlow {
+  0% { opacity: 0.8; text-shadow: 0 0 8px rgba(51,255,102,0.4); }
+  50% { opacity: 1; text-shadow: 0 0 16px rgba(51,255,102,0.9); }
+  100% { opacity: 0.8; text-shadow: 0 0 8px rgba(51,255,102,0.4); }
+}
