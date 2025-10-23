@@ -1108,3 +1108,80 @@ button:hover, .open-btn:hover, .emp-refresh:hover, .tv-nav:hover {
   font-weight: 600;
   margin-top: 4px;
 }
+
+/* ============================================================
+   🧩 ACW-App v5.0 — Uniform Floating Cards (Stable Fix)
+   Johan A. Giraldo (JAG15) | Allston Car Wash © 2025
+   ============================================================ */
+
+/* --- Grid contenedor del Team View --- */
+.employee-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 18px;
+}
+
+/* --- Tarjetas uniformes --- */
+.employee-card {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 14px;
+  box-shadow: 0 0 30px rgba(0, 120, 255, 0.25);
+  width: 210px;              /* mismo ancho */
+  height: 220px;             /* altura fija */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 18px;
+  transition: all 0.3s ease;
+  text-align: center;
+  color: #111;
+}
+
+.employee-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 40px rgba(0,136,255,0.4);
+}
+
+/* --- Nombre, rol, y horas --- */
+.employee-card h4 {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0;
+  color: #000;
+}
+
+.employee-card .hours {
+  color: #0078ff;
+  font-size: 15px;
+  margin: 8px 0;
+}
+
+/* --- Botón Open (rojo uniforme) --- */
+.employee-card .open-btn {
+  background: #e60000;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.25s ease;
+  box-shadow: 0 4px 16px rgba(0,120,255,0.25);
+}
+
+.employee-card .open-btn:hover {
+  background: #ff3333;
+  transform: translateY(-1px);
+}
+
+/* --- Animación suave al aparecer --- */
+@keyframes cardIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.employee-card {
+  animation: cardIn 0.3s ease forwards;
+}
