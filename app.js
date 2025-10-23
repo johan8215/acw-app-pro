@@ -180,7 +180,7 @@ window.addEventListener("load", () => {
 });
 
 /* ============================================================
-   ⏱️ ACW-App v5.3.2 — Live Shift “Dot Logic” (Blue Glass)
+   ⏱️ ACW-App v5.3.4 — Live Shift “Dot Logic + Color Mode”
    Johan A. Giraldo | Allston Car Wash © 2025
    ============================================================ */
 function startLiveTimer(days, total) {
@@ -190,8 +190,9 @@ function startLiveTimer(days, total) {
     if (!today || !today.shift || /off/i.test(today.shift)) return;
 
     const shift = today.shift.trim();
+    const totalEl = document.querySelector(".total");
 
-    // Caso 1️⃣: Turno abierto (ej. "7:30.")
+    // Caso 1️⃣: Turno abierto ("7:30.")
     if (shift.endsWith(".")) {
       const startStr = shift.replace(".", "").trim();
       const startTime = parseTime(startStr);
@@ -199,17 +200,17 @@ function startLiveTimer(days, total) {
       const update = () => {
         const now = new Date();
         const diffHrs = Math.max(0, (now - startTime) / 36e5);
-        updateTotalDisplay(total + diffHrs);
-        showLiveHours(diffHrs);
+        updateTotalDisplay(total + diffHrs, true);
+        showLiveHours(diffHrs, true);
       };
 
-      update(); // primera ejecución inmediata
+      update(); // primera ejecución
       clearInterval(window.liveInterval);
       window.liveInterval = setInterval(update, 60000);
       return;
     }
 
-    // Caso 2️⃣: Turno cerrado (ej. "7:30 - 6")
+    // Caso 2️⃣: Turno cerrado ("7:30 - 6")
     const parts = shift.split("-");
     if (parts.length < 2) return;
 
@@ -221,9 +222,8 @@ function startLiveTimer(days, total) {
     const endTime = parseTime(endStr);
     const diffHrs = Math.max(0, (endTime - startTime) / 36e5);
 
-    // Solo mostrar total fijo, sin ⏱️
-    updateTotalDisplay(total);
-    showLiveHours(0, false);
+    updateTotalDisplay(total, false);
+    showLiveHours(diffHrs, false);
   } catch (err) {
     console.warn("⏱️ Live shift inactive:", err);
   }
@@ -245,14 +245,29 @@ function showLiveHours(hours, active = true) {
     return;
   }
 
-  const color = "#0078ff";
-  el.innerHTML = `⏱️ <b style="color:${color}">${hours.toFixed(1)}h</b>`;
+  el.innerHTML = `⏱️ <b style="color:#0078ff">${hours.toFixed(1)}h</b>`;
 }
 
-function updateTotalDisplay(value) {
+function updateTotalDisplay(value, active = false) {
   const totalEl = document.querySelector(".total");
-  if (totalEl)
-    totalEl.innerHTML = `⚪ Total Hours: <b>${value.toFixed(1)}</b>`;
+  if (!totalEl) return;
+
+  const color = active ? "#33a0ff" : "#ffffff"; // azul si activo, blanco si cerrado
+  totalEl.innerHTML = `<span style="color:${color}">⚪ Total Hours: <b>${value.toFixed(1)}</b></span>`;
+}
+
+/* ============================================================
+   🕓 Parsear hora AM/PM o 24h
+   ============================================================ */
+function parseTime(str) {
+  const clean = str.replace(/[^\d:apm]/gi, "").trim();
+  const [time, meridian] = clean.split(" ");
+  let [h, m] = (time || "").split(":").map(Number);
+  if (meridian?.toLowerCase() === "pm" && h !== 12) h += 12;
+  if (meridian?.toLowerCase() === "am" && h === 12) h = 0;
+  const d = new Date();
+  d.setHours(h, m || 0, 0, 0);
+  return d;
 }
 
 /* ============================================================
