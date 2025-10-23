@@ -512,8 +512,10 @@ td {
 }
 
 /* ============================================================
-   🧩 EMPLOYEE PANEL — FINAL CLEAN LAYOUT (v4.8.3e)
+   💎 ACW Unified Table Look — identical to main schedule
    ============================================================ */
+
+/* ======= EMPLOYEE PANEL ======= */
 .employee-modal.emp-panel {
   position: fixed;
   top: 50%;
@@ -521,108 +523,146 @@ td {
   transform: translate(-50%, -50%) scale(1);
   width: 420px;
   max-width: 90vw;
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
-  border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.3);
-  box-shadow: 0 0 45px rgba(0,120,255,0.35);
-  padding: 32px 28px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 0 40px rgba(0,120,255,0.35);
+  padding: 28px 24px 34px 24px;
   text-align: center;
-  animation: fadeIn 0.4s ease;
   z-index: 9999;
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  color: #111;
 }
 
-/* Quita overlay oscuro */
-.employee-modal { background: none !important; }
-
-/* ---------- Header arriba ---------- */
-.emp-header {
-  margin-bottom: 14px;
-  text-align: center;
-}
+/* Header (name, phone, role) */
 .emp-header h3 {
-  font-size: 22px;
-  font-weight: 700;
-  color: #000;
-  margin: 0 0 4px 0;
-}
-.emp-phone {
-  margin-top: 2px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #0078ff;
-}
-.emp-role {
-  color: #777;
-  font-size: 14px;
-  margin-top: 2px;
-}
-
-/* ---------- Tabla de horario ---------- */
-.schedule-mini {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-  font-size: 16px;
-  text-align: center;
-}
-.schedule-mini th {
-  color: #0078ff;
-  background: rgba(0,120,255,0.05);
-  border-bottom: 2px solid rgba(0,120,255,0.2);
-  padding: 8px;
-}
-.schedule-mini td {
-  padding: 6px;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-}
-
-/* ---------- Total Hours ---------- */
-.total {
-  margin-top: 16px;
   font-size: 18px;
   font-weight: 700;
-  color: #e60000;
+  color: #000;
+  margin: 0;
+}
+.emp-phone {
+  margin-top: 4px;
+  color: #0078ff;
+  font-size: 14px;
+  font-weight: 600;
+}
+.emp-role {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
 }
 
-/* ---------- Botón grande “Check for Updates” ---------- */
+/* Table identical to main floating one */
+.employee-modal .schedule-mini {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+  font-size: 15px;
+  text-align: center;
+}
+.employee-modal .schedule-mini th {
+  color: #0078ff;
+  background: #fff;
+  border-bottom: 2px solid rgba(0,120,255,0.25);
+  padding: 6px 4px;
+}
+.employee-modal .schedule-mini td {
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+  padding: 5px 4px;
+}
+.employee-modal .schedule-mini tr:hover {
+  background: rgba(0,120,255,0.05);
+}
+
+/* Total Hours + live hours */
+.total {
+  color: #e60000;
+  font-weight: 700;
+  font-size: 15px;
+  margin-top: 10px;
+}
+.live-hours {
+  color: #0078ff;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* Check for Updates button */
 .emp-refresh {
-  margin-top: 18px;
-  background: linear-gradient(145deg,#0078ff,#0096ff);
+  margin-top: 14px;
+  background: #0078ff;
   color: #fff;
   border: none;
-  border-radius: 10px;
-  padding: 14px 26px;
-  font-size: 17px;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(0,120,255,0.3);
-  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0,120,255,0.3);
+  transition: 0.3s;
 }
-.emp-refresh:hover {
-  transform: scale(1.05);
-  box-shadow: 0 8px 24px rgba(0,120,255,0.4);
-}
+.emp-refresh:hover { background: #0096ff; }
 
-/* ---------- Live Hours ---------- */
-.live-hours {
-  margin-top: 10px;
-  color: #0078ff;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-/* ---------- Cerrar ---------- */
+/* Close button */
 .emp-close {
   position: absolute;
-  top: 10px;
-  right: 12px;
-  border: none;
+  right: 10px;
+  top: 6px;
   background: transparent;
-  font-size: 22px;
+  border: none;
+  font-size: 20px;
   color: #777;
   cursor: pointer;
-  transition: transform 0.2s ease;
 }
-.emp-close:hover { color: #e60000; transform: scale(1.1); }
+.emp-close:hover { color: #e60000; }
+
+/* ======= TEAM VIEW TABLE ======= */
+.directory-wrapper {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 0 45px rgba(0,120,255,0.35);
+  padding: 26px 30px;
+  width: 85%;
+  max-width: 800px;
+  max-height: 75vh;
+  overflow-y: auto;
+  text-align: center;
+  color: #111;
+}
+
+.tv-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 15px;
+}
+.tv-table th {
+  color: #0078ff;
+  border-bottom: 2px solid rgba(0,120,255,0.25);
+  padding: 8px 4px;
+  font-weight: 600;
+}
+.tv-table td {
+  padding: 6px 4px;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+}
+.tv-table tr:hover {
+  background: rgba(0,120,255,0.05);
+}
+
+/* Team View Open button */
+.open-btn {
+  background: #e60000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.3s;
+}
+.open-btn:hover { background: #ff3333; }
