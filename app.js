@@ -180,20 +180,24 @@ window.addEventListener("load", () => {
 });
 
 /* ============================================================
-   ⏱️ ACW-App v5.3.4 — Live Shift “Dot Logic + Color Mode”
+   ⏱️ ACW-App v5.3.6 — Live Shift + 🟢 Online Badge (Stable)
    Johan A. Giraldo | Allston Car Wash © 2025
    ============================================================ */
 function startLiveTimer(days, total) {
   try {
+    // Buscar el día actual
     const todayName = new Date().toLocaleString("en-US", { weekday: "long" });
     const today = days.find(d => d.name.toLowerCase() === todayName.toLowerCase());
     if (!today || !today.shift || /off/i.test(today.shift)) return;
 
     const shift = today.shift.trim();
-    const totalEl = document.querySelector(".total");
 
-    // Caso 1️⃣: Turno abierto ("7:30.")
+    // El badge 🟢 solo aparece si el turno está activo (7:30.)
+    removeOnlineBadge();
+
     if (shift.endsWith(".")) {
+      addOnlineBadge();
+
       const startStr = shift.replace(".", "").trim();
       const startTime = parseTime(startStr);
 
@@ -204,13 +208,13 @@ function startLiveTimer(days, total) {
         showLiveHours(diffHrs, true);
       };
 
-      update(); // primera ejecución
+      update();
       clearInterval(window.liveInterval);
       window.liveInterval = setInterval(update, 60000);
       return;
     }
 
-    // Caso 2️⃣: Turno cerrado ("7:30 - 6")
+    // Turno cerrado ("7:30 - 6") → sin cronómetro ni badge
     const parts = shift.split("-");
     if (parts.length < 2) return;
 
@@ -224,17 +228,21 @@ function startLiveTimer(days, total) {
 
     updateTotalDisplay(total, false);
     showLiveHours(diffHrs, false);
+    removeOnlineBadge();
   } catch (err) {
     console.warn("⏱️ Live shift inactive:", err);
   }
 }
 
+/* ============================================================
+   💡 LIVE HOURS + TOTAL
+   ============================================================ */
 function showLiveHours(hours, active = true) {
   let el = document.querySelector(".live-hours");
   if (!el) {
     el = document.createElement("p");
     el.className = "live-hours";
-    el.style.fontSize = "1.2em";
+    el.style.fontSize = "1.1em";
     el.style.marginTop = "6px";
     el.style.textShadow = "0 0 10px rgba(0,120,255,0.4)";
     document.querySelector("#schedule")?.appendChild(el);
@@ -245,15 +253,38 @@ function showLiveHours(hours, active = true) {
     return;
   }
 
-  el.innerHTML = `⏱️ <b style="color:#0078ff">${hours.toFixed(1)}h</b>`;
+  el.innerHTML = `⏱️ <b style="color:#33a0ff">${hours.toFixed(1)}h</b>`;
 }
 
 function updateTotalDisplay(value, active = false) {
   const totalEl = document.querySelector(".total");
   if (!totalEl) return;
 
-  const color = active ? "#33a0ff" : "#ffffff"; // azul si activo, blanco si cerrado
+  const color = active ? "#33a0ff" : "#ffffff";
   totalEl.innerHTML = `<span style="color:${color}">⚪ Total Hours: <b>${value.toFixed(1)}</b></span>`;
+}
+
+/* ============================================================
+   🟢 ONLINE BADGE (arriba del nombre)
+   ============================================================ */
+function addOnlineBadge() {
+  const nameEl = document.getElementById("welcomeName");
+  if (!nameEl || document.getElementById("onlineBadge")) return;
+
+  const badge = document.createElement("span");
+  badge.id = "onlineBadge";
+  badge.textContent = "🟢 Online";
+  badge.style.display = "block";
+  badge.style.fontWeight = "600";
+  badge.style.color = "#33ff66";
+  badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
+  badge.style.marginBottom = "6px";
+
+  nameEl.parentNode.insertBefore(badge, nameEl);
+}
+
+function removeOnlineBadge() {
+  document.getElementById("onlineBadge")?.remove();
 }
 
 /* ============================================================
