@@ -647,6 +647,8 @@ if (totalEl) {
       header.parentNode.insertBefore(badge, header);
     }
   }
+     // === Activar monitoreo en vivo dentro del modal ===
+enableModalLiveShift(m, data.days);
   }
 }
 
