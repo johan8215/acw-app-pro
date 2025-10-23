@@ -634,6 +634,7 @@ async function openEmployeePanel(btnEl) {
 
 /* ============================================================
    ⏱️ Employee Modal Live Tracker (Working + Live Hours)
+   v5.4.2 — Prevent overwriting total (Stable)
    ============================================================ */
 function enableModalLiveShift(modal, days) {
   try {
@@ -654,6 +655,9 @@ function enableModalLiveShift(modal, days) {
     );
     if (!row) return;
     const cellHours = row.cells[2];
+
+    // 🔒 evita que otro proceso borre el contenido
+    cellHours.dataset.locked = "true";
 
     // Turno activo (ej. "7:30.")
     if (shift.endsWith(".")) {
@@ -704,6 +708,16 @@ function enableModalLiveShift(modal, days) {
       const badge = modal.querySelector(".emp-working");
       if (badge) badge.remove();
     }
+
+    // ✅ Refuerzo: si otra función intenta limpiar la celda, la restauramos
+    const observer = new MutationObserver(() => {
+      if (cellHours.dataset.locked === "true" && cellHours.textContent.trim() === "") {
+        cellHours.textContent = cellHours.dataset.lastValue || cellHours.textContent;
+      } else {
+        cellHours.dataset.lastValue = cellHours.textContent;
+      }
+    });
+    observer.observe(cellHours, { childList: true, characterData: true, subtree: true });
 
   } catch (err) {
     console.warn("Modal live tracker inactive:", err);
