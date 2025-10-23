@@ -641,6 +641,7 @@ function enableModalLiveShift(modal, days) {
       .toLocaleString("en-US", { weekday: "short" })
       .slice(0, 3)
       .toLowerCase();
+
     const today = days.find(
       d => d.name.slice(0, 3).toLowerCase() === todayName
     );
@@ -649,8 +650,7 @@ function enableModalLiveShift(modal, days) {
     const shift = today.shift.trim();
     const table = modal.querySelector(".schedule-mini");
     const row = Array.from(table.querySelectorAll("tr")).find(
-      r =>
-        r.cells[0]?.textContent.slice(0, 3).toLowerCase() === todayName
+      r => r.cells[0]?.textContent.slice(0, 3).toLowerCase() === todayName
     );
     if (!row) return;
     const cellHours = row.cells[2];
@@ -685,7 +685,26 @@ function enableModalLiveShift(modal, days) {
       update();
       clearInterval(modal.liveTimer);
       modal.liveTimer = setInterval(update, 60000);
+    } 
+    // 🔚 Turno cerrado → mostrar horas totales y quitar "Working"
+    else {
+      const parts = shift.split("-");
+      if (parts.length === 2) {
+        const startStr = parts[0].trim();
+        const endStr = parts[1].trim();
+        const startTime = parseTime(startStr);
+        const endTime = parseTime(endStr);
+        const diffHrs = Math.max(0, (endTime - startTime) / 36e5);
+        cellHours.innerHTML = `${diffHrs.toFixed(1)}h`;
+        cellHours.style.color = "#999";
+        cellHours.style.fontWeight = "500";
+      }
+
+      // Eliminar 🟢 Working si existía
+      const badge = modal.querySelector(".emp-working");
+      if (badge) badge.remove();
     }
+
   } catch (err) {
     console.warn("Modal live tracker inactive:", err);
   }
