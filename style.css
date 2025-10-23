@@ -624,3 +624,115 @@ td {
 .employee-modal.emp-panel {
   animation: softIn 0.3s ease;
 }
+
+/* ============================================================
+   🧩 Employee Modal — Perfect Vertical Layout (v4.9.1 Clean)
+   ============================================================ */
+.employee-modal.emp-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 0 55px rgba(0, 136, 255, 0.4);
+  width: 420px;
+  max-width: 92vw;
+  padding: 34px 38px 42px 38px;
+  text-align: center;
+  color: #111;
+  z-index: 9999;
+  animation: softIn 0.3s ease;
+}
+
+/* ---------- Header ---------- */
+.emp-header {
+  margin-bottom: 10px;
+}
+.emp-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #000;
+}
+.emp-phone {
+  margin-top: 4px;
+  font-size: 15px;
+}
+.emp-phone a {
+  color: #0078ff;
+  text-decoration: none;
+  font-weight: 600;
+}
+.emp-role {
+  font-size: 14px;
+  color: #777;
+  margin-top: 3px;
+}
+
+/* ---------- Close Button ---------- */
+.emp-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #e60000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.emp-close:hover {
+  background: #ff3333;
+  transform: scale(1.1);
+}
+
+/* ---------- Table ---------- */
+.employee-modal .schedule-mini {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 14px 6px;
+  margin: 18px auto 12px;
+  font-size: 16px;
+}
+.employee-modal .schedule-mini th {
+  background: rgba(0, 120, 255, 0.08);
+  color: #0078ff;
+  border-radius: 6px;
+  padding: 6px;
+  font-weight: 600;
+}
+.employee-modal .schedule-mini td {
+  padding: 6px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* ---------- Total ---------- */
+.total {
+  margin-top: 12px;
+  font-size: 18px;
+  color: #e60000;
+  font-weight: 700;
+}
+
+/* ---------- Update Button ---------- */
+.emp-refresh {
+  display: block;
+  margin: 16px auto 0 auto;
+  background: linear-gradient(180deg, #0096ff, #0078ff);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 120, 255, 0.35);
+  transition: 0.3s;
+}
+.emp-refresh:hover {
+  background: linear-gradient(180deg, #00a8ff, #0086ff);
+  transform: translateY(-2px);
+}
