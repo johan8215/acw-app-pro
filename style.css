@@ -1004,3 +1004,107 @@ window.addEventListener("load", () => {
   text-shadow: 0 0 10px rgba(0,120,255,0.35);
   opacity: 0.9;
 }
+
+/* ============================================================
+   🎨 UNIFIED TABLE STYLE — Blue Glass White Edition
+   Johan A. Giraldo (JAG15) | Allston Car Wash © 2025
+   ============================================================ */
+
+/* ---- Tablas principales, modales y Team View ---- */
+table, .schedule-mini, .directory-table {
+  width: 95%;
+  margin: 0 auto 14px auto;
+  border-collapse: separate;
+  border-spacing: 18px 10px;
+  text-align: center;
+  font-size: 17px;
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  color: #111;
+}
+
+/* ---- Encabezados ---- */
+th {
+  background: rgba(0, 120, 255, 0.07);
+  color: #0078ff;
+  border-bottom: 2px solid rgba(0, 120, 255, 0.25);
+  border-radius: 6px;
+  padding: 8px;
+  font-weight: 600;
+}
+
+/* ---- Filas ---- */
+td {
+  background: rgba(255, 255, 255, 0.98);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+/* ---- Hover azul suave ---- */
+tr:hover td {
+  background: rgba(0, 120, 255, 0.06);
+  transition: background 0.25s ease;
+}
+
+/* ---- Total Hours ---- */
+.total {
+  color: #e60000;
+  font-weight: 700;
+  font-size: 18px;
+  text-align: center;
+  margin-top: 14px;
+  text-shadow: 0 0 6px rgba(255, 0, 0, 0.25);
+}
+
+/* ---- Live Shift (debajo del total) ---- */
+.live-hours {
+  color: #0078ff;
+  font-weight: 600;
+  font-size: 16px;
+  margin-top: 6px;
+  text-shadow: 0 0 10px rgba(0, 120, 255, 0.3);
+}
+
+/* ---- Botones (Open, Refresh, Next, Prev) ---- */
+button, .open-btn, .emp-refresh, .tv-nav {
+  background: #e60000;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 120, 255, 0.25);
+  transition: all 0.25s ease;
+}
+button:hover, .open-btn:hover, .emp-refresh:hover, .tv-nav:hover {
+  background: #ff3333;
+  transform: translateY(-1px);
+}
+
+/* ---- Paneles flotantes (modales y Team View) ---- */
+.directory-wrapper, .employee-modal.emp-panel {
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 16px;
+  box-shadow: 0 0 55px rgba(0, 136, 255, 0.4);
+  padding: 36px 40px;
+  max-width: 860px;
+  width: 90%;
+  color: #111;
+  text-align: center;
+}
+
+/* ---- Footer común ---- */
+.footer {
+  margin-top: 20px;
+  text-align: center;
+  color: #888;
+  font-size: 13px;
+}
+.footer::after {
+  content: "Powered by JAG15 | Allston Car Wash © 2025";
+  display: block;
+  color: #0078ff;
+  font-weight: 600;
+  margin-top: 4px;
+}
