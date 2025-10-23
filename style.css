@@ -600,3 +600,51 @@ td {
   text-shadow: 0 0 10px rgba(0,120,255,0.35);
 }
 
+/* ============================================================
+   🧭 ACW-App v5.2.1 — Employee Modal True Match to Team View
+   Johan A. Giraldo | Allston Car Wash © 2025
+   ============================================================ */
+
+/* Fuerza el Employee Modal a usar la misma posición que Team View */
+.employee-modal {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  background: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(10px) !important;
+  z-index: 9999 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Caja interior con el mismo ancho visual del Team View */
+.employee-modal .emp-box,
+.employee-modal.emp-panel {
+  width: 85% !important;
+  max-width: 800px !important;
+  background: rgba(255,255,255,0.97) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 0 45px rgba(0,120,255,0.35) !important;
+  padding: 40px 50px 50px !important;
+  text-align: center !important;
+  color: #111 !important;
+}
+
+/* Footer centrado como Team View */
+.employee-modal::after {
+  content: "Powered by JAG15 | Allston Car Wash © 2025";
+  position: absolute !important;
+  bottom: 12px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #0078ff !important;
+  text-shadow: 0 0 10px rgba(0,120,255,0.35) !important;
+}
