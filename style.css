@@ -512,115 +512,115 @@ td {
 }
 
 /* ============================================================
-   💎 ACW-App v4.8.8 — JAG15 Panel Perfect Match
+   💎 ACW-App v4.8.9 — Blue Glass Glow Edition
+   Johan A. Giraldo | Allston Car Wash © 2025
    ============================================================ */
 
+/* ===== Panel de Empleado — efecto glass con sombra azul ===== */
 .employee-modal.emp-panel {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 420px;
-  max-width: 90vw;
   background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 0 35px rgba(0,120,255,0.35);
-  padding: 42px 48px 48px 48px;
+  border-radius: 18px;
+  box-shadow: 0 0 55px rgba(0, 136, 255, 0.4);
+  padding: 45px 52px;
+  width: 420px;
+  max-width: 92vw;
   text-align: center;
-  font-family: 'Segoe UI', Roboto, sans-serif;
   color: #111;
-  z-index: 9999;
+  transition: all 0.4s ease;
 }
 
-/* ===== Header ===== */
-.emp-header {
-  margin-bottom: 8px;
-}
+/* ===== Título y cabecera ===== */
 .emp-header h3 {
   font-size: 18px;
   font-weight: 700;
   color: #000;
   margin: 0;
+  text-shadow: 0 0 6px rgba(0, 120, 255, 0.35);
 }
+
 .emp-phone {
-  display: block;
-  margin-top: 4px;
   color: #0078ff;
   font-size: 16px;
   font-weight: 600;
+  text-shadow: 0 0 4px rgba(0, 120, 255, 0.25);
 }
-.emp-phone a {
-  color: #0078ff;
-  text-decoration: none;
-}
-.emp-phone a:hover { text-decoration: underline; }
-
 .emp-role {
   color: #777;
   font-size: 14px;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
-/* ===== Table ===== */
+/* ===== Tabla Glass ===== */
 .employee-modal .schedule-mini {
   width: 100%;
   border-collapse: separate;
   border-spacing: 20px 10px;
+  font-size: 17px;
   text-align: center;
-  font-size: 18px;
-  margin-top: 14px;
+  margin-top: 18px;
 }
 .employee-modal .schedule-mini th {
-  color: #000;
-  letter-spacing: 0.5px;
-  border-bottom: 2px solid rgba(0,120,255,0.25);
-  padding-bottom: 6px;
+  background: rgba(0, 120, 255, 0.07);
+  color: #0078ff;
+  border-bottom: 2px solid rgba(0, 120, 255, 0.25);
+  padding: 6px;
+  border-radius: 6px;
 }
 .employee-modal .schedule-mini td {
-  color: #111;
-  padding: 8px 12px;
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 6px;
+  padding: 6px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-/* ===== Total & Button ===== */
+/* ===== Total Hours ===== */
 .total {
   color: #e60000;
   font-weight: bold;
   font-size: 20px;
   margin-top: 20px;
-  text-align: center;
+  text-shadow: 0 0 5px rgba(255, 0, 0, 0.25);
 }
+
+/* ===== Botón Azul “Check for Updates” ===== */
 .emp-refresh {
   display: inline-block;
   margin-top: 16px;
-  background: #0078ff;
+  background: linear-gradient(180deg, #0096ff, #0078ff);
   color: #fff;
   border: none;
-  border-radius: 8px;
-  padding: 10px 22px;
+  border-radius: 10px;
+  padding: 12px 26px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0,120,255,0.3);
-  transition: background 0.3s ease;
+  box-shadow: 0 6px 18px rgba(0, 120, 255, 0.35);
+  transition: all 0.25s ease;
 }
-.emp-refresh:hover { background: #0096ff; }
-
-/* ===== Close Button (X) ===== */
-.emp-close {
-  position: absolute;
-  top: 12px;
-  right: 18px;
-  background: transparent;
-  border: none;
-  font-size: 22px;
-  color: #777;
-  cursor: pointer;
+.emp-refresh:hover {
+  background: linear-gradient(180deg, #00a6ff, #0080ff);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 136, 255, 0.45);
 }
-.emp-close:hover { color: #e60000; }
 
-/* ===== Remove old pseudo icons ===== */
-.user-phone::before, .emp-phone::before {
-  content: none !important;
-  display: none !important;
+/* ===== Tarjetas del Team View (mejor contraste) ===== */
+.employee-card {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 14px;
+  box-shadow: 0 0 30px rgba(0, 120, 255, 0.25);
+  padding: 18px 24px;
+  transition: all 0.3s ease;
+}
+.employee-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 40px rgba(0, 136, 255, 0.45);
+}
+
+/* ===== Animación suave ===== */
+@keyframes softIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.employee-modal.emp-panel {
+  animation: softIn 0.3s ease;
 }
