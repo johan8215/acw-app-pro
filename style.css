@@ -512,48 +512,50 @@ td {
 }
 
 /* ============================================================
-   💎 ACW Unified Table Look — identical to main schedule
+   📋 Employee Panel — Clean Vertical Layout (v4.8.3g)
    ============================================================ */
 
-/* ======= EMPLOYEE PANEL ======= */
 .employee-modal.emp-panel {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(1);
+  transform: translate(-50%, -50%);
   width: 420px;
   max-width: 90vw;
-  background: #ffffff;
+  background: #fff;
   border-radius: 16px;
   border: 1px solid rgba(0,0,0,0.08);
   box-shadow: 0 0 40px rgba(0,120,255,0.35);
   padding: 28px 24px 34px 24px;
   text-align: center;
-  z-index: 9999;
   font-family: 'Segoe UI', Roboto, sans-serif;
   color: #111;
+  z-index: 9999;
 }
 
-/* Header (name, phone, role) */
+/* ===== Header (name + phone) ===== */
+.emp-header {
+  margin-bottom: 8px;
+}
 .emp-header h3 {
   font-size: 18px;
   font-weight: 700;
   color: #000;
-  margin: 0;
+  margin: 0 0 4px 0;
 }
 .emp-phone {
-  margin-top: 4px;
   color: #0078ff;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
+  margin: 2px 0 8px 0;
 }
 .emp-role {
   font-size: 13px;
   color: #666;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
-/* Table identical to main floating one */
+/* ===== Table ===== */
 .employee-modal .schedule-mini {
   width: 100%;
   border-collapse: collapse;
@@ -563,35 +565,22 @@ td {
 }
 .employee-modal .schedule-mini th {
   color: #0078ff;
-  background: #fff;
   border-bottom: 2px solid rgba(0,120,255,0.25);
-  padding: 6px 4px;
+  padding: 6px;
 }
 .employee-modal .schedule-mini td {
-  border-bottom: 1px solid rgba(0,0,0,0.07);
-  padding: 5px 4px;
-}
-.employee-modal .schedule-mini tr:hover {
-  background: rgba(0,120,255,0.05);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  padding: 6px;
 }
 
-/* Total Hours + live hours */
+/* ===== Totals + Updates ===== */
 .total {
   color: #e60000;
   font-weight: 700;
-  font-size: 15px;
-  margin-top: 10px;
+  font-size: 16px;
+  margin: 14px 0 10px 0;
 }
-.live-hours {
-  color: #0078ff;
-  font-size: 14px;
-  font-weight: 600;
-  margin-top: 4px;
-}
-
-/* Check for Updates button */
 .emp-refresh {
-  margin-top: 14px;
   background: #0078ff;
   color: #fff;
   border: none;
@@ -605,11 +594,11 @@ td {
 }
 .emp-refresh:hover { background: #0096ff; }
 
-/* Close button */
+/* ===== Close Button ===== */
 .emp-close {
   position: absolute;
   right: 10px;
-  top: 6px;
+  top: 8px;
   background: transparent;
   border: none;
   font-size: 20px;
@@ -617,52 +606,3 @@ td {
   cursor: pointer;
 }
 .emp-close:hover { color: #e60000; }
-
-/* ======= TEAM VIEW TABLE ======= */
-.directory-wrapper {
-  background: #ffffff;
-  border-radius: 16px;
-  border: 1px solid rgba(0,0,0,0.08);
-  box-shadow: 0 0 45px rgba(0,120,255,0.35);
-  padding: 26px 30px;
-  width: 85%;
-  max-width: 800px;
-  max-height: 75vh;
-  overflow-y: auto;
-  text-align: center;
-  color: #111;
-}
-
-.tv-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 8px;
-  font-size: 15px;
-}
-.tv-table th {
-  color: #0078ff;
-  border-bottom: 2px solid rgba(0,120,255,0.25);
-  padding: 8px 4px;
-  font-weight: 600;
-}
-.tv-table td {
-  padding: 6px 4px;
-  border-bottom: 1px solid rgba(0,0,0,0.07);
-}
-.tv-table tr:hover {
-  background: rgba(0,120,255,0.05);
-}
-
-/* Team View Open button */
-.open-btn {
-  background: #e60000;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 14px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: 0.3s;
-}
-.open-btn:hover { background: #ff3333; }
