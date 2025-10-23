@@ -452,55 +452,6 @@ async function openEmployeePanel(btnEl) {
 }
 
 /* ============================================================
-   ⏱️ ACW-App v5.2.6 — Live Shift v2.3 (Instant Total)
-   Johan A. Giraldo | Allston Car Wash © 2025
-   ============================================================ */
-
-// Recalcula y muestra horas en vivo dentro del modal
-function startLiveShift(modalEl, startStr, endStr, totalCell) {
-  if (!startStr || !endStr || !modalEl) return;
-
-  const parseHour = t => {
-    const [h, m = 0] = t.toString().split(":").map(Number);
-    return h + (m / 60);
-  };
-
-  const start = parseHour(startStr);
-  const end   = parseHour(endStr);
-
-  const clockEl = modalEl.querySelector(".live-hours");
-  const totalEl = modalEl.querySelector(".total");
-
-  if (window.liveShiftTimer) clearInterval(window.liveShiftTimer);
-
-  function updateTimer() {
-    const now = new Date();
-    const current = now.getHours() + now.getMinutes() / 60;
-    if (current < start || current > end) {
-      if (clockEl) clockEl.textContent = "";
-      clearInterval(window.liveShiftTimer);
-      return;
-    }
-
-    const elapsed = current - start;
-    const hrs = Math.floor(elapsed);
-    const mins = Math.floor((elapsed - hrs) * 60);
-
-    if (clockEl) {
-      clockEl.textContent = `⏱️ Live Shift (${hrs}h ${mins}m)`;
-      clockEl.style.opacity = "1";
-    }
-
-    const baseTotal = Number(totalCell.dataset.base || totalCell.textContent || 0);
-    const newTotal = (baseTotal + elapsed).toFixed(1);
-    if (totalEl) totalEl.textContent = `Total Hours: ${newTotal}`;
-  }
-
-  updateTimer();
-  window.liveShiftTimer = setInterval(updateTimer, 60 * 1000);
-}
-
-/* ============================================================
    🔄 Refresh en modal (no molesta a nadie)
    ============================================================ */
 function checkForUpdatesInModal(modalEl){
