@@ -1,7 +1,6 @@
 {
   "name": "Allston Car Wash",
   "short_name": "ACW",
-  "description": "ACW Blue Glass White Edition by JAG15",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
