@@ -650,23 +650,17 @@ td {
 }
 
 /* ============================================================
-   🔐 ACW-App v5.2.4 — Login Stack Layout (Vertical Form)
+   🔐 ACW-App v5.2.5 — Login Vertical Align (Direct Fix)
    Johan A. Giraldo | Allston Car Wash © 2025
    ============================================================ */
 
-.login-container {
-  display: flex;
-  flex-direction: column;  /* apila los elementos */
-  align-items: center;
-  justify-content: center;
-  gap: 14px;               /* separación entre Email y Password */
-  margin-top: 25px;
-}
-
-.login-container input[type="email"],
-.login-container input[type="password"] {
+/* Hace que email y password estén uno debajo del otro */
+input[type="email"],
+input[type="password"] {
+  display: block;
+  margin: 10px auto;          /* centra los campos */
   width: 80%;
-  max-width: 300px;
+  max-width: 280px;
   padding: 10px 14px;
   font-size: 15px;
   border: 1px solid rgba(0,120,255,0.25);
@@ -675,13 +669,18 @@ td {
   transition: 0.25s ease;
 }
 
-.login-container input:focus {
+/* Brillo azul al enfocar */
+input[type="email"]:focus,
+input[type="password"]:focus {
   border-color: #0078ff;
   box-shadow: 0 0 8px rgba(0,120,255,0.25);
 }
 
-/* Botón centrado */
-.login-container button {
+/* Botón Sign In centrado debajo */
+button[type="submit"],
+button.signin-btn {
+  display: block;
+  margin: 16px auto 0 auto;
   width: 150px;
   padding: 10px 20px;
   background: #e60000;
@@ -693,8 +692,8 @@ td {
   transition: all 0.3s ease;
 }
 
-.login-container button:hover {
+button[type="submit"]:hover,
+button.signin-btn:hover {
   background: #ff3333;
   transform: translateY(-1px);
 }
-
