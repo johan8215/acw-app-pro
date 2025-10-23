@@ -649,3 +649,52 @@ td {
   text-shadow: 0 0 10px rgba(0,120,255,0.35) !important;
 }
 
+/* ============================================================
+   🔐 ACW-App v5.2.4 — Login Stack Layout (Vertical Form)
+   Johan A. Giraldo | Allston Car Wash © 2025
+   ============================================================ */
+
+.login-container {
+  display: flex;
+  flex-direction: column;  /* apila los elementos */
+  align-items: center;
+  justify-content: center;
+  gap: 14px;               /* separación entre Email y Password */
+  margin-top: 25px;
+}
+
+.login-container input[type="email"],
+.login-container input[type="password"] {
+  width: 80%;
+  max-width: 300px;
+  padding: 10px 14px;
+  font-size: 15px;
+  border: 1px solid rgba(0,120,255,0.25);
+  border-radius: 6px;
+  outline: none;
+  transition: 0.25s ease;
+}
+
+.login-container input:focus {
+  border-color: #0078ff;
+  box-shadow: 0 0 8px rgba(0,120,255,0.25);
+}
+
+/* Botón centrado */
+.login-container button {
+  width: 150px;
+  padding: 10px 20px;
+  background: #e60000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-container button:hover {
+  background: #ff3333;
+  transform: translateY(-1px);
+}
+
