@@ -374,70 +374,57 @@ function renderTeamViewPage() {
 }
 
 /* ============================================================
-   🧩 Employee Modal — Full Rebuild (v4.9.4 Stable Clone)
+   ⏱️ ACW-App v5.2.6 — Live Shift v2.3 (Instant Total)
+   Johan A. Giraldo | Allston Car Wash © 2025
    ============================================================ */
-async function openEmployeePanel(btnEl) {
-  const tr = btnEl.closest("tr");
-  const email = tr.dataset.email;
-  const name = tr.dataset.name;
-  const role = tr.dataset.role || "";
-  const phone = tr.dataset.phone || "";
 
-  const modalId = `emp-${email.replace(/[@.]/g, "_")}`;
-  if (document.getElementById(modalId)) return;
+// Recalcula y muestra horas en vivo dentro del modal
+function startLiveShift(modalEl, startStr, endStr, totalCell) {
+  if (!startStr || !endStr || !modalEl) return;
 
-  let data = null;
-  try {
-    const res = await fetch(
-      `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`
-    );
-    data = await res.json();
-    if (!data.ok) throw new Error("No schedule");
-  } catch (e) {
-    alert("No schedule found for this employee.");
-    return;
+  // Convierte formato tipo "7:30" o "8" en horas decimales
+  const parseHour = t => {
+    const [h, m = 0] = t.toString().split(':').map(Number);
+    return h + (m / 60);
+  };
+
+  const start = parseHour(startStr);
+  const end   = parseHour(endStr);
+
+  const clockEl = modalEl.querySelector('.live-hours');
+  const totalEl = modalEl.querySelector('.total');
+
+  // Limpia intervalos previos
+  if (window.liveShiftTimer) clearInterval(window.liveShiftTimer);
+
+  function updateTimer() {
+    const now = new Date();
+    const current = now.getHours() + now.getMinutes() / 60;
+    if (current < start || current > end) {
+      // fuera de rango -> detener
+      if (clockEl) clockEl.textContent = '';
+      clearInterval(window.liveShiftTimer);
+      return;
+    }
+
+    const elapsed = current - start; // horas trabajadas hasta ahora
+    const hrs = Math.floor(elapsed);
+    const mins = Math.floor((elapsed - hrs) * 60);
+
+    // Actualiza cronómetro
+    if (clockEl) {
+      clockEl.textContent = `⏱️ Live Shift (${hrs}h ${mins}m)`;
+      clockEl.style.opacity = '1';
+    }
+
+    // Actualiza total instantáneo
+    const baseTotal = Number(totalCell.dataset.base || totalCell.textContent || 0);
+    const newTotal = (baseTotal + elapsed).toFixed(1);
+    if (totalEl) totalEl.textContent = `Total Hours: ${newTotal}`;
   }
 
-  // === Crear modal estructurado ===
-  const m = document.createElement("div");
-  m.className = "employee-modal emp-panel";
-  m.id = modalId;
-  m.innerHTML = `
-    <div class="emp-box">
-      <button class="emp-close">×</button>
-      <div class="emp-header">
-        <h3>${name}</h3>
-        ${phone ? `<p class="emp-phone"><a href="tel:${phone}">${phone}</a></p>` : ""}
-        <p class="emp-role">${role}</p>
-      </div>
-      <table class="schedule-mini">
-        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-        ${data.days
-          .map(
-            (d) => `
-          <tr>
-            <td>${d.name}</td>
-            <td>${d.shift || "-"}</td>
-            <td>${d.hours || 0}</td>
-          </tr>`
-          )
-          .join("")}
-      </table>
-      <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g, "_")}">${data.total || 0}</b></p>
-      <p class="live-hours" id="lh-${name.replace(/\s+/g, "_")}"></p>
-      <button class="emp-refresh">⚙️ Check for Updates</button>
-    </div>
-  `;
-  document.body.appendChild(m);
-
-  requestAnimationFrame(() => m.classList.add("in"));
-
-  // Eventos
-  m.querySelector(".emp-close").onclick = () => m.remove();
-  m.querySelector(".emp-refresh").onclick = () => checkForUpdatesInModal(m);
-
-  // Activar cronómetro ⏱️
-  startLiveTimerForModal(modalId, data);
+  updateTimer();                         // primera ejecución inmediata
+  window.liveShiftTimer = setInterval(updateTimer, 60 * 1000); // cada minuto
 }
 
 /* ============================================================
