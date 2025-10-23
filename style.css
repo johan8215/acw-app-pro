@@ -1606,3 +1606,94 @@ button:hover, .open-btn:hover, .emp-refresh:hover, .tv-nav:hover {
   bottom: 10px;
   opacity: 1;
 }
+
+/* ============================================================
+   🔧 Employee Modal — Centrado perfecto como el panel principal
+   ============================================================ */
+
+/* 1) Centra el overlay y elimina el offset 50% */
+.employee-modal {             /* overlay pantalla completa */
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 12px calc(36px + env(safe-area-inset-bottom)); /* aire + notch iOS */
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(10px);
+  z-index: 9999;
+}
+
+/* 2) Anula el posicionamiento anterior del panel que lo empujaba arriba */
+.employee-modal.emp-panel {
+  top: auto !important;
+  left: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  padding: 0 !important; /* el padding va en la caja interna */
+  box-shadow: none;      /* la sombra va en la caja interna */
+  background: transparent;
+}
+
+/* 3) Caja interna con EXACTAS medidas y estilos del panel principal */
+.employee-modal .emp-box {
+  background: #fff;
+  width: 420px;                 /* igual a tu panel */
+  max-width: 92vw;
+  border-radius: 18px;
+  padding: 40px 32px 54px;      /* más aire arriba y abajo */
+  box-shadow: 0 0 45px rgba(0,120,255,0.35);
+  text-align: center;
+  color: #111;
+}
+
+/* 4) Encabezado “🚘 Allston Car Wash — [Nombre]” + teléfono visible */
+.emp-header { margin: 4px 0 16px; }
+.emp-header::before{
+  content: "🚘 Allston Car Wash — ";
+  display: block;
+  font-size: 17px;
+  font-weight: 600;
+  color: #0078ff;
+  text-shadow: 0 0 8px rgba(0,120,255,0.35);
+  margin-bottom: 4px;
+}
+.emp-header h3{ font-size:20px; font-weight:700; margin:0 0 2px; color:#000; }
+.emp-phone{ margin-top:4px; }
+.emp-phone a{ color:#0078ff; font-weight:600; text-decoration:none; }
+
+/* 5) Tabla y totales centrados y con el mismo look */
+.employee-modal .schedule-mini{
+  width:100%;
+  border-collapse: separate;
+  border-spacing: 20px 10px;   /* igual al principal */
+  margin: 10px auto 8px;
+  text-align:center;
+  font-size:16px;
+}
+.employee-modal .schedule-mini th{
+  background: rgba(0,120,255,0.05);
+  color:#0078ff;
+  border-bottom:2px solid rgba(0,120,255,0.2);
+  padding:6px;
+  border-radius:6px;
+}
+.employee-modal .schedule-mini td{
+  padding:6px;
+  border-bottom:1px solid rgba(0,0,0,0.05);
+}
+.employee-modal .total{
+  color:#e60000; font-weight:700; margin-top:12px; font-size:18px;
+}
+.employee-modal .live-hours{
+  margin-top:6px; color:#0078ff; font-weight:600;
+}
+
+/* 6) Footer interno fijo en la parte baja del modal */
+.employee-modal::after{
+  content:"Powered by JAG15 | Allston Car Wash © 2025";
+  position:absolute; left:50%; transform:translateX(-50%);
+  bottom: 10px;
+  font-size:13px; font-weight:600; color:#0078ff;
+  text-shadow: 0 0 10px rgba(0,120,255,0.35);
+}
