@@ -1551,3 +1551,58 @@ button:hover, .open-btn:hover, .emp-refresh:hover, .tv-nav:hover {
   font-weight: 600;
   text-shadow: 0 0 8px rgba(0,120,255,0.35);
 }
+
+/* ============================================================
+   🧩 ACW-App v5.1.4 — Employee Modal Vertical Fix (JAG15)
+   ============================================================ */
+
+/* 🔹 Baja ligeramente el modal y centra visualmente el contenido */
+.employee-modal.emp-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding-top: 80px;     /* antes 46px — más aire arriba */
+  padding-bottom: 70px;  /* más espacio para el footer */
+  max-height: 92vh;      /* evita que se corte en pantallas pequeñas */
+  overflow-y: auto;      /* scroll interno si hay overflow */
+}
+
+/* 🔹 Encabezado mejor equilibrado */
+.emp-header {
+  margin-top: 10px;
+  margin-bottom: 20px;   /* separa más el título de la tabla */
+}
+
+/* 🔹 Título principal */
+.emp-header::before {
+  content: "🚘 Allston Car Wash — ";
+  display: block;
+  font-size: 17px;
+  font-weight: 600;
+  color: #0078ff;
+  margin-bottom: 6px;
+  text-shadow: 0 0 8px rgba(0,120,255,0.35);
+}
+
+/* 🔹 Ajusta tabla para centrarse más verticalmente */
+.employee-modal .schedule-mini {
+  margin-top: 16px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+/* 🔹 Cronómetro y total equilibrados */
+.total {
+  margin-top: 16px;
+  margin-bottom: 4px;
+}
+.live-hours {
+  margin-top: 6px;
+}
+
+/* 🔹 Footer visualmente más abajo */
+.employee-modal.emp-panel::after {
+  bottom: 10px;
+  opacity: 1;
+}
