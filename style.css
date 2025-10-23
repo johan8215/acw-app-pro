@@ -1697,3 +1697,25 @@ button:hover, .open-btn:hover, .emp-refresh:hover, .tv-nav:hover {
   font-size:13px; font-weight:600; color:#0078ff;
   text-shadow: 0 0 10px rgba(0,120,255,0.35);
 }
+/* ============================================================
+   🧩 ACW-App v5.1.5 — Perfect Center Fix (JAG15)
+   ============================================================ */
+
+/* 🔹 Centra el modal vertical y horizontalmente de forma idéntica al panel */
+.employee-modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 6vh;              /* baja un poco el contenido */
+  padding-bottom: calc(10vh + env(safe-area-inset-bottom));
+}
+
+/* 🔹 Ajuste interno para que el contenido quede más abajo aún */
+.employee-modal .emp-box {
+  transform: translateY(10px);   /* corrige 10px hacia abajo */
+}
+
+/* 🔹 Footer ajustado para no tapar nada */
+.employee-modal::after {
+  bottom: 8px;
+}
