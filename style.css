@@ -1719,3 +1719,77 @@ button:hover, .open-btn:hover, .emp-refresh:hover, .tv-nav:hover {
 .employee-modal::after {
   bottom: 8px;
 }
+
+/* ============================================================
+   🧩 ACW-App v5.1.6 — True Center Alignment (JAG15)
+   ============================================================ */
+
+/* Centrado absoluto corregido en ambos ejes */
+.employee-modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  z-index: 9999;
+}
+
+/* Caja interior perfectamente centrada */
+.employee-modal .emp-box {
+  background: #fff;
+  width: 420px;
+  max-width: 92vw;
+  border-radius: 18px;
+  padding: 40px 34px 54px;
+  box-shadow: 0 0 45px rgba(0,120,255,0.35);
+  text-align: center;
+  color: #111;
+
+  /* 💠 Centrado exacto en ambos ejes */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Encabezado */
+.emp-header {
+  margin-bottom: 18px;
+}
+.emp-header::before {
+  content: "🚘 Allston Car Wash — ";
+  display: block;
+  font-size: 17px;
+  font-weight: 600;
+  color: #0078ff;
+  text-shadow: 0 0 8px rgba(0,120,255,0.35);
+  margin-bottom: 4px;
+}
+.emp-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #000;
+}
+.emp-phone a {
+  color: #0078ff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Footer */
+.employee-modal::after {
+  content: "Powered by JAG15 | Allston Car Wash © 2025";
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 600;
+  color: #0078ff;
+  text-shadow: 0 0 10px rgba(0,120,255,0.35);
+}
