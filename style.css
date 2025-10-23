@@ -834,3 +834,115 @@ td {
 .emp-refresh:hover {
   background: #0096ff;
 }
+
+/* ============================================================
+   ✨ Employee Modal — Blue Glass White Edition (v4.9.5 Visual)
+   Johan A. Giraldo (JAG15) & Sky — Oct 2025
+   ============================================================ */
+
+.employee-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 15, 40, 0.65);
+  backdrop-filter: blur(12px);
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.employee-modal.in { opacity: 1; }
+
+.emp-box {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 18px;
+  padding: 28px 36px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55),
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  color: #eef5ff;
+  max-width: 380px;
+  width: 90%;
+  text-align: center;
+  font-family: 'SF Pro Display', 'Inter', sans-serif;
+}
+
+.emp-header h3 {
+  font-size: 1.3em;
+  margin-bottom: 4px;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(120,180,255,0.6);
+}
+
+.emp-phone a {
+  color: #5bb6ff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.emp-role {
+  font-size: 0.9em;
+  color: #c0c8d5;
+  margin-bottom: 14px;
+}
+
+.schedule-mini {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0 14px;
+}
+
+.schedule-mini th {
+  background: rgba(255,255,255,0.08);
+  color: #9bc9ff;
+  font-weight: 600;
+  padding: 6px 0;
+}
+
+.schedule-mini td {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.total {
+  margin-top: 12px;
+  color: #ff6666;
+  font-weight: 700;
+}
+
+.emp-refresh {
+  background: linear-gradient(180deg, #2196f3 0%, #0069c0 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  padding: 10px 22px;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.emp-refresh:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 18px rgba(33,150,243,0.6);
+}
+
+.emp-close {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #ff3b3b;
+  color: white;
+  border: none;
+  font-size: 1.1em;
+  border-radius: 6px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.emp-close:hover {
+  background: #e60000;
+}
