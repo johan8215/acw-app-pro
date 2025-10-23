@@ -633,6 +633,65 @@ async function openEmployeePanel(btnEl) {
 }
 
 /* ============================================================
+   ⏱️ Employee Modal Live Tracker (Working + Live Hours)
+   ============================================================ */
+function enableModalLiveShift(modal, days) {
+  try {
+    const todayName = new Date()
+      .toLocaleString("en-US", { weekday: "short" })
+      .slice(0, 3)
+      .toLowerCase();
+    const today = days.find(
+      d => d.name.slice(0, 3).toLowerCase() === todayName
+    );
+    if (!today || !today.shift || /off/i.test(today.shift)) return;
+
+    const shift = today.shift.trim();
+    const table = modal.querySelector(".schedule-mini");
+    const row = Array.from(table.querySelectorAll("tr")).find(
+      r =>
+        r.cells[0]?.textContent.slice(0, 3).toLowerCase() === todayName
+    );
+    if (!row) return;
+    const cellHours = row.cells[2];
+
+    // Turno activo (ej. "7:30.")
+    if (shift.endsWith(".")) {
+      const startStr = shift.replace(".", "").trim();
+      const startTime = parseTime(startStr);
+
+      const update = () => {
+        const now = new Date();
+        const diffHrs = Math.max(0, (now - startTime) / 36e5);
+        cellHours.innerHTML = `⏱️ ${diffHrs.toFixed(1)}h`;
+        cellHours.style.color = "#33a0ff";
+        cellHours.style.fontWeight = "600";
+
+        // Mostrar 🟢 Working si aún no existe
+        if (!modal.querySelector(".emp-working")) {
+          const header = modal.querySelector(".emp-header h3");
+          const badge = document.createElement("span");
+          badge.className = "emp-working";
+          badge.textContent = "🟢 Working";
+          badge.style.display = "block";
+          badge.style.fontWeight = "600";
+          badge.style.color = "#33ff66";
+          badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
+          badge.style.marginBottom = "4px";
+          header.parentNode.insertBefore(badge, header);
+        }
+      };
+
+      update();
+      clearInterval(modal.liveTimer);
+      modal.liveTimer = setInterval(update, 60000);
+    }
+  } catch (err) {
+    console.warn("Modal live tracker inactive:", err);
+  }
+}
+
+/* ============================================================
    🔄 Refresh en modal (no molesta a nadie)
    ============================================================ */
 function checkForUpdatesInModal(modalEl){
