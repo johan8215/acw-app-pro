@@ -1395,3 +1395,66 @@ button:hover, .open-btn:hover, .emp-refresh:hover, .tv-nav:hover {
   color: #0078ff;
   text-shadow: 0 0 10px rgba(0,120,255,0.35);
 }
+
+/* ============================================================
+   💠 ACW-App v5.1.2 — Fine Alignment Fix (JAG15)
+   ============================================================ */
+
+/* 🔹 Ajuste visual del Employee Modal (nombre y teléfono visibles) */
+.employee-modal.emp-panel {
+  padding: 30px 36px 46px 36px;  /* más espacio arriba y abajo */
+  max-width: 520px;              /* mismo tamaño que tu panel principal */
+}
+
+.emp-header {
+  margin-bottom: 14px;
+}
+
+.emp-header h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 4px;
+  text-shadow: 0 0 8px rgba(0,120,255,0.25);
+}
+
+.emp-phone {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0078ff;
+  margin: 2px 0 6px;
+  text-shadow: 0 0 8px rgba(0,120,255,0.25);
+}
+
+.emp-role {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+/* 🔹 Corrige la tabla para que no tape el encabezado */
+.employee-modal .schedule-mini {
+  margin-top: 10px;
+}
+
+/* 🔹 Team View más compacto (igual al panel principal) */
+.directory-wrapper {
+  padding: 36px 40px;
+  max-width: 520px; /* igual al modal y al panel principal */
+}
+
+/* 🔹 Texto del Team View */
+.directory-wrapper h3 {
+  font-size: 20px;
+  color: #000;
+  text-shadow: 0 0 8px rgba(0,120,255,0.25);
+}
+
+/* 🔹 Footer mejor posicionado */
+.employee-modal.emp-panel::after,
+.directory-wrapper::after {
+  bottom: 8px;
+  font-size: 12.5px;
+  color: #0078ff;
+  opacity: 0.9;
+}
