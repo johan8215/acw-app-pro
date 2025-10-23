@@ -727,3 +727,17 @@ button.signin-btn:hover {
   50% { opacity: 1; text-shadow: 0 0 16px rgba(51,255,102,0.9); }
   100% { opacity: 0.8; text-shadow: 0 0 8px rgba(51,255,102,0.4); }
 }
+
+/* ============================================================
+   🟢 Pulse Glow Animation (for Working employees)
+   ============================================================ */
+.tv-hours.glow {
+  text-shadow: 0 0 10px rgba(51,255,102,0.7), 0 0 20px rgba(51,255,102,0.5);
+  animation: pulseGlow 1.8s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0% { opacity: 0.8; text-shadow: 0 0 6px rgba(51,255,102,0.3); }
+  50% { opacity: 1; text-shadow: 0 0 16px rgba(51,255,102,0.9); }
+  100% { opacity: 0.8; text-shadow: 0 0 6px rgba(51,255,102,0.3); }
+}
