@@ -512,70 +512,90 @@ td {
 }
 
 /* ============================================================
-   🧩 EMPLOYEE PANEL — FIX FULLSCREEN OVERLAY (v4.8.3a)
+   🧩 EMPLOYEE PANEL — CLEAN GLASS FIX (v4.8.3b)
    ============================================================ */
 .employee-modal.emp-panel {
-  background: none !important;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.employee-modal.emp-panel::before {
-  content: "";
   position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.45);
-  z-index: -1;
-}
-
-.employee-modal.emp-panel.in {
-  opacity: 1;
+  top: 50%;
+  left: 50%;
   transform: translate(-50%, -50%) scale(1);
-}
-
-.emp-panel .emp-header,
-.emp-panel .schedule-mini,
-.emp-panel .total,
-.emp-panel .modal-footer {
+  width: 420px;
+  max-width: 90vw;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 18px;
+  padding: 28px 26px;
+  box-shadow: 0 0 45px rgba(0,120,255,0.35);
   text-align: center;
-  margin: auto;
+  z-index: 9999;
+  animation: fadeIn 0.4s ease;
+}
+
+/* ❌ Elimina completamente el fondo oscuro */
+.employee-modal {
+  background: none !important;
+  display: block !important;
+}
+
+.emp-header h3 {
+  font-size: 20px;
+  color: #000;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.emp-phone {
+  margin: 4px 0 6px 0;
+  color: #0078ff;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.emp-role {
+  color: #777;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.schedule-mini {
   width: 100%;
-}
-
-.emp-panel .schedule-mini {
-  margin-top: 10px;
   border-collapse: collapse;
+  margin: 10px auto;
+  font-size: 16px;
 }
-
-.emp-panel .schedule-mini th {
+.schedule-mini th {
   background: rgba(0,120,255,0.05);
   color: #0078ff;
   border-bottom: 2px solid rgba(0,120,255,0.2);
+  padding: 6px;
 }
-
-.emp-panel .schedule-mini td {
+.schedule-mini td {
   padding: 6px;
   border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
-.emp-panel .emp-refresh {
-  margin-top: 14px;
+.total {
+  color: #e60000;
+  font-size: 18px;
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+.emp-refresh {
+  margin-top: 12px;
   background: #0078ff;
-  color: white;
+  color: #fff;
   border: none;
   border-radius: 8px;
   padding: 8px 14px;
-  box-shadow: 0 4px 16px rgba(0,120,255,0.25);
   cursor: pointer;
-  transition: 0.3s;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0,120,255,0.25);
 }
-.emp-panel .emp-refresh:hover { background: #0096ff; }
+.emp-refresh:hover { background: #0096ff; }
 
-.emp-panel .total {
-  margin-top: 10px;
-  color: #e60000;
-  font-size: 18px;
+.live-hours {
+  margin-top: 8px;
+  color: #0078ff;
   font-weight: 600;
+  font-size: 16px;
 }
