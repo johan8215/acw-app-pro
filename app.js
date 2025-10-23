@@ -180,7 +180,7 @@ window.addEventListener("load", () => {
 });
 
 /* ============================================================
-   ⏱️ ACW-App v5.2.8 — Live Shift Auto Update (Blue Glass Mode)
+   ⏱️ ACW-App v5.3.2 — Live Shift “Dot Logic” (Blue Glass)
    Johan A. Giraldo | Allston Car Wash © 2025
    ============================================================ */
 function startLiveTimer(days, total) {
@@ -189,44 +189,63 @@ function startLiveTimer(days, total) {
     const today = days.find(d => d.name.toLowerCase() === todayName.toLowerCase());
     if (!today || !today.shift || /off/i.test(today.shift)) return;
 
-    const [startStr, endStr] = today.shift.split("-");
+    const shift = today.shift.trim();
+
+    // Caso 1️⃣: Turno abierto (ej. "7:30.")
+    if (shift.endsWith(".")) {
+      const startStr = shift.replace(".", "").trim();
+      const startTime = parseTime(startStr);
+
+      const update = () => {
+        const now = new Date();
+        const diffHrs = Math.max(0, (now - startTime) / 36e5);
+        updateTotalDisplay(total + diffHrs);
+        showLiveHours(diffHrs);
+      };
+
+      update(); // primera ejecución inmediata
+      clearInterval(window.liveInterval);
+      window.liveInterval = setInterval(update, 60000);
+      return;
+    }
+
+    // Caso 2️⃣: Turno cerrado (ej. "7:30 - 6")
+    const parts = shift.split("-");
+    if (parts.length < 2) return;
+
+    const startStr = parts[0].trim();
+    const endStr = parts[1].trim();
     if (!startStr || !endStr) return;
 
     const startTime = parseTime(startStr);
-    const now = new Date();
-    const diffHrs = (now - startTime) / 36e5;
-    let liveHrs = Math.max(0, diffHrs);
+    const endTime = parseTime(endStr);
+    const diffHrs = Math.max(0, (endTime - startTime) / 36e5);
 
-    updateTotalDisplay(total + liveHrs);
-    showLiveHours(liveHrs);
-
-    // ⏱️ Actualización automática cada minuto
-    clearInterval(window.liveInterval);
-    window.liveInterval = setInterval(() => {
-      const now2 = new Date();
-      const diff2 = (now2 - startTime) / 36e5;
-      liveHrs = Math.max(0, diff2);
-      updateTotalDisplay(total + liveHrs);
-      showLiveHours(liveHrs);
-    }, 60000);
+    // Solo mostrar total fijo, sin ⏱️
+    updateTotalDisplay(total);
+    showLiveHours(0, false);
   } catch (err) {
-    console.warn("Live shift inactive:", err);
+    console.warn("⏱️ Live shift inactive:", err);
   }
 }
 
-function showLiveHours(hours) {
+function showLiveHours(hours, active = true) {
   let el = document.querySelector(".live-hours");
   if (!el) {
     el = document.createElement("p");
     el.className = "live-hours";
     el.style.fontSize = "1.2em";
-    el.style.color = "#a8cfff";
     el.style.marginTop = "6px";
-    el.style.textShadow = "0 0 12px rgba(120,180,255,0.5)";
+    el.style.textShadow = "0 0 10px rgba(0,120,255,0.4)";
     document.querySelector("#schedule")?.appendChild(el);
   }
 
-  const color = hours >= 9 ? "#ff4d4d" : "#a8cfff";
+  if (!active) {
+    el.textContent = "";
+    return;
+  }
+
+  const color = "#0078ff";
   el.innerHTML = `⏱️ <b style="color:${color}">${hours.toFixed(1)}h</b>`;
 }
 
@@ -234,16 +253,6 @@ function updateTotalDisplay(value) {
   const totalEl = document.querySelector(".total");
   if (totalEl)
     totalEl.innerHTML = `⚪ Total Hours: <b>${value.toFixed(1)}</b>`;
-}
-
-function parseTime(str) {
-  const [time, meridian] = str.trim().split(" ");
-  let [h, m] = time.split(":").map(Number);
-  if (meridian?.toLowerCase() === "pm" && h !== 12) h += 12;
-  if (meridian?.toLowerCase() === "am" && h === 12) h = 0;
-  const d = new Date();
-  d.setHours(h, m || 0, 0, 0);
-  return d;
 }
 
 /* ============================================================
