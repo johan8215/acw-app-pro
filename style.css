@@ -960,3 +960,47 @@ window.addEventListener("load", () => {
     document.body.appendChild(footer);
   }
 });
+
+/* ============================================================
+   💎 ACW-App v5.0 — Unified Blue Glass Footer (by JAG15 & Sky)
+   ============================================================ */
+
+/* ---- Footer Global ---- */
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  padding: 10px 0;
+  font-size: 14px;
+  color: #0078ff;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(0, 120, 255, 0.15);
+  box-shadow: 0 -3px 25px rgba(0, 120, 255, 0.25);
+  text-shadow: 0 0 8px rgba(0, 120, 255, 0.35);
+  z-index: 99999;
+  animation: footerGlow 4s ease-in-out infinite alternate;
+}
+
+@keyframes footerGlow {
+  from { text-shadow: 0 0 6px rgba(0,120,255,0.2); }
+  to   { text-shadow: 0 0 14px rgba(0,120,255,0.55); }
+}
+
+/* ---- Footer para modales (ajuste en Employee Modal & Team View) ---- */
+.employee-modal::after,
+.directory-wrapper::after {
+  content: "Powered by JAG15 | Allston Car Wash © 2025";
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 600;
+  color: #0078ff;
+  text-shadow: 0 0 10px rgba(0,120,255,0.35);
+  opacity: 0.9;
+}
