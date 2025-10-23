@@ -1251,3 +1251,147 @@ button:hover, .open-btn:hover, .emp-refresh:hover, .tv-nav:hover {
   background: #ff3333;
   transform: translateY(-1px);
 }
+
+/* ============================================================
+   💎 ACW-App v5.1 — Unified Main Table Design (JAG15)
+   ============================================================ */
+
+/* === TEAM VIEW & EMPLOYEE MODAL — estilo igual al panel principal === */
+.directory-wrapper,
+.employee-modal.emp-panel {
+  background: rgba(255,255,255,0.98);         /* mismo fondo blanco glass */
+  border-radius: 16px;
+  box-shadow: 0 0 45px rgba(0,120,255,0.35);  /* mismo brillo azul */
+  padding: 40px 50px;
+  width: 90%;
+  max-width: 760px;                           /* misma anchura que tu tabla principal */
+  text-align: center;
+  color: #111;                                /* texto oscuro */
+  backdrop-filter: blur(8px);
+  margin: auto;
+  animation: fadeIn 0.3s ease;
+}
+
+/* === TITULOS === */
+.directory-wrapper h3,
+.emp-header h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #000;
+  margin: 0 0 10px;
+  text-shadow: 0 0 8px rgba(0,120,255,0.25);
+}
+
+/* === TABLAS === */
+.directory-table,
+.schedule-mini {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 18px 10px;
+  font-size: 17px;
+  color: #000;
+  margin-top: 14px;
+  text-align: center;
+}
+
+.directory-table th,
+.schedule-mini th {
+  background: rgba(0,120,255,0.08);
+  color: #0078ff;
+  border-radius: 8px;
+  padding: 10px 8px;
+  border-bottom: 2px solid rgba(0,120,255,0.25);
+}
+
+.directory-table td,
+.schedule-mini td {
+  background: rgba(255,255,255,0.96);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  padding: 10px 8px;
+  border-radius: 6px;
+}
+
+/* === HOVER IGUAL QUE LA PRINCIPAL === */
+.directory-table tr:hover td,
+.schedule-mini tr:hover td {
+  background: rgba(0,120,255,0.06);
+  transition: background 0.25s ease;
+}
+
+/* === TOTAL Y CRONÓMETRO AZUL === */
+.total {
+  color: #e60000;
+  font-weight: 700;
+  font-size: 18px;
+  margin-top: 14px;
+}
+.live-hours {
+  color: #0078ff;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 6px;
+  text-shadow: 0 0 8px rgba(0,120,255,0.35);
+}
+
+/* === BOTÓN AZUL DE UPDATE === */
+.emp-refresh {
+  background: #0078ff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 16px;
+  box-shadow: 0 6px 16px rgba(0,120,255,0.35);
+  transition: all 0.25s ease;
+}
+.emp-refresh:hover { background: #0096ff; }
+
+/* === BOTÓN OPEN ROJO === */
+.open-btn {
+  background: #e60000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,120,255,0.25);
+  transition: 0.25s ease;
+}
+.open-btn:hover {
+  background: #ff3333;
+  transform: translateY(-1px);
+}
+
+/* === CERRAR MODAL === */
+.emp-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #e60000;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.emp-close:hover { background: #ff3333; }
+
+/* === FOOTER AZUL IGUAL EN TODO === */
+.employee-modal.emp-panel::after,
+.directory-wrapper::after {
+  content: "Powered by JAG15 | Allston Car Wash © 2025";
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 600;
+  color: #0078ff;
+  text-shadow: 0 0 10px rgba(0,120,255,0.35);
+}
