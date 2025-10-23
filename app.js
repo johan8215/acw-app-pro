@@ -374,7 +374,7 @@ function renderTeamViewPage() {
 }
 
 /* ============================================================
-   🔍 Employee Panel — misma dimensión y estilo que tu tarjeta
+   🧠 Employee Panel — Layout Fixed + Blue Glass Ready (v4.8.9)
    ============================================================ */
 async function openEmployeePanel(btnEl) {
   const tr = btnEl.closest("tr");
@@ -386,49 +386,56 @@ async function openEmployeePanel(btnEl) {
   const modalId = `emp-${email.replace(/[@.]/g,'_')}`;
   if (document.getElementById(modalId)) return;
 
-  // fetch horario
+  // ⏳ Obtener horario
   let data = null;
   try {
     const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
     data = await res.json();
     if (!data.ok) throw new Error("No schedule");
-  } catch(e) {
+  } catch (e) {
     alert("No schedule found for this employee.");
     return;
   }
 
-  // modal
+  // 🧩 Crear modal
   const m = document.createElement("div");
   m.className = "employee-modal emp-panel";
   m.id = modalId;
-  m.innerHTML = buildEmployeePanelHTML({name, role, phone, data});
+  m.innerHTML = buildEmployeePanelHTML({ name, role, phone, data });
   document.body.appendChild(m);
 
-  // animación
-  requestAnimationFrame(()=>{ m.classList.add("in"); });
+  // ✨ animación suave
+  requestAnimationFrame(() => m.classList.add("in"));
 
-  // ⏱️ cronómetro vivo dentro del modal
+  // ⏱️ cronómetro vivo
   startLiveTimerForModal(modalId, data);
 
-  // acciones
+  // 🔘 eventos
   m.querySelector(".emp-close").onclick = () => m.remove();
   m.querySelector(".emp-refresh").onclick = () => checkForUpdatesInModal(m);
 }
 
-function buildEmployeePanelHTML({name, role, phone, data}) {
-  const rows = (data.days||[]).map(d => `
-    <tr>
-      <td>${d.name}</td>
-      <td>${d.shift || '-'}</td>
-      <td>${d.hours || 0}</td>
-    </tr>`).join("");
+/* ============================================================
+   🧱 HTML ordenado igual que el panel principal
+   ============================================================ */
+function buildEmployeePanelHTML({ name, role, phone, data }) {
+  const rows = (data.days || [])
+    .map(
+      (d) => `
+      <tr>
+        <td>${d.name}</td>
+        <td>${d.shift || "-"}</td>
+        <td>${d.hours || 0}</td>
+      </tr>`
+    )
+    .join("");
 
   return `
     <div class="emp-header">
       <button class="emp-close">×</button>
       <h3>${name}</h3>
-      ${phone ? `<p class="emp-phone">📞 <a href="tel:${phone}">${phone}</a></p>` : ``}
-      <p class="emp-role">${role || ""}</p>
+      ${phone ? `<div class="emp-phone"><a href="tel:${phone}">${phone}</a></div>` : ""}
+      ${role ? `<div class="emp-role">${role}</div>` : ""}
     </div>
 
     <table class="schedule-mini">
@@ -436,12 +443,10 @@ function buildEmployeePanelHTML({name, role, phone, data}) {
       ${rows}
     </table>
 
-    <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g,'_')}">${data.total || 0}</b></p>
-    <p class="live-hours" id="lh-${name.replace(/\s+/g,'_')}"></p>
+    <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g, "_")}">${data.total || 0}</b></p>
+    <p class="live-hours" id="lh-${name.replace(/\s+/g, "_")}"></p>
 
-    <div class="modal-footer">
-      <button class="emp-refresh">⚙️ Check for Updates</button>
-    </div>
+    <button class="emp-refresh">⚙️ Check for Updates</button>
   `;
 }
 
