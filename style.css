@@ -697,3 +697,20 @@ button.signin-btn:hover {
   background: #ff3333;
   transform: translateY(-1px);
 }
+
+.emp-working {
+  animation: pulseGlow 1.8s infinite ease-in-out;
+}
+@keyframes pulseGlow {
+  0% { text-shadow: 0 0 6px rgba(51,255,102,0.4); opacity: 0.8; }
+  50% { text-shadow: 0 0 14px rgba(51,255,102,0.8); opacity: 1; }
+  100% { text-shadow: 0 0 6px rgba(51,255,102,0.4); opacity: 0.8; }
+}
+.emp-completed {
+  opacity: 0.9;
+  animation: fadeIn 0.8s ease-in-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 0.9; transform: translateY(0); }
+}
