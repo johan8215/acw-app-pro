@@ -306,24 +306,31 @@ function parseTime(str) {
 }
 
 /* ============================================================
-   ⏱️ ACW-App v5.4.2 — Live Shift in Table Cell (Universal)
+   ⏱️ ACW-App v5.4.5 — Live Hours Visible in Table (Fixed)
    Johan A. Giraldo | Allston Car Wash © 2025
    ============================================================ */
 function injectLiveHoursInTable(days, tableEl) {
   try {
-    const todayName = new Date().toLocaleString("en-US", { weekday: "short" }).slice(0,3).toLowerCase();
-    const today = days.find(d => d.name.slice(0,3).toLowerCase() === todayName);
+    const todayName = new Date()
+      .toLocaleString("en-US", { weekday: "short" })
+      .slice(0, 3)
+      .toLowerCase();
+    const today = days.find(
+      d => d.name.slice(0, 3).toLowerCase() === todayName
+    );
     if (!today || !today.shift || /off/i.test(today.shift)) return;
 
     const shift = today.shift.trim();
-    const row = tableEl.querySelector(`tr[data-day^="${todayName.charAt(0).toUpperCase() + todayName.slice(1)}"]`) ||
-                Array.from(tableEl.querySelectorAll("tr")).find(r => 
-                  r.cells[0]?.textContent.slice(0,3).toLowerCase() === todayName);
-
+    const allRows = Array.from(tableEl.querySelectorAll("tr"));
+    const row = allRows.find(
+      r =>
+        r.cells[0]?.textContent.slice(0, 3).toLowerCase() === todayName
+    );
     if (!row) return;
+
     const cellHours = row.cells[2];
 
-    // Turno activo
+    // Turno activo ("7:30.")
     if (shift.endsWith(".")) {
       const startStr = shift.replace(".", "").trim();
       const startTime = parseTime(startStr);
@@ -335,12 +342,13 @@ function injectLiveHoursInTable(days, tableEl) {
         cellHours.style.color = "#33a0ff";
         cellHours.style.fontWeight = "600";
       };
+
       update();
       clearInterval(window.cellTimer);
       window.cellTimer = setInterval(update, 60000);
     }
   } catch (err) {
-    console.warn("Live hours in cell inactive:", err);
+    console.warn("Live hours in table inactive:", err);
   }
 }
 
