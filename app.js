@@ -546,6 +546,22 @@ async function openEmployeePanel(btnEl) {
     const [startStr, endStr] = shift.split("-").map(s => s.trim());
     if (startStr && endStr)
       startLiveShift(m, startStr, endStr, m.querySelector(".total"));
+
+       /* === Mostrar 🟢 Working si tiene turno activo === */
+  if (rowToday && rowToday.dataset.shift && rowToday.dataset.shift.endsWith(".")) {
+    const header = m.querySelector(".emp-header h3");
+    if (header && !m.querySelector(".emp-working")) {
+      const badge = document.createElement("span");
+      badge.className = "emp-working";
+      badge.textContent = "🟢 Working";
+      badge.style.display = "block";
+      badge.style.fontWeight = "600";
+      badge.style.color = "#33ff66";
+      badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
+      badge.style.marginBottom = "4px";
+      header.parentNode.insertBefore(badge, header);
+    }
+  }
   }
 }
 
