@@ -499,44 +499,6 @@ function startLiveShift(modalEl, startStr, endStr, totalCell) {
 }
 
 /* ============================================================
-   ⏱️ Live Timer por modal (reparado)
-   ============================================================ */
-function startLiveTimerForModal(modalId, sched) {
-  const modal = document.getElementById(modalId);
-  if (!modal || !sched?.days) return;
-
-  const todayName = new Date().toLocaleString("en-US", { weekday: "long" });
-  const today = sched.days.find(
-    (d) => (d.name || "").toLowerCase() === todayName.toLowerCase()
-  );
-  if (!today || !today.shift || /off/i.test(today.shift)) return;
-
-  const parts = (today.shift || "").split("-");
-  const start = parseShiftTime(parts[0]);
-  if (!start) return;
-
-  const totEl = modal.querySelector(".total b");
-  const liveEl = modal.querySelector(".live-hours");
-  const base = Number(totEl?.textContent || 0);
-
-  const update = () => {
-    const diff = Math.max(0, (Date.now() - start.getTime()) / 36e5);
-    const live = Math.round(diff * 100) / 100;
-    if (totEl) totEl.textContent = (base + live).toFixed(2);
-    if (liveEl)
-      liveEl.innerHTML = `Live Shift: <b style="color:#0078ff">${live.toFixed(
-        2
-      )}</b> h ⏱️`;
-  };
-
-  update();
-  const iv = setInterval(() => {
-    if (!document.body.contains(modal)) return clearInterval(iv);
-    update();
-  }, 60000);
-}
-
-/* ============================================================
    🔄 Refresh en modal (no molesta a nadie)
    ============================================================ */
 function checkForUpdatesInModal(modalEl){
