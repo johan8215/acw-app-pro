@@ -512,3 +512,108 @@ function checkForUpdatesInModal(modalEl){
 function closeTeamView() {
   document.getElementById("directoryWrapper")?.remove();
 }
+
+/* ============================================================
+   🧩 Employee Modal — Full Rebuild (v4.9.4 Stable Clone)
+   ============================================================ */
+async function openEmployeePanel(btnEl) {
+  const tr = btnEl.closest("tr");
+  const email = tr.dataset.email;
+  const name = tr.dataset.name;
+  const role = tr.dataset.role || "";
+  const phone = tr.dataset.phone || "";
+
+  const modalId = `emp-${email.replace(/[@.]/g, "_")}`;
+  if (document.getElementById(modalId)) return;
+
+  let data = null;
+  try {
+    const res = await fetch(
+      `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`
+    );
+    data = await res.json();
+    if (!data.ok) throw new Error("No schedule");
+  } catch (e) {
+    alert("No schedule found for this employee.");
+    return;
+  }
+
+  // === Crear modal estructurado ===
+  const m = document.createElement("div");
+  m.className = "employee-modal emp-panel";
+  m.id = modalId;
+  m.innerHTML = `
+    <div class="emp-box">
+      <button class="emp-close">×</button>
+      <div class="emp-header">
+        <h3>${name}</h3>
+        ${phone ? `<p class="emp-phone"><a href="tel:${phone}">${phone}</a></p>` : ""}
+        <p class="emp-role">${role}</p>
+      </div>
+      <table class="schedule-mini">
+        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+        ${data.days
+          .map(
+            (d) => `
+          <tr>
+            <td>${d.name}</td>
+            <td>${d.shift || "-"}</td>
+            <td>${d.hours || 0}</td>
+          </tr>`
+          )
+          .join("")}
+      </table>
+      <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g, "_")}">${data.total || 0}</b></p>
+      <p class="live-hours" id="lh-${name.replace(/\s+/g, "_")}"></p>
+      <button class="emp-refresh">⚙️ Check for Updates</button>
+    </div>
+  `;
+  document.body.appendChild(m);
+
+  requestAnimationFrame(() => m.classList.add("in"));
+
+  // Eventos
+  m.querySelector(".emp-close").onclick = () => m.remove();
+  m.querySelector(".emp-refresh").onclick = () => checkForUpdatesInModal(m);
+
+  // Activar cronómetro ⏱️
+  startLiveTimerForModal(modalId, data);
+}
+
+/* ============================================================
+   ⏱️ Live Timer por modal (reparado)
+   ============================================================ */
+function startLiveTimerForModal(modalId, sched) {
+  const modal = document.getElementById(modalId);
+  if (!modal || !sched?.days) return;
+
+  const todayName = new Date().toLocaleString("en-US", { weekday: "long" });
+  const today = sched.days.find(
+    (d) => (d.name || "").toLowerCase() === todayName.toLowerCase()
+  );
+  if (!today || !today.shift || /off/i.test(today.shift)) return;
+
+  const parts = (today.shift || "").split("-");
+  const start = parseShiftTime(parts[0]);
+  if (!start) return;
+
+  const totEl = modal.querySelector(".total b");
+  const liveEl = modal.querySelector(".live-hours");
+  const base = Number(totEl?.textContent || 0);
+
+  const update = () => {
+    const diff = Math.max(0, (Date.now() - start.getTime()) / 36e5);
+    const live = Math.round(diff * 100) / 100;
+    if (totEl) totEl.textContent = (base + live).toFixed(2);
+    if (liveEl)
+      liveEl.innerHTML = `Live Shift: <b style="color:#0078ff">${live.toFixed(
+        2
+      )}</b> h ⏱️`;
+  };
+
+  update();
+  const iv = setInterval(() => {
+    if (!document.body.contains(modal)) return clearInterval(iv);
+    update();
+  }, 60000);
+}
