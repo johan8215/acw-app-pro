@@ -374,146 +374,6 @@ function renderTeamViewPage() {
 }
 
 /* ============================================================
-   🧠 Employee Panel — Layout Fixed + Blue Glass Ready (v4.8.9)
-   ============================================================ */
-async function openEmployeePanel(btnEl) {
-  const tr = btnEl.closest("tr");
-  const email = tr.dataset.email;
-  const name  = tr.dataset.name;
-  const role  = tr.dataset.role || "";
-  const phone = tr.dataset.phone || "";
-
-  const modalId = `emp-${email.replace(/[@.]/g,'_')}`;
-  if (document.getElementById(modalId)) return;
-
-  // ⏳ Obtener horario
-  let data = null;
-  try {
-    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
-    data = await res.json();
-    if (!data.ok) throw new Error("No schedule");
-  } catch (e) {
-    alert("No schedule found for this employee.");
-    return;
-  }
-
-  // 🧩 Crear modal
-  const m = document.createElement("div");
-  m.className = "employee-modal emp-panel";
-  m.id = modalId;
-  m.innerHTML = buildEmployeePanelHTML({ name, role, phone, data });
-  document.body.appendChild(m);
-
-  // ✨ animación suave
-  requestAnimationFrame(() => m.classList.add("in"));
-
-  // ⏱️ cronómetro vivo
-  startLiveTimerForModal(modalId, data);
-
-  // 🔘 eventos
-  m.querySelector(".emp-close").onclick = () => m.remove();
-  m.querySelector(".emp-refresh").onclick = () => checkForUpdatesInModal(m);
-}
-
-/* ============================================================
-   🧱 HTML ordenado igual que el panel principal
-   ============================================================ */
-function buildEmployeePanelHTML({ name, role, phone, data }) {
-  const rows = (data.days || [])
-    .map(
-      (d) => `
-      <tr>
-        <td>${d.name}</td>
-        <td>${d.shift || "-"}</td>
-        <td>${d.hours || 0}</td>
-      </tr>`
-    )
-    .join("");
-
-  return `
-    <div class="emp-header">
-      <button class="emp-close">×</button>
-      <h3>${name}</h3>
-      ${phone ? `<div class="emp-phone"><a href="tel:${phone}">${phone}</a></div>` : ""}
-      ${role ? `<div class="emp-role">${role}</div>` : ""}
-    </div>
-
-    <table class="schedule-mini">
-      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-      ${rows}
-    </table>
-
-    <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g, "_")}">${data.total || 0}</b></p>
-    <p class="live-hours" id="lh-${name.replace(/\s+/g, "_")}"></p>
-
-    <button class="emp-refresh">⚙️ Check for Updates</button>
-  `;
-}
-
-/* ============================================================
-   ⏱️ Live timer por-modal (no toca tu tablero principal)
-   ============================================================ */
-function startLiveTimerForModal(modalId, sched) {
-  const modal = document.getElementById(modalId);
-  if (!modal || !sched?.days) return;
-
-  const todayName = new Date().toLocaleString("en-US", { weekday: "long" });
-  const today = sched.days.find(d => (d.name||"").toLowerCase() === todayName.toLowerCase());
-  if (!today || !today.shift || /off/i.test(today.shift)) return;
-
-  const parts = (today.shift||"").split("-");
-  if (parts.length < 1) return;
-
-  const start = parseShiftTime(parts[0]);
-  if (!start) return;
-
-  const totEl = modal.querySelector(".total b");
-  const liveEl = modal.querySelector(".live-hours");
-  const base = Number(totEl?.textContent || 0);
-
-  const update = () => {
-    const diff = Math.max(0, (Date.now() - start.getTime()) / 36e5);
-    const live = Math.round(diff*100)/100;
-    if (totEl) totEl.textContent = (base + live).toFixed(2);
-    if (liveEl) liveEl.innerHTML = `Live shift: <b>${live.toFixed(2)}</b> h ⏱️`;
-  };
-
-  update();
-  const iv = setInterval(()=>{
-    if (!document.body.contains(modal)) return clearInterval(iv);
-    update();
-  }, 60000);
-}
-
-function parseShiftTime(raw) {
-  // admite "7:30", "7:30 am", "7.30", "7"
-  const s = raw.trim().toLowerCase().replace('.',':');
-  const mMer = s.match(/(am|pm)$/);
-  const time = s.replace(/\s?(am|pm)$/,'');
-  let [h, m] = time.split(':').map(n=>parseInt(n,10));
-  if (isNaN(h)) return null;
-  if (isNaN(m)) m = 0;
-  if (mMer && mMer[1]==='pm' && h!==12) h+=12;
-  if (mMer && mMer[1]==='am' && h===12) h=0;
-  const d = new Date(); d.setHours(h,m,0,0); return d;
-}
-
-/* ============================================================
-   🔄 Refresh en modal (no molesta a nadie)
-   ============================================================ */
-function checkForUpdatesInModal(modalEl){
-  try{
-    if ("caches" in window) caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));
-  }catch(e){}
-  modalEl.classList.add("flash");
-  setTimeout(()=>window.location.reload(true), 900);
-}
-
-function closeTeamView() {
-  document.getElementById("directoryWrapper")?.remove();
-}
-
-/* ============================================================
    🧩 Employee Modal — Full Rebuild (v4.9.4 Stable Clone)
    ============================================================ */
 async function openEmployeePanel(btnEl) {
@@ -617,3 +477,102 @@ function startLiveTimerForModal(modalId, sched) {
     update();
   }, 60000);
 }
+
+/* ============================================================
+   🧱 HTML ordenado igual que el panel principal
+   ============================================================ */
+function buildEmployeePanelHTML({ name, role, phone, data }) {
+  const rows = (data.days || [])
+    .map(
+      (d) => `
+      <tr>
+        <td>${d.name}</td>
+        <td>${d.shift || "-"}</td>
+        <td>${d.hours || 0}</td>
+      </tr>`
+    )
+    .join("");
+
+  return `
+    <div class="emp-header">
+      <button class="emp-close">×</button>
+      <h3>${name}</h3>
+      ${phone ? `<div class="emp-phone"><a href="tel:${phone}">${phone}</a></div>` : ""}
+      ${role ? `<div class="emp-role">${role}</div>` : ""}
+    </div>
+
+    <table class="schedule-mini">
+      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+      ${rows}
+    </table>
+
+    <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g, "_")}">${data.total || 0}</b></p>
+    <p class="live-hours" id="lh-${name.replace(/\s+/g, "_")}"></p>
+
+    <button class="emp-refresh">⚙️ Check for Updates</button>
+  `;
+}
+
+/* ============================================================
+   ⏱️ Live timer por-modal (no toca tu tablero principal)
+   ============================================================ */
+function startLiveTimerForModal(modalId, sched) {
+  const modal = document.getElementById(modalId);
+  if (!modal || !sched?.days) return;
+
+  const todayName = new Date().toLocaleString("en-US", { weekday: "long" });
+  const today = sched.days.find(d => (d.name||"").toLowerCase() === todayName.toLowerCase());
+  if (!today || !today.shift || /off/i.test(today.shift)) return;
+
+  const parts = (today.shift||"").split("-");
+  if (parts.length < 1) return;
+
+  const start = parseShiftTime(parts[0]);
+  if (!start) return;
+
+  const totEl = modal.querySelector(".total b");
+  const liveEl = modal.querySelector(".live-hours");
+  const base = Number(totEl?.textContent || 0);
+
+  const update = () => {
+    const diff = Math.max(0, (Date.now() - start.getTime()) / 36e5);
+    const live = Math.round(diff*100)/100;
+    if (totEl) totEl.textContent = (base + live).toFixed(2);
+    if (liveEl) liveEl.innerHTML = `Live shift: <b>${live.toFixed(2)}</b> h ⏱️`;
+  };
+
+  update();
+  const iv = setInterval(()=>{
+    if (!document.body.contains(modal)) return clearInterval(iv);
+    update();
+  }, 60000);
+}
+
+function parseShiftTime(raw) {
+  // admite "7:30", "7:30 am", "7.30", "7"
+  const s = raw.trim().toLowerCase().replace('.',':');
+  const mMer = s.match(/(am|pm)$/);
+  const time = s.replace(/\s?(am|pm)$/,'');
+  let [h, m] = time.split(':').map(n=>parseInt(n,10));
+  if (isNaN(h)) return null;
+  if (isNaN(m)) m = 0;
+  if (mMer && mMer[1]==='pm' && h!==12) h+=12;
+  if (mMer && mMer[1]==='am' && h===12) h=0;
+  const d = new Date(); d.setHours(h,m,0,0); return d;
+}
+
+/* ============================================================
+   🔄 Refresh en modal (no molesta a nadie)
+   ============================================================ */
+function checkForUpdatesInModal(modalEl){
+  try{
+    if ("caches" in window) caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));
+  }catch(e){}
+  modalEl.classList.add("flash");
+  setTimeout(()=>window.location.reload(true), 900);
+}
+
+function closeTeamView() {
+  document.getElementById("directoryWrapper")?.remove();
+}
+
