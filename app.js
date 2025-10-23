@@ -1,708 +1,302 @@
 /* ============================================================
-   🧠 ACW-App v4.7.4 — Blue Glass White Edition (Stable Clean Build)
-   Johan A. Giraldo (JAG15) & Sky — Oct 2025
+   🎨 ACW-App v5.4 — Blue Glass White Edition (Unified Stable)
+   Johan A. Giraldo (JAG15) | Allston Car Wash © 2025
    ============================================================ */
 
-let currentUser = null;
-let scheduleData = null;
-
-/* ============================================================
-   🔐 LOGIN
-   ============================================================ */
-async function loginUser() {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
-  const diag = document.getElementById("diag");
-  const btn = document.querySelector("#login button");
-
-  if (!email || !password) {
-    diag.textContent = "Please enter your email and password.";
-    return;
-  }
-
-  try {
-    btn.disabled = true;
-    btn.innerHTML = "⏳ Loading your shift…";
-    btn.style.boxShadow = "0 0 20px rgba(0,136,255,0.8)";
-    diag.textContent = "Connecting to Allston Car Wash servers ☀️";
-
-    const res = await fetch(
-      `${CONFIG.BASE_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
-    );
-    const data = await res.json();
-    if (!data.ok) throw new Error("Invalid email or password.");
-
-    currentUser = data;
-    localStorage.setItem("acwUser", JSON.stringify(data));
-    diag.textContent = "✅ Welcome, " + data.name + "!";
-    showWelcome(data.name, data.role);
-    await loadSchedule(email);
-  } catch (err) {
-    diag.textContent = "❌ " + err.message;
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = "Sign In";
-    btn.style.boxShadow = "none";
-  }
+body {
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  background: #ffffff;
+  color: #222;
+  text-align: center;
+  margin: 0;
+  padding: 0;
 }
 
-/* ============================================================
-   👋 SHOW WELCOME DASHBOARD — with delayed phone render
-   ============================================================ */
-async function showWelcome(name, role) {
-  document.getElementById("login").style.display = "none";
-  document.getElementById("welcome").style.display = "block";
-  document.getElementById("welcomeName").innerHTML = `<b>${name}</b>`;
-  document.getElementById("welcomeRole").textContent = role;
+/* ---------- Glass Container ---------- */
+.container {
+  background: rgba(255,255,255,0.95);
+  border-radius: 14px;
+  padding: 40px 50px;
+  margin: 70px auto;
+  max-width: 420px;
+  box-shadow: 0 0 35px rgba(0, 120, 255, 0.35);
+  transition: all 0.4s ease;
+}
 
-  // Solo managers o supervisores ven el botón "Team View"
-  if (["manager", "supervisor"].includes(role.toLowerCase())) addTeamButton();
+/* ---------- Buttons ---------- */
+button {
+  background: #e60000;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 22px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.25s ease;
+}
+button:hover { background: #ff3333; }
 
-  // 🔍 Buscar teléfono desde Employees list
-  try {
-    const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
-    const data = await res.json();
+/* ---------- Clock & Totals ---------- */
+.clock { color: #0070ff; font-size: 0.9em; margin-top: 6px; }
+.total { color: #e60000; font-weight: bold; margin-top: 10px; }
 
-    if (data.ok && data.directory) {
-      const match = data.directory.find(e =>
-        e.email?.toLowerCase() === (currentUser?.email || "").toLowerCase()
-      );
+/* ---------- Gear Button ---------- */
+.gear-btn {
+  position: fixed; bottom: 20px; right: 20px;
+  background: #e60000; color: #fff;
+  border: none; border-radius: 50%;
+  width: 46px; height: 46px;
+  font-size: 22px; cursor: pointer;
+  box-shadow: 0 0 25px rgba(0, 120, 255, 0.4);
+  transition: 0.3s;
+}
+.gear-btn:hover { background: #ff3333; transform: rotate(25deg); }
 
-      if (match && match.phone) {
-        setTimeout(() => {
-          const existing = document.querySelector(".user-phone");
-          if (existing) existing.remove();
-
-          // Teléfono clickeable con efecto azul
-          const phoneHTML = `<p class="user-phone">📞 <a href="tel:${match.phone}" style="color:#0078ff;text-decoration:none;font-weight:600;">${match.phone}</a></p>`;
-          const nameEl = document.getElementById("welcomeName");
-          if (nameEl) nameEl.insertAdjacentHTML("afterend", phoneHTML);
-        }, 300);
-      }
-    }
-  } catch (err) {
-    console.warn("Could not load phone number:", err);
-  }
+/* ---------- Team View Button ---------- */
+.team-btn {
+  position: fixed;
+  top: 25px;
+  right: 40px;
+  background: #ffffff;
+  color: #e60000;
+  border: 2px solid rgba(0, 120, 255, 0.4);
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(0,120,255,0.4);
+  cursor: pointer;
+  z-index: 9999;
+  transition: all 0.3s ease;
+}
+.team-btn:hover {
+  background: #f9f9f9;
+  box-shadow: 0 0 25px rgba(0,136,255,0.6);
 }
 
 /* ============================================================
-   📅 LOAD SCHEDULE — with Auto Live Timer (v4.7.5)
+   👥 TEAM VIEW — Blue Glass White Edition (Centered)
    ============================================================ */
-async function loadSchedule(email) {
-  const schedDiv = document.getElementById("schedule");
-  schedDiv.innerHTML = `<p style="color:#007bff;font-weight:500;">Loading your shift...</p>`;
+.directory-wrapper {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 16px;
+  padding: 22px 28px;
+  width: 85%;
+  max-width: 800px;
+  max-height: 75vh;
+  overflow-y: auto;
+  box-shadow: 0 0 45px rgba(0, 128, 255, 0.35);
+  backdrop-filter: blur(10px);
+  color: #111;
+  text-align: center;
+  z-index: 9999;
+  animation: fadeIn 0.4s ease;
+}
 
-  try {
-    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
-    const data = await res.json();
+.directory-wrapper h3 {
+  margin-top: 0;
+  font-size: 22px;
+  color: #c00;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(0, 136, 255, 0.4);
+}
 
-    if (!data.ok || !data.days) {
-      schedDiv.innerHTML = `<p style="color:#c00;">No schedule found for this week.</p>`;
-      return;
-    }
-
-    // 🧾 Construir la tabla principal
-    let html = `
-      <table>
-        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-    `;
-
-    data.days.forEach(d => {
-      const isToday = new Date()
-        .toLocaleString("en-US", { weekday: "short" })
-        .toLowerCase()
-        .includes(d.name.slice(0, 3).toLowerCase());
-
-      html += `
-        <tr class="${isToday ? "today" : ""}">
-          <td>${d.name}</td>
-          <td>${d.shift || "-"}</td>
-          <td>${d.hours || "0"}</td>
-        </tr>`;
-    });
-
-    html += `
-      </table>
-      <p class="total">Total Hours: <b>${data.total || 0}</b></p>
-    `;
-
-    schedDiv.innerHTML = html;
-
-    // ⏱️ Activar cronómetro 1 segundo después de mostrar la tabla
-    setTimeout(() => {
-      if (data.ok && data.days) {
-        startLiveTimer(data.days, Number(data.total || 0));
-      }
-    }, 1000);
-
-  } catch (err) {
-    console.error("Error loading schedule:", err);
-    schedDiv.innerHTML = `<p style="color:#c00;">Error loading schedule. Please try again later.</p>`;
-  }
+.directory-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14px;
+  font-size: 17px;
+  text-align: center;
+}
+.directory-table th {
+  color: #0078ff;
+  border-bottom: 2px solid rgba(0,120,255,0.2);
+  padding: 10px 6px;
+  background: rgba(0,120,255,0.05);
+}
+.directory-table td {
+  padding: 10px 6px;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.directory-table tr:hover {
+  background: rgba(0,120,255,0.08);
 }
 
 /* ============================================================
-   ⚙️ SETTINGS + REFRESH
+   🔐 LOGIN FORM — Clean Vertical Align
    ============================================================ */
-function openSettings() {
-  document.getElementById("settingsModal").style.display = "block";
+input[type="email"],
+input[type="password"] {
+  display: block;
+  margin: 10px auto;
+  width: 80%;
+  max-width: 280px;
+  padding: 10px 14px;
+  font-size: 15px;
+  border: 1px solid rgba(0,120,255,0.25);
+  border-radius: 6px;
+  outline: none;
+  transition: 0.25s ease;
 }
-function closeSettings() {
-  document.getElementById("settingsModal").style.display = "none";
+input[type="email"]:focus,
+input[type="password"]:focus {
+  border-color: #0078ff;
+  box-shadow: 0 0 8px rgba(0,120,255,0.25);
 }
-function refreshApp() {
-  closeSettings?.();
-  if ("caches" in window) caches.keys().then(names => names.forEach(n => caches.delete(n)));
-  const btn = document.querySelector(".settings-section button:first-child");
-  if (btn) {
-    btn.innerHTML = "⏳ Updating...";
-    btn.style.opacity = "0.7";
-  }
-  setTimeout(() => window.location.reload(true), 1200);
+button[type="submit"],
+button.signin-btn {
+  display: block;
+  margin: 16px auto 0 auto;
+  width: 150px;
+  padding: 10px 20px;
+  background: #e60000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
-function logoutUser() {
-  localStorage.removeItem("acwUser");
-  closeSettings();
-  setTimeout(() => window.location.reload(true), 600);
+button[type="submit"]:hover,
+button.signin-btn:hover {
+  background: #ff3333;
+  transform: translateY(-1px);
 }
 
 /* ============================================================
-   ♻️ RESTORE SESSION
+   🧩 EMPLOYEE MODAL — Unified Stable (v5.4)
    ============================================================ */
-window.addEventListener("load", () => {
-  const saved = localStorage.getItem("acwUser");
-  if (saved) {
-    const user = JSON.parse(saved);
-    currentUser = user;
-    showWelcome(user.name, user.role);
-    loadSchedule(user.email);
-  }
-});
-
-/* ============================================================
-   ⏱️ ACW-App v5.3.6 — Live Shift + 🟢 Online Badge (Stable)
-   Johan A. Giraldo | Allston Car Wash © 2025
-   ============================================================ */
-function startLiveTimer(days, total) {
-  try {
-    // Buscar el día actual
-    const todayName = new Date().toLocaleString("en-US", { weekday: "short" }).slice(0,3).toLowerCase();
-   const today = days.find(d => d.name.slice(0,3).toLowerCase() === todayName);
-     console.log("🧭 Hoy detectado:", todayName, today);
-    if (!today || !today.shift || /off/i.test(today.shift)) return;
-
-    const shift = today.shift.trim();
-
-    // El badge 🟢 solo aparece si el turno está activo (7:30.)
-    removeOnlineBadge();
-
-    if (shift.endsWith(".")) {
-      addOnlineBadge();
-
-      const startStr = shift.replace(".", "").trim();
-      const startTime = parseTime(startStr);
-
-      const update = () => {
-        const now = new Date();
-        const diffHrs = Math.max(0, (now - startTime) / 36e5);
-        updateTotalDisplay(total + diffHrs, true);
-        showLiveHours(diffHrs, true);
-      };
-
-      update();
-      clearInterval(window.liveInterval);
-      window.liveInterval = setInterval(update, 60000);
-      return;
-    }
-
-    // Turno cerrado ("7:30 - 6") → sin cronómetro ni badge
-    const parts = shift.split("-");
-    if (parts.length < 2) return;
-
-    const startStr = parts[0].trim();
-    const endStr = parts[1].trim();
-    if (!startStr || !endStr) return;
-
-    const startTime = parseTime(startStr);
-    const endTime = parseTime(endStr);
-    const diffHrs = Math.max(0, (endTime - startTime) / 36e5);
-
-    updateTotalDisplay(total, false);
-    showLiveHours(diffHrs, false);
-    removeOnlineBadge();
-     // Mostrar también ⏱️ dentro de la tabla principal (o modal)
-const tableEl = document.querySelector("#schedule table") || document.querySelector(".schedule-mini");
-if (tableEl) injectLiveHoursInTable(days, tableEl);
-  } catch (err) {
-    console.warn("⏱️ Live shift inactive:", err);
-  }
+.employee-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(10px);
+  z-index: 9999;
 }
-
-/* ============================================================
-   💡 LIVE HOURS + TOTAL
-   ============================================================ */
-function showLiveHours(hours, active = true) {
-  let el = document.querySelector(".live-hours");
-  if (!el) {
-    el = document.createElement("p");
-    el.className = "live-hours";
-    el.style.fontSize = "1.1em";
-    el.style.marginTop = "6px";
-    el.style.textShadow = "0 0 10px rgba(0,120,255,0.4)";
-    document.querySelector("#schedule")?.appendChild(el);
-  }
-
-  if (!active) {
-    el.textContent = "";
-    return;
-  }
-
-  el.innerHTML = `⏱️ <b style="color:#33a0ff">${hours.toFixed(1)}h</b>`;
+.employee-modal .emp-box {
+  background: rgba(255,255,255,0.97);
+  border-radius: 18px;
+  box-shadow: 0 0 45px rgba(0,120,255,0.35);
+  width: 85%;
+  max-width: 800px;
+  padding: 40px 50px 50px;
+  color: #111;
+  text-align: center;
 }
-
-function updateTotalDisplay(value, active = false) {
-  const totalEl = document.querySelector(".total");
-  if (!totalEl) return;
-
-  const color = active ? "#33a0ff" : "#ffffff";
-  totalEl.innerHTML = `<span style="color:${color}">⚪ Total Hours: <b>${value.toFixed(1)}</b></span>`;
+.emp-header::before {
+  content: "🚘 Allston Car Wash — ";
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0078ff;
+  text-shadow: 0 0 10px rgba(0,120,255,0.35);
+  margin-bottom: 4px;
 }
-
-/* ============================================================
-   🟢 ONLINE BADGE (arriba del nombre)
-   ============================================================ */
-function addOnlineBadge() {
-  const nameEl = document.getElementById("welcomeName");
-  if (!nameEl || document.getElementById("onlineBadge")) return;
-
-  const badge = document.createElement("span");
-  badge.id = "onlineBadge";
-  badge.textContent = "🟢 Online";
-  badge.style.display = "block";
-  badge.style.fontWeight = "600";
-  badge.style.color = "#33ff66";
-  badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
-  badge.style.marginBottom = "6px";
-
-  nameEl.parentNode.insertBefore(badge, nameEl);
+.emp-header h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #000;
+  margin: 0;
 }
-
-function removeOnlineBadge() {
-  document.getElementById("onlineBadge")?.remove();
+.emp-phone a {
+  color: #0078ff;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 16px;
+}
+.emp-role {
+  color: #777;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+.employee-modal .schedule-mini {
+  width: 95%;
+  border-collapse: separate;
+  border-spacing: 20px 10px;
+  text-align: center;
+  font-size: 18px;
+  margin: 0 auto;
+}
+.employee-modal .schedule-mini th {
+  background: rgba(0,120,255,0.05);
+  color: #0078ff;
+  border-bottom: 2px solid rgba(0,120,255,0.2);
+  border-radius: 6px;
+  padding: 6px;
+}
+.employee-modal .schedule-mini td {
+  padding: 6px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.employee-modal .total {
+  color: #e60000;
+  font-weight: 700;
+  margin-top: 14px;
+}
+.employee-modal .live-hours {
+  color: #0078ff;
+  font-weight: 600;
+  margin-top: 6px;
+}
+.emp-refresh {
+  background: #0078ff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  margin-top: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0,120,255,0.35);
+  transition: all 0.3s ease;
+}
+.emp-refresh:hover {
+  background: #0096ff;
+  transform: translateY(-2px);
+}
+.employee-modal::after {
+  content: "Powered by JAG15 | Allston Car Wash © 2025";
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 600;
+  color: #0078ff;
+  text-shadow: 0 0 10px rgba(0,120,255,0.35);
 }
 
 /* ============================================================
-   🕓 Parsear hora AM/PM o 24h
+   ✨ ANIMATIONS & LIVE STATES
    ============================================================ */
-function parseTime(str) {
-  const clean = str.replace(/[^\d:apm]/gi, "").trim();
-  const [time, meridian] = clean.split(" ");
-  let [h, m] = (time || "").split(":").map(Number);
-  if (meridian?.toLowerCase() === "pm" && h !== 12) h += 12;
-  if (meridian?.toLowerCase() === "am" && h === 12) h = 0;
-  const d = new Date();
-  d.setHours(h, m || 0, 0, 0);
-  return d;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulseGlow {
+  0% { opacity: 0.8; text-shadow: 0 0 8px rgba(51,255,102,0.4); }
+  50% { opacity: 1; text-shadow: 0 0 16px rgba(51,255,102,0.9); }
+  100% { opacity: 0.8; text-shadow: 0 0 8px rgba(51,255,102,0.4); }
 }
 
 /* ============================================================
-   ⏱️ ACW-App v5.4.5 — Live Hours Visible in Table (Fixed)
-   Johan A. Giraldo | Allston Car Wash © 2025
+   🟢 LIVE HOURS & WORKING STATES
    ============================================================ */
-function injectLiveHoursInTable(days, tableEl) {
-  try {
-    const todayName = new Date()
-      .toLocaleString("en-US", { weekday: "short" })
-      .slice(0, 3)
-      .toLowerCase();
-    const today = days.find(
-      d => d.name.slice(0, 3).toLowerCase() === todayName
-    );
-    if (!today || !today.shift || /off/i.test(today.shift)) return;
-
-    const shift = today.shift.trim();
-    const allRows = Array.from(tableEl.querySelectorAll("tr"));
-    const row = allRows.find(
-      r =>
-        r.cells[0]?.textContent.slice(0, 3).toLowerCase() === todayName
-    );
-    if (!row) return;
-
-    const cellHours = row.cells[2];
-
-    // Turno activo ("7:30.")
-    if (shift.endsWith(".")) {
-      const startStr = shift.replace(".", "").trim();
-      const startTime = parseTime(startStr);
-
-      const update = () => {
-        const now = new Date();
-        const diffHrs = Math.max(0, (now - startTime) / 36e5);
-        cellHours.innerHTML = `⏱️ ${diffHrs.toFixed(1)}h`;
-        cellHours.style.color = "#33a0ff";
-        cellHours.style.fontWeight = "600";
-      };
-
-      update();
-      clearInterval(window.cellTimer);
-      window.cellTimer = setInterval(update, 60000);
-    }
-  } catch (err) {
-    console.warn("Live hours in table inactive:", err);
-  }
+.emp-working,
+.tv-hours.glow {
+  animation: pulseGlow 1.8s infinite ease-in-out;
+  text-shadow: 0 0 10px rgba(51,255,102,0.7), 0 0 20px rgba(51,255,102,0.5);
+  color: #33ff66;
+  font-weight: 600;
 }
-
-/* ============================================================
-   👋 SHOW WELCOME DASHBOARD — with delayed phone render
-   ============================================================ */
-async function showWelcome(name, role) {
-  document.getElementById("login").style.display = "none";
-  document.getElementById("welcome").style.display = "block";
-  document.getElementById("welcomeName").innerHTML = `<b>${name}</b>`;
-  document.getElementById("welcomeRole").textContent = role;
-
-  // Solo managers o supervisores ven el botón "Team View"
-  if (role === "manager" || role === "supervisor") addTeamButton();
-
-  // 🔍 Buscar teléfono desde Employees list
-  try {
-    const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
-    const data = await res.json();
-
-    if (data.ok && data.directory) {
-      const match = data.directory.find(e =>
-        e.email?.toLowerCase() === (currentUser?.email || "").toLowerCase()
-      );
-
-      if (match && match.phone) {
-        setTimeout(() => {
-          const existing = document.querySelector(".user-phone");
-          if (existing) existing.remove();
-
-          // clickable + glow azul
-          const phoneHTML = `<p class="user-phone">📞 <a href="tel:${match.phone}" style="color:#0078ff;text-decoration:none;font-weight:600;">${match.phone}</a></p>`;
-          const nameEl = document.getElementById("welcomeName");
-          if (nameEl) nameEl.insertAdjacentHTML("afterend", phoneHTML);
-        }, 300);
-      }
-    }
-  } catch (err) {
-    console.warn("Could not load phone number:", err);
-  }
+.emp-completed {
+  opacity: 0.9;
+  animation: fadeIn 0.8s ease-in-out;
+  color: #00bfff;
 }
-
-/* ============================================================
-   👥 TEAM VIEW — Paged + Employee Panels (safe drop-in)
-   ============================================================ */
-
-const TEAM_PAGE_SIZE = 8;       // empleados por página
-let __teamList = [];
-let __teamPage = 0;
-
-function addTeamButton() {
-  if (document.getElementById("teamBtn")) return;
-  const btn = document.createElement("button");
-  btn.id = "teamBtn";
-  btn.className = "team-btn";
-  btn.textContent = "Team View";
-  btn.onclick = toggleTeamOverview;
-  document.body.appendChild(btn);
-}
-
-function toggleTeamOverview() {
-  const wrapper = document.getElementById("directoryWrapper");
-  if (wrapper) { wrapper.remove(); return; }
-  loadEmployeeDirectory();
-}
-
-async function loadEmployeeDirectory() {
-  try {
-    const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
-    const data = await res.json();
-    if (!data.ok) return;
-    __teamList = data.directory || [];
-    __teamPage = 0;
-    renderTeamViewPage();
-  } catch(e){ console.warn(e); }
-}
-
-function renderTeamViewPage() {
-  // contenedor principal
-  document.getElementById("directoryWrapper")?.remove();
-
-  const box = document.createElement("div");
-  box.id = "directoryWrapper";
-  box.className = "directory-wrapper tv-wrapper";
-  box.innerHTML = `
-    <div class="tv-head">
-      <h3>Team View</h3>
-      <button class="tv-close" onclick="document.getElementById('directoryWrapper').remove()">✖️</button>
-    </div>
-
-    <div class="tv-pager">
-      <button class="tv-nav" id="tvPrev" ${__teamPage===0?'disabled':''}>‹ Prev</button>
-      <span class="tv-index">Page ${__teamPage+1} / ${Math.max(1, Math.ceil(__teamList.length/TEAM_PAGE_SIZE))}</span>
-      <button class="tv-nav" id="tvNext" ${(__teamPage+1)>=Math.ceil(__teamList.length/TEAM_PAGE_SIZE)?'disabled':''}>Next ›</button>
-    </div>
-
-    <table class="directory-table tv-table">
-      <tr><th>Name</th><th>Hours</th><th></th></tr>
-      <tbody id="tvBody"></tbody>
-    </table>
-  `;
-  document.body.appendChild(box);
-
-  // página actual
-  const start = __teamPage * TEAM_PAGE_SIZE;
-  const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
-  const body = box.querySelector("#tvBody");
-
-  body.innerHTML = slice.map(emp => `
-    <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role||''}" data-phone="${emp.phone||''}">
-      <td><b>${emp.name}</b></td>
-      <td class="tv-hours">—</td>
-      <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
-    </tr>
-  `).join("");
-
-  // navegación
-  box.querySelector("#tvPrev").onclick = () => { __teamPage=Math.max(0,__teamPage-1); renderTeamViewPage(); };
-  box.querySelector("#tvNext").onclick = () => { __teamPage=Math.min(Math.ceil(__teamList.length/TEAM_PAGE_SIZE)-1,__teamPage+1); renderTeamViewPage(); };
-
-  // hidratar horas de la página (ligero, asincrónico)
-  slice.forEach(async emp => {
-    try {
-      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`);
-      const d = await r.json();
-      const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
-      if (!tr) return;
-      tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (d.total ?? 0) : "0";
-    } catch(e){}
-  });
-}
-
-/* ============================================================
-   🟢 Team View Live Badges — Online + Working
-   ============================================================ */
-async function updateTeamViewLiveStatus() {
-  try {
-    const rows = document.querySelectorAll(".tv-table tr[data-email]");
-    if (!rows.length) return;
-
-    for (const row of rows) {
-      const email = row.dataset.email;
-      const hoursCell = row.querySelector(".tv-hours");
-
-      const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
-      const data = await res.json();
-      if (!data.ok || !data.days) continue;
-
-      const todayName = new Date()
-        .toLocaleString("en-US", { weekday: "short" })
-        .slice(0, 3)
-        .toLowerCase();
-      const today = data.days.find(
-        d => d.name.slice(0, 3).toLowerCase() === todayName
-      );
-      if (!today || !today.shift) continue;
-
-      const shift = today.shift.trim();
-
-      // Turno activo (ej. "7:30.")
-      if (shift.endsWith(".")) {
-        const startStr = shift.replace(".", "").trim();
-        const startTime = parseTime(startStr);
-        const now = new Date();
-        const diffHrs = Math.max(0, (now - startTime) / 36e5);
-        hoursCell.innerHTML = `🟢 ${diffHrs.toFixed(1)}h`;
-        hoursCell.style.color = "#33ff66";
-        hoursCell.style.fontWeight = "600";
-        hoursCell.style.textShadow = "0 0 10px rgba(51,255,102,0.6)";
-      } 
-      // Turno completado o cerrado
-      else if (shift.includes("-")) {
-        hoursCell.textContent = (data.total ?? 0).toFixed(1);
-        hoursCell.style.color = "#ffffff";
-        hoursCell.style.fontWeight = "500";
-      } 
-      // Día libre u otro caso
-      else {
-        hoursCell.textContent = (data.total ?? 0).toFixed(1);
-        hoursCell.style.color = "#aaa";
-        hoursCell.style.fontWeight = "400";
-      }
-    }
-  } catch (err) {
-    console.warn("TeamView live badge error:", err);
-  }
-}
-
-// 🔄 Actualiza cada 2 minutos automáticamente
-setInterval(updateTeamViewLiveStatus, 120000);
-
-/* ============================================================
-   🧩 Employee Modal — Full Rebuild (v4.9.4 Stable Clone)
-   + ⏱️ Live Shift Integration (v2.3 Instant Total)
-   ============================================================ */
-async function openEmployeePanel(btnEl) {
-  const tr = btnEl.closest("tr");
-  const email = tr.dataset.email;
-  const name = tr.dataset.name;
-  const role = tr.dataset.role || "";
-  const phone = tr.dataset.phone || "";
-
-  const modalId = `emp-${email.replace(/[@.]/g, "_")}`;
-  if (document.getElementById(modalId)) return;
-
-  let data = null;
-  try {
-    const res = await fetch(
-      `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`
-    );
-    data = await res.json();
-    if (!data.ok) throw new Error("No schedule");
-  } catch (e) {
-    alert("No schedule found for this employee.");
-    return;
-  }
-
-  // === Crear modal estructurado ===
-  const m = document.createElement("div");
-  m.className = "employee-modal emp-panel";
-  m.id = modalId;
-  m.innerHTML = `
-    <div class="emp-box">
-      <button class="emp-close">×</button>
-      <div class="emp-header">
-        <h3>${name}</h3>
-        ${phone ? `<p class="emp-phone"><a href="tel:${phone}">${phone}</a></p>` : ""}
-        <p class="emp-role">${role}</p>
-      </div>
-      <table class="schedule-mini">
-        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-        ${data.days
-          .map(
-            (d) => `
-          <tr data-day="${d.name.slice(0,3)}" data-shift="${d.shift}">
-            <td>${d.name}</td>
-            <td>${d.shift || "-"}</td>
-            <td>${d.hours || 0}</td>
-          </tr>`
-          )
-          .join("")}
-      </table>
-      <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g, "_")}">${data.total || 0}</b></p>
-      <p class="live-hours" id="lh-${name.replace(/\s+/g, "_")}"></p>
-      <button class="emp-refresh">⚙️ Check for Updates</button>
-    </div>
-  `;
-  document.body.appendChild(m);
-
-  requestAnimationFrame(() => m.classList.add("in"));
-
-  // Eventos
-  m.querySelector(".emp-close").onclick = () => m.remove();
-  m.querySelector(".emp-refresh").onclick = () => checkForUpdatesInModal(m);
-
-  /* === Detectar si el empleado tiene un shift activo hoy === */
-  const today = new Date();
-  const currentDay = today.toLocaleString("en-US", { weekday: "short" }); // "Mon", "Tue", etc.
-  const rowToday = m.querySelector(`tr[data-day^="${currentDay}"]`);
-  if (rowToday) {
-    const shift = rowToday.dataset.shift || rowToday.cells[1]?.textContent || "";
-    const [startStr, endStr] = shift.split("-").map(s => s.trim());
-    if (startStr && endStr)
-      startLiveShift(m, startStr, endStr, m.querySelector(".total"));
-
-       /* === Mostrar 🟢 Working si tiene turno activo === */
-  if (rowToday && rowToday.dataset.shift && rowToday.dataset.shift.endsWith(".")) {
-    const header = m.querySelector(".emp-header h3");
-    if (header && !m.querySelector(".emp-working")) {
-      const badge = document.createElement("span");
-      badge.className = "emp-working";
-      badge.textContent = "🟢 Working";
-      badge.style.display = "block";
-      badge.style.fontWeight = "600";
-      badge.style.color = "#33ff66";
-      badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
-      badge.style.marginBottom = "4px";
-      header.parentNode.insertBefore(badge, header);
-    }
-  }
-  }
-}
-
-/* ============================================================
-   ⏱️ Employee Modal Live Tracker (Working + Live Hours)
-   ============================================================ */
-function enableModalLiveShift(modal, days) {
-  try {
-    const todayName = new Date()
-      .toLocaleString("en-US", { weekday: "short" })
-      .slice(0, 3)
-      .toLowerCase();
-    const today = days.find(
-      d => d.name.slice(0, 3).toLowerCase() === todayName
-    );
-    if (!today || !today.shift || /off/i.test(today.shift)) return;
-
-    const shift = today.shift.trim();
-    const table = modal.querySelector(".schedule-mini");
-    const row = Array.from(table.querySelectorAll("tr")).find(
-      r =>
-        r.cells[0]?.textContent.slice(0, 3).toLowerCase() === todayName
-    );
-    if (!row) return;
-    const cellHours = row.cells[2];
-
-    // Turno activo (ej. "7:30.")
-    if (shift.endsWith(".")) {
-      const startStr = shift.replace(".", "").trim();
-      const startTime = parseTime(startStr);
-
-      const update = () => {
-        const now = new Date();
-        const diffHrs = Math.max(0, (now - startTime) / 36e5);
-        cellHours.innerHTML = `⏱️ ${diffHrs.toFixed(1)}h`;
-        cellHours.style.color = "#33a0ff";
-        cellHours.style.fontWeight = "600";
-
-        // Mostrar 🟢 Working si aún no existe
-        if (!modal.querySelector(".emp-working")) {
-          const header = modal.querySelector(".emp-header h3");
-          const badge = document.createElement("span");
-          badge.className = "emp-working";
-          badge.textContent = "🟢 Working";
-          badge.style.display = "block";
-          badge.style.fontWeight = "600";
-          badge.style.color = "#33ff66";
-          badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
-          badge.style.marginBottom = "4px";
-          header.parentNode.insertBefore(badge, header);
-        }
-      };
-
-      update();
-      clearInterval(modal.liveTimer);
-      modal.liveTimer = setInterval(update, 60000);
-    }
-  } catch (err) {
-    console.warn("Modal live tracker inactive:", err);
-  }
-}
-
-/* ============================================================
-   🔄 Refresh en modal (no molesta a nadie)
-   ============================================================ */
-function checkForUpdatesInModal(modalEl){
-  try{
-    if ("caches" in window) caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));
-  }catch(e){}
-  modalEl.classList.add("flash");
-  setTimeout(()=>window.location.reload(true), 900);
-}
-
-function closeTeamView() {
-  document.getElementById("directoryWrapper")?.remove();
-}
-
