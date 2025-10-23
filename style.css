@@ -1,971 +1,134 @@
 /* ============================================================
-   🎨 ACW-App v4.8.3 — Blue Glass+ Edition (Stable UI)
+   💎 ACW-App v5.1 — Unified Blue Glass White Edition
    Johan A. Giraldo (JAG15) | Allston Car Wash © 2025
    ============================================================ */
 
+/* ==== FONDO Y FUENTE GLOBAL ==== */
 body {
-  font-family: 'Segoe UI', Roboto, sans-serif;
   background: #ffffff;
-  color: #222;
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  color: #111;
   text-align: center;
   margin: 0;
   padding: 0;
 }
 
-/* ---------- Glass Container ---------- */
-.container {
-  background: rgba(255,255,255,0.95);
-  border-radius: 14px;
-  padding: 40px 50px;
-  margin: 70px auto;
-  max-width: 420px;
-  box-shadow: 0 0 35px rgba(0, 120, 255, 0.35);
-  transition: all 0.4s ease;
-}
-
-/* ---------- Buttons ---------- */
-button {
-  background: #e60000;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 22px;
-  cursor: pointer;
-  font-size: 15px;
-  transition: all 0.25s ease;
-}
-button:hover { background: #ff3333; }
-
-/* ---------- Clock & Totals ---------- */
-.clock { color: #0070ff; font-size: 0.9em; margin-top: 6px; }
-.total { color: #e60000; font-weight: bold; margin-top: 10px; }
-
-/* ---------- Error Text ---------- */
-.error { color: #c00; font-size: 13px; margin-top: 10px; }
-
-/* ---------- Gear Button ---------- */
-.gear-btn {
-  position: fixed; bottom: 20px; right: 20px;
-  background: #e60000; color: #fff;
-  border: none; border-radius: 50%;
-  width: 46px; height: 46px;
-  font-size: 22px; cursor: pointer;
-  box-shadow: 0 0 25px rgba(0, 120, 255, 0.4);
-  transition: 0.3s;
-}
-.gear-btn:hover { background: #ff3333; transform: rotate(25deg); }
-
-/* ---------- Team View Button ---------- */
-.team-btn {
-  position: fixed;
-  top: 25px;
-  right: 40px;
-  background: #ffffff;
-  color: #e60000;
-  border: 2px solid rgba(0, 120, 255, 0.4);
-  border-radius: 10px;
-  padding: 8px 16px;
-  font-weight: 600;
-  box-shadow: 0 4px 20px rgba(0,120,255,0.4);
-  cursor: pointer;
-  z-index: 9999;
-  transition: all 0.3s ease;
-}
-.team-btn:hover {
-  background: #f9f9f9;
-  box-shadow: 0 0 25px rgba(0,136,255,0.6);
-}
-
-/* ============================================================
-   👥 TEAM VIEW — Blue Glass White Edition (Centered)
-   ============================================================ */
-.directory-wrapper {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 16px;
-  padding: 22px 28px;
-  width: 85%;
-  max-width: 800px;
-  max-height: 75vh;
-  overflow-y: auto;
-  box-shadow: 0 0 45px rgba(0, 128, 255, 0.35);
-  backdrop-filter: blur(10px);
-  color: #111;
-  text-align: center;
-  z-index: 9999;
-  animation: fadeIn 0.4s ease;
-}
-
-.directory-wrapper h3 {
-  margin-top: 0;
-  font-size: 22px;
-  color: #c00;
-  font-weight: 700;
-  text-shadow: 0 0 10px rgba(0, 136, 255, 0.4);
-}
-
-.directory-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 14px;
-  font-size: 17px;
-  text-align: center;
-}
-
-.directory-table th {
-  color: #0078ff;
-  border-bottom: 2px solid rgba(0,120,255,0.2);
-  padding: 10px 6px;
-  background: rgba(0,120,255,0.05);
-}
-
-.directory-table td {
-  padding: 10px 6px;
-  border-bottom: 1px solid rgba(0,0,0,0.08);
-}
-
-.directory-table tr:hover {
-  background: rgba(0,120,255,0.08);
-  transition: background 0.2s ease;
-}
-
-/* ============================================================
-   📞 USER PHONE STYLE — Blue Glow
-   ============================================================ */
-.user-phone {
-  color: #0078ff;
-  font-weight: 600;
-  font-size: 17px;
-  margin: 10px 0 16px 0;
-  text-align: center;
-  text-shadow: 0 0 8px rgba(0,120,255,0.25);
-  opacity: 0;
-  animation: fadeIn 0.6s ease forwards;
-}
-
-/* ============================================================
-   ⏱️ LIVE HOURS INDICATOR — Blue Glow
-   ============================================================ */
-.live-hours {
-  margin-top: 14px;
-  color: #007bff;
-  font-size: 18px;
-  font-weight: 600;
-  text-align: center;
-  text-shadow: 0 0 12px rgba(0,120,255,0.35);
-  animation: glowBlue 3s ease-in-out infinite alternate, fadeIn 0.8s ease forwards;
-  opacity: 0;
-}
-
-@keyframes glowBlue {
-  from { text-shadow: 0 0 5px rgba(0,120,255,0.25); }
-  to   { text-shadow: 0 0 18px rgba(0,120,255,0.5); }
-}
-
-/* ============================================================
-   🧾 TABLE & TOTAL — Spacing Adjustments
-   ============================================================ */
-table {
-  margin: 0 auto;
-  width: 95%;
-  border-collapse: separate;
-  border-spacing: 20px 10px;
-  text-align: center;
-  font-size: 18px;
-}
-
-th {
-  padding-bottom: 6px;
-  color: #000;
-  letter-spacing: 0.5px;
-}
-
-td {
-  padding: 8px 12px;
-}
-
-.total {
-  color: #e60000;
-  font-weight: bold;
-  font-size: 20px;
-  margin-top: 16px;
-  text-align: center;
-}
-
-/* ============================================================
-   ⚙️ SETTINGS PANEL
-   ============================================================ */
-.modal {
-  display: none;
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 2000;
-  animation: fadeIn 0.3s ease;
-}
-
-.modal-content {
-  background: rgba(255, 255, 255, 0.97);
-  border-radius: 16px;
-  padding: 28px 30px;
-  width: 340px;
-  margin: 12% auto;
-  text-align: center;
-  box-shadow: 0 0 40px rgba(0,128,255,0.3);
-  animation: popIn 0.3s ease;
-}
-
-.modal-content h3 {
-  color: #c00;
-  font-size: 20px;
-  margin-bottom: 15px;
-  text-shadow: 0 0 8px rgba(0,136,255,0.3);
-}
-
-.close {
-  color: #555;
-  float: right;
-  font-size: 24px;
-  font-weight: bold;
-  cursor: pointer;
-  margin-top: -10px;
-}
-.close:hover { color: #000; }
-
-.settings-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 20px;
-  text-align: center;
-}
-.settings-section button {
-  background: #e60000;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 12px;
-  width: 100%;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 10px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-  transition: all 0.3s ease;
-}
-.settings-section button:hover {
-  background: #ff3333;
-  transform: scale(1.05);
-}
-
-/* ============================================================
-   🪶 CLOSE BUTTON FOR TEAM VIEW
-   ============================================================ */
-.directory-close {
-  position: absolute;
-  top: 10px;
-  right: 16px;
-  font-size: 22px;
-  font-weight: bold;
-  color: #007bff;
-  cursor: pointer;
-  text-shadow: 0 0 10px rgba(0,120,255,0.3);
-  transition: transform 0.2s ease;
-}
-.directory-close:hover {
-  transform: scale(1.2);
-  color: #e60000;
-}
-
-/* ============================================================
-   ✨ ANIMATIONS
-   ============================================================ */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes popIn {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-/* ============================================================
-   👥 TEAM VIEW CARDS — Blue Glass White Edition
-   ============================================================ */
-.employee-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 18px;
-  margin-top: 15px;
-}
-
-.employee-card {
-  background: rgba(255,255,255,0.95);
-  border-radius: 14px;
-  box-shadow: 0 0 25px rgba(0,120,255,0.25);
-  padding: 18px 25px;
-  width: 200px;
-  text-align: center;
-  transition: all 0.3s ease;
-}
-
-.employee-card:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 35px rgba(0,136,255,0.4);
-}
-
-.employee-card h4 {
-  margin: 0;
-  font-size: 18px;
-  color: #000;
-}
-
-.employee-card .hours {
-  color: #0078ff;
-  font-size: 15px;
-  margin: 8px 0;
-}
-
-.employee-card .open-btn {
-  background: #e60000;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 14px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: 0.3s;
-}
-.employee-card .open-btn:hover {
-  background: #ff3333;
-}
-
-/* ============================================================
-   🪶 EMPLOYEE MODAL (individual schedule view)
-   ============================================================ */
-.employee-modal {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.45);
-  z-index: 3000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.employee-modal-content {
-  background: rgba(255,255,255,0.97);
-  border-radius: 16px;
-  padding: 40px;
-  width: 90%;
-  max-width: 420px;
-  box-shadow: 0 0 45px rgba(0,120,255,0.3);
-  text-align: center;
-  position: relative;
-  animation: popIn 0.3s ease;
-}
-
-.employee-modal-content h3 {
-  font-size: 20px;
-  color: #000;
-  margin-bottom: 12px;
-}
-
-.refresh-mini {
-  background: #0078ff;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 14px;
-  cursor: pointer;
-  margin-bottom: 10px;
-}
-.refresh-mini:hover { background: #0096ff; }
-
-.modal-close {
-  position: absolute;
-  top: 10px; right: 16px;
-  font-size: 22px;
-  color: #0078ff;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-.modal-close:hover {
-  color: #e60000;
-  transform: scale(1.15);
-}
-
-/* ===== Team View (paginado) ===== */
-.tv-wrapper { max-width: 860px; }
-.tv-head { display:flex; align-items:center; justify-content:center; position:relative; }
-.tv-head h3 { margin:0; font-size:22px; color:#c00; text-shadow:0 0 8px rgba(0,136,255,.35); }
-.tv-close {
-  position:absolute; right:8px; top:0; border:none; background:transparent;
-  font-size:22px; color:#0078ff; cursor:pointer;
-}
-.tv-close:hover { color:#e60000; transform:scale(1.1); }
-
-.tv-pager { display:flex; align-items:center; justify-content:center; gap:12px; margin:10px 0 6px; }
-.tv-nav {
-  background:#fff; color:#0078ff; border:1px solid rgba(0,120,255,.3);
-  padding:6px 10px; border-radius:8px; cursor:pointer;
-  box-shadow:0 4px 16px rgba(0,120,255,.25);
-}
-.tv-nav[disabled]{ opacity:.4; cursor:not-allowed; }
-.tv-index { color:#555; font-weight:600; }
-
-.tv-table th { color:#0078ff; border-bottom:2px solid rgba(0,120,255,.2); }
-.tv-table td { padding:10px 6px; }
-
-.open-btn {
-  background:#e60000; color:#fff; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;
-}
-.open-btn:hover { background:#ff3333; }
-
-/* ===== Employee Panel — Blue Glass White Edition (Fix 4.7.4) ===== */
+/* ==== PANEL PRINCIPAL, TEAM VIEW Y MODALES ==== */
+.container,
+.directory-wrapper,
 .employee-modal.emp-panel {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(1);
-  width: 420px;
-  max-width: 90vw;
-  background: rgba(255, 255, 255, 0.97);
-  border-radius: 18px;
-  padding: 30px 26px;
-  box-shadow: 0 0 50px rgba(0, 120, 255, 0.35);
-  text-align: center;
-  z-index: 10000;
-  animation: fadeIn 0.4s ease;
-}
-
-.emp-header h3 {
-  font-size: 20px;
-  color: #000;
-  margin-bottom: 4px;
-  font-weight: 700;
-}
-
-.emp-phone {
-  margin: 4px 0 6px 0;
-  color: #0078ff;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.emp-role {
-  color: #888;
-  font-size: 14px;
-  margin-bottom: 10px;
-}
-
-.employee-modal .schedule-mini {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 10px auto;
-  font-size: 16px;
-}
-.employee-modal .schedule-mini th {
-  background: rgba(0,120,255,0.05);
-  color: #0078ff;
-  padding: 6px;
-  border-bottom: 2px solid rgba(0,120,255,0.2);
-}
-.employee-modal .schedule-mini td {
-  padding: 6px;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-}
-
-.total {
-  color: #e60000;
-  font-size: 18px;
-  margin-top: 12px;
-  font-weight: 600;
-}
-
-.emp-refresh {
-  margin-top: 12px;
-  background: #0078ff;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 14px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 16px rgba(0,120,255,0.25);
-}
-.emp-refresh:hover { background: #0096ff; }
-
-.live-hours {
-  margin-top: 8px;
-  color: #0078ff;
-  font-weight: 600;
-  font-size: 16px;
-}
-
-/* ============================================================
-   💎 ACW-App v4.8.9 — Blue Glass Glow Edition
-   Johan A. Giraldo | Allston Car Wash © 2025
-   ============================================================ */
-
-/* ===== Panel de Empleado — efecto glass con sombra azul ===== */
-.employee-modal.emp-panel {
-  background: #fff;
-  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 16px;
   box-shadow: 0 0 55px rgba(0, 136, 255, 0.4);
-  padding: 45px 52px;
+  padding: 38px 44px;
   width: 420px;
   max-width: 92vw;
   text-align: center;
   color: #111;
-  transition: all 0.4s ease;
-}
-
-/* ===== Título y cabecera ===== */
-.emp-header h3 {
-  font-size: 18px;
-  font-weight: 700;
-  color: #000;
-  margin: 0;
-  text-shadow: 0 0 6px rgba(0, 120, 255, 0.35);
-}
-
-.emp-phone {
-  color: #0078ff;
-  font-size: 16px;
-  font-weight: 600;
-  text-shadow: 0 0 4px rgba(0, 120, 255, 0.25);
-}
-.emp-role {
-  color: #777;
-  font-size: 14px;
-  margin-top: 3px;
-}
-
-/* ===== Tabla Glass ===== */
-.employee-modal .schedule-mini {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 20px 10px;
-  font-size: 17px;
-  text-align: center;
-  margin-top: 18px;
-}
-.employee-modal .schedule-mini th {
-  background: rgba(0, 120, 255, 0.07);
-  color: #0078ff;
-  border-bottom: 2px solid rgba(0, 120, 255, 0.25);
-  padding: 6px;
-  border-radius: 6px;
-}
-.employee-modal .schedule-mini td {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 6px;
-  padding: 6px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-/* ===== Total Hours ===== */
-.total {
-  color: #e60000;
-  font-weight: bold;
-  font-size: 20px;
-  margin-top: 20px;
-  text-shadow: 0 0 5px rgba(255, 0, 0, 0.25);
-}
-
-/* ===== Botón Azul “Check for Updates” ===== */
-.emp-refresh {
-  display: inline-block;
-  margin-top: 16px;
-  background: linear-gradient(180deg, #0096ff, #0078ff);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 12px 26px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0, 120, 255, 0.35);
-  transition: all 0.25s ease;
-}
-.emp-refresh:hover {
-  background: linear-gradient(180deg, #00a6ff, #0080ff);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 136, 255, 0.45);
-}
-
-/* ===== Tarjetas del Team View (mejor contraste) ===== */
-.employee-card {
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 14px;
-  box-shadow: 0 0 30px rgba(0, 120, 255, 0.25);
-  padding: 18px 24px;
+  margin: 40px auto;
   transition: all 0.3s ease;
 }
-.employee-card:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 40px rgba(0, 136, 255, 0.45);
-}
 
-/* ===== Animación suave ===== */
-@keyframes softIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
-}
-.employee-modal.emp-panel {
-  animation: softIn 0.3s ease;
-}
-
-/* ============================================================
-   🧩 Employee Modal — Perfect Vertical Layout (v4.9.1 Clean)
-   ============================================================ */
-.employee-modal.emp-panel {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 0 55px rgba(0, 136, 255, 0.4);
-  width: 420px;
-  max-width: 92vw;
-  padding: 34px 38px 42px 38px;
-  text-align: center;
-  color: #111;
-  z-index: 9999;
-  animation: softIn 0.3s ease;
-}
-
-/* ---------- Header ---------- */
-.emp-header {
-  margin-bottom: 10px;
-}
-.emp-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #000;
-}
-.emp-phone {
-  margin-top: 4px;
-  font-size: 15px;
-}
-.emp-phone a {
-  color: #0078ff;
-  text-decoration: none;
-  font-weight: 600;
-}
-.emp-role {
-  font-size: 14px;
-  color: #777;
-  margin-top: 3px;
-}
-
-/* ---------- Close Button ---------- */
-.emp-close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: #e60000;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  width: 28px;
-  height: 28px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-.emp-close:hover {
-  background: #ff3333;
-  transform: scale(1.1);
-}
-
-/* ---------- Table ---------- */
-.employee-modal .schedule-mini {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 14px 6px;
-  margin: 18px auto 12px;
-  font-size: 16px;
-}
-.employee-modal .schedule-mini th {
-  background: rgba(0, 120, 255, 0.08);
-  color: #0078ff;
-  border-radius: 6px;
-  padding: 6px;
-  font-weight: 600;
-}
-.employee-modal .schedule-mini td {
-  padding: 6px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-/* ---------- Total ---------- */
-.total {
-  margin-top: 12px;
-  font-size: 18px;
-  color: #e60000;
-  font-weight: 700;
-}
-
-/* ---------- Update Button ---------- */
-.emp-refresh {
-  display: block;
-  margin: 16px auto 0 auto;
-  background: linear-gradient(180deg, #0096ff, #0078ff);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 6px 16px rgba(0, 120, 255, 0.35);
-  transition: 0.3s;
-}
-.emp-refresh:hover {
-  background: linear-gradient(180deg, #00a8ff, #0086ff);
-  transform: translateY(-2px);
-}
-
-/* ============================================================
-   🧩 Employee Modal Layout Fix (v4.9.4 Stable)
-   ============================================================ */
-.employee-modal.emp-panel {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 0 55px rgba(0, 136, 255, 0.4);
-  width: 420px;
-  max-width: 92vw;
-  padding: 36px 40px 44px;
-  text-align: center;
-  z-index: 9999;
-}
-
-.emp-close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: #e60000;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  width: 26px;
-  height: 26px;
-  font-size: 16px;
-  cursor: pointer;
-}
-.emp-close:hover {
-  background: #ff3333;
-}
-
-.emp-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #000;
-}
-.emp-phone {
-  margin-top: 4px;
-  font-size: 15px;
-}
-.emp-phone a {
-  color: #0078ff;
-  text-decoration: none;
-  font-weight: 600;
-}
-.emp-role {
-  font-size: 14px;
-  color: #777;
-  margin-top: 2px;
-}
-
-/* Tabla */
-.schedule-mini {
+/* ==== TABLAS (TODAS) ==== */
+table, .schedule-mini, .directory-table, .tv-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 16px 8px;
-  margin-top: 16px;
   font-size: 16px;
+  margin: 16px auto;
+  color: #111;
+  text-align: center;
 }
-.schedule-mini th {
+
+th {
   background: rgba(0, 120, 255, 0.08);
   color: #0078ff;
   border-radius: 6px;
-  padding: 6px;
-}
-.schedule-mini td {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 6px;
+  padding: 8px;
+  font-weight: 600;
+  border-bottom: 2px solid rgba(0, 120, 255, 0.25);
 }
 
-/* Total y botón */
+td {
+  background: rgba(255, 255, 255, 0.97);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+/* ==== FILAS HOVER ==== */
+tr:hover td {
+  background: rgba(0, 120, 255, 0.06);
+  transition: background 0.25s ease;
+}
+
+/* ==== TITULOS ==== */
+.emp-header h3, .directory-wrapper h3, .tv-head h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #000;
+  margin: 0 0 6px 0;
+  text-shadow: 0 0 8px rgba(0,120,255,0.25);
+}
+
+/* ==== ROLE / PHONE ==== */
+.emp-role, .emp-phone, .user-phone {
+  font-size: 15px;
+  color: #0078ff;
+  font-weight: 600;
+  margin-top: 4px;
+  text-shadow: 0 0 6px rgba(0,120,255,0.2);
+}
+
+/* ==== TOTAL Y CRONOMETRO ==== */
 .total {
-  margin-top: 14px;
-  font-size: 18px;
   color: #e60000;
   font-weight: 700;
+  font-size: 18px;
+  margin-top: 14px;
 }
-.emp-refresh {
-  display: block;
-  margin: 16px auto 0;
-  background: #0078ff;
+
+.live-hours {
+  color: #0078ff;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 6px;
+  text-shadow: 0 0 10px rgba(0,120,255,0.35);
+}
+
+/* ==== BOTONES ==== */
+button, .open-btn, .emp-refresh, .tv-nav {
+  background: #e60000;
   color: #fff;
   border: none;
   border-radius: 8px;
   padding: 10px 20px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 6px 16px rgba(0, 120, 255, 0.35);
+  box-shadow: 0 4px 16px rgba(0,120,255,0.25);
+  transition: all 0.25s ease;
 }
-.emp-refresh:hover {
-  background: #0096ff;
-}
-
-/* ============================================================
-   ✨ Employee Modal — Blue Glass White Edition (v4.9.5 Visual)
-   Johan A. Giraldo (JAG15) & Sky — Oct 2025
-   ============================================================ */
-
-.employee-modal {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 15, 40, 0.65);
-  backdrop-filter: blur(12px);
-  z-index: 9999;
-  opacity: 0;
-  transition: opacity 0.25s ease;
+button:hover, .open-btn:hover, .emp-refresh:hover, .tv-nav:hover {
+  background: #ff3333;
+  transform: translateY(-1px);
 }
 
-.employee-modal.in { opacity: 1; }
-
-.emp-box {
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 18px;
-  padding: 28px 36px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55),
-              inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  color: #eef5ff;
-  max-width: 380px;
-  width: 90%;
-  text-align: center;
-  font-family: 'SF Pro Display', 'Inter', sans-serif;
+/* ==== TEAM VIEW CARDS ==== */
+.employee-card {
+  background: rgba(255,255,255,0.97);
+  border-radius: 14px;
+  box-shadow: 0 0 35px rgba(0,120,255,0.25);
+  padding: 18px 24px;
+  width: 200px;
+  color: #111;
+  transition: all 0.3s ease;
 }
-
-.emp-header h3 {
-  font-size: 1.3em;
-  margin-bottom: 4px;
-  color: #fff;
-  text-shadow: 0 0 10px rgba(120,180,255,0.6);
-}
-
-.emp-phone a {
-  color: #5bb6ff;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.emp-role {
-  font-size: 0.9em;
-  color: #c0c8d5;
-  margin-bottom: 14px;
-}
-
-.schedule-mini {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 10px 0 14px;
-}
-
-.schedule-mini th {
-  background: rgba(255,255,255,0.08);
-  color: #9bc9ff;
-  font-weight: 600;
-  padding: 6px 0;
-}
-
-.schedule-mini td {
-  padding: 4px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-
-.total {
-  margin-top: 12px;
-  color: #ff6666;
-  font-weight: 700;
-}
-
-.emp-refresh {
-  background: linear-gradient(180deg, #2196f3 0%, #0069c0 100%);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-weight: 600;
-  padding: 10px 22px;
-  cursor: pointer;
-  margin-top: 12px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.emp-refresh:hover {
+.employee-card:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 18px rgba(33,150,243,0.6);
+  box-shadow: 0 0 40px rgba(0,136,255,0.4);
 }
 
-.emp-close {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: #ff3b3b;
-  color: white;
-  border: none;
-  font-size: 1.1em;
-  border-radius: 6px;
-  padding: 3px 10px;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.emp-close:hover {
-  background: #e60000;
-}
-
-/* ============================================================
-   ⚙️ ACW-App v5.0 — Global Footer Injection (Safe)
-   ============================================================ */
-
-window.addEventListener("load", () => {
-  // Si ya existe, no se duplica
-  if (!document.querySelector(".footer")) {
-    const footer = document.createElement("footer");
-    footer.className = "footer";
-    footer.innerHTML = "Powered by <b>JAG15</b> | Allston Car Wash © 2025";
-    document.body.appendChild(footer);
-  }
-});
-
-/* ============================================================
-   💎 ACW-App v5.0 — Unified Blue Glass Footer (by JAG15 & Sky)
-   ============================================================ */
-
-/* ---- Footer Global ---- */
+/* ==== FOOTER UNIFICADO ==== */
 .footer {
   position: fixed;
   bottom: 0;
@@ -976,22 +139,15 @@ window.addEventListener("load", () => {
   font-size: 14px;
   color: #0078ff;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(8px);
   border-top: 1px solid rgba(0, 120, 255, 0.15);
   box-shadow: 0 -3px 25px rgba(0, 120, 255, 0.25);
   text-shadow: 0 0 8px rgba(0, 120, 255, 0.35);
   z-index: 99999;
-  animation: footerGlow 4s ease-in-out infinite alternate;
 }
 
-@keyframes footerGlow {
-  from { text-shadow: 0 0 6px rgba(0,120,255,0.2); }
-  to   { text-shadow: 0 0 14px rgba(0,120,255,0.55); }
-}
-
-/* ---- Footer para modales (ajuste en Employee Modal & Team View) ---- */
-.employee-modal::after,
+.employee-modal.emp-panel::after,
 .directory-wrapper::after {
   content: "Powered by JAG15 | Allston Car Wash © 2025";
   position: absolute;
@@ -1003,108 +159,4 @@ window.addEventListener("load", () => {
   color: #0078ff;
   text-shadow: 0 0 10px rgba(0,120,255,0.35);
   opacity: 0.9;
-}
-
-/* ============================================================
-   🎨 UNIFIED TABLE STYLE — Blue Glass White Edition
-   Johan A. Giraldo (JAG15) | Allston Car Wash © 2025
-   ============================================================ */
-
-/* ---- Tablas principales, modales y Team View ---- */
-table, .schedule-mini, .directory-table {
-  width: 95%;
-  margin: 0 auto 14px auto;
-  border-collapse: separate;
-  border-spacing: 18px 10px;
-  text-align: center;
-  font-size: 17px;
-  font-family: 'Segoe UI', Roboto, sans-serif;
-  color: #111;
-}
-
-/* ---- Encabezados ---- */
-th {
-  background: rgba(0, 120, 255, 0.07);
-  color: #0078ff;
-  border-bottom: 2px solid rgba(0, 120, 255, 0.25);
-  border-radius: 6px;
-  padding: 8px;
-  font-weight: 600;
-}
-
-/* ---- Filas ---- */
-td {
-  background: rgba(255, 255, 255, 0.98);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: 6px;
-  padding: 8px 10px;
-}
-
-/* ---- Hover azul suave ---- */
-tr:hover td {
-  background: rgba(0, 120, 255, 0.06);
-  transition: background 0.25s ease;
-}
-
-/* ---- Total Hours ---- */
-.total {
-  color: #e60000;
-  font-weight: 700;
-  font-size: 18px;
-  text-align: center;
-  margin-top: 14px;
-  text-shadow: 0 0 6px rgba(255, 0, 0, 0.25);
-}
-
-/* ---- Live Shift (debajo del total) ---- */
-.live-hours {
-  color: #0078ff;
-  font-weight: 600;
-  font-size: 16px;
-  margin-top: 6px;
-  text-shadow: 0 0 10px rgba(0, 120, 255, 0.3);
-}
-
-/* ---- Botones (Open, Refresh, Next, Prev) ---- */
-button, .open-btn, .emp-refresh, .tv-nav {
-  background: #e60000;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 120, 255, 0.25);
-  transition: all 0.25s ease;
-}
-button:hover, .open-btn:hover, .emp-refresh:hover, .tv-nav:hover {
-  background: #ff3333;
-  transform: translateY(-1px);
-}
-
-/* ---- Paneles flotantes (modales y Team View) ---- */
-.directory-wrapper, .employee-modal.emp-panel {
-  background: rgba(255, 255, 255, 0.97);
-  border-radius: 16px;
-  box-shadow: 0 0 55px rgba(0, 136, 255, 0.4);
-  padding: 36px 40px;
-  max-width: 860px;
-  width: 90%;
-  color: #111;
-  text-align: center;
-}
-
-/* ---- Footer común ---- */
-.footer {
-  margin-top: 20px;
-  text-align: center;
-  color: #888;
-  font-size: 13px;
-}
-.footer::after {
-  content: "Powered by JAG15 | Allston Car Wash © 2025";
-  display: block;
-  color: #0078ff;
-  font-weight: 600;
-  margin-top: 4px;
 }
