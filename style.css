@@ -736,3 +736,101 @@ td {
   background: linear-gradient(180deg, #00a8ff, #0086ff);
   transform: translateY(-2px);
 }
+
+/* ============================================================
+   🧩 Employee Modal Layout Fix (v4.9.4 Stable)
+   ============================================================ */
+.employee-modal.emp-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 0 55px rgba(0, 136, 255, 0.4);
+  width: 420px;
+  max-width: 92vw;
+  padding: 36px 40px 44px;
+  text-align: center;
+  z-index: 9999;
+}
+
+.emp-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #e60000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.emp-close:hover {
+  background: #ff3333;
+}
+
+.emp-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #000;
+}
+.emp-phone {
+  margin-top: 4px;
+  font-size: 15px;
+}
+.emp-phone a {
+  color: #0078ff;
+  text-decoration: none;
+  font-weight: 600;
+}
+.emp-role {
+  font-size: 14px;
+  color: #777;
+  margin-top: 2px;
+}
+
+/* Tabla */
+.schedule-mini {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 16px 8px;
+  margin-top: 16px;
+  font-size: 16px;
+}
+.schedule-mini th {
+  background: rgba(0, 120, 255, 0.08);
+  color: #0078ff;
+  border-radius: 6px;
+  padding: 6px;
+}
+.schedule-mini td {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 6px;
+}
+
+/* Total y botón */
+.total {
+  margin-top: 14px;
+  font-size: 18px;
+  color: #e60000;
+  font-weight: 700;
+}
+.emp-refresh {
+  display: block;
+  margin: 16px auto 0;
+  background: #0078ff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 120, 255, 0.35);
+}
+.emp-refresh:hover {
+  background: #0096ff;
+}
