@@ -650,120 +650,45 @@ td {
 }
 
 /* ============================================================
-   💠 ACW-App v5.2.2 — Employee Modal Perfect Match (JAG15)
+   ✅ ACW-App v5.2.3 — Align Modal to Team View (Safe Patch)
    ============================================================ */
 
-/* === Overlay igual al Team View === */
+/* Centrado del modal igual que Team View */
 .employee-modal {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   position: fixed !important;
   inset: 0 !important;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
   background: rgba(0,0,0,0.45) !important;
   backdrop-filter: blur(10px) !important;
   z-index: 9999 !important;
 }
 
-/* === Caja principal (idéntica al Team View) === */
-.employee-modal .emp-box,
-.employee-modal.emp-panel {
+/* Caja interior — usa tu mismo glass blanco */
+.employee-modal .emp-box {
   background: rgba(255,255,255,0.97) !important;
-  border-radius: 18px !important;
+  border-radius: 16px !important;
   box-shadow: 0 0 45px rgba(0,120,255,0.35) !important;
   width: 85% !important;
   max-width: 800px !important;
-  padding: 46px 52px 64px !important;   /* más aire arriba y abajo */
-  text-align: center !important;
+  padding: 40px 50px 54px !important;
   color: #111 !important;
-  position: relative;
+  text-align: center !important;
 }
 
-/* === Encabezado === */
-.emp-header {
-  margin-bottom: 14px;
-}
+/* Encabezado — Allston Car Wash arriba */
 .emp-header::before {
   content: "🚘 Allston Car Wash — ";
   display: block;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 600;
   color: #0078ff;
-  margin-bottom: 4px;
   text-shadow: 0 0 8px rgba(0,120,255,0.35);
-}
-.emp-header h3 {
-  font-size: 22px;
-  font-weight: 700;
-  color: #000;
-  margin: 0 0 2px;
-}
-.emp-phone a {
-  color: #0078ff;
-  font-weight: 600;
-  text-decoration: none;
-  font-size: 16px;
-}
-.emp-role {
-  color: #777;
-  margin-bottom: 12px;
-  font-size: 15px;
+  margin-bottom: 4px;
 }
 
-/* === Tabla === */
-.employee-modal .schedule-mini {
-  width: 95%;
-  margin: 0 auto;
-  border-collapse: separate;
-  border-spacing: 20px 10px;
-  text-align: center;
-  font-size: 18px;
-}
-.employee-modal .schedule-mini th {
-  background: rgba(0,120,255,0.05);
-  color: #0078ff;
-  border-bottom: 2px solid rgba(0,120,255,0.2);
-  border-radius: 6px;
-  padding: 6px;
-}
-.employee-modal .schedule-mini td {
-  padding: 6px;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-}
-
-/* === Totales y cronómetro === */
-.employee-modal .total {
-  color: #e60000;
-  font-weight: 700;
-  margin-top: 14px;
-  font-size: 18px;
-}
-.employee-modal .live-hours {
-  color: #0078ff;
-  font-weight: 600;
-  margin-top: 6px;
-  font-size: 16px;
-}
-
-/* === Botón azul === */
-.emp-refresh {
-  background: #0078ff;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
-  margin-top: 18px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 6px 16px rgba(0,120,255,0.35);
-  transition: all 0.3s ease;
-}
-.emp-refresh:hover {
-  background: #0096ff;
-  transform: translateY(-2px);
-}
-
-/* === Footer con crédito completo === */
+/* Footer fijo abajo */
 .employee-modal::after {
   content: "Powered by JAG15 | Allston Car Wash © 2025";
   position: absolute !important;
@@ -773,5 +698,5 @@ td {
   font-size: 13px !important;
   font-weight: 600 !important;
   color: #0078ff !important;
-  text-shadow: 0 0 10px rgba(0,120,255,0.35) !important;
+  text-shadow: 0 0 10px rgba(0,120,255,0.35);
 }
