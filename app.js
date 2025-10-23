@@ -440,6 +440,16 @@ async function openEmployeePanel(btnEl) {
   startLiveTimerForModal(modalId, data);
 }
 
+// Detectar si el empleado tiene un shift activo hoy
+const today = new Date();
+const currentDay = today.toLocaleString('en-US', { weekday: 'short' });
+const rowToday = modal.querySelector(`tr[data-day="${currentDay}"]`);
+if (rowToday) {
+  const shift = rowToday.dataset.shift || rowToday.cells[1]?.textContent || '';
+  const [startStr, endStr] = shift.split('-').map(s => s.trim());
+  if (startStr && endStr) startLiveShift(modal, startStr, endStr, modal.querySelector('.total'));
+}
+
 /* ============================================================
    ⏱️ ACW-App v5.2.6 — Live Shift v2.3 (Instant Total)
    Johan A. Giraldo | Allston Car Wash © 2025
