@@ -482,6 +482,65 @@ function renderTeamViewPage() {
 }
 
 /* ============================================================
+   🟢 Team View Live Badges — Online + Working
+   ============================================================ */
+async function updateTeamViewLiveStatus() {
+  try {
+    const rows = document.querySelectorAll(".tv-table tr[data-email]");
+    if (!rows.length) return;
+
+    for (const row of rows) {
+      const email = row.dataset.email;
+      const hoursCell = row.querySelector(".tv-hours");
+
+      const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      if (!data.ok || !data.days) continue;
+
+      const todayName = new Date()
+        .toLocaleString("en-US", { weekday: "short" })
+        .slice(0, 3)
+        .toLowerCase();
+      const today = data.days.find(
+        d => d.name.slice(0, 3).toLowerCase() === todayName
+      );
+      if (!today || !today.shift) continue;
+
+      const shift = today.shift.trim();
+
+      // Turno activo (ej. "7:30.")
+      if (shift.endsWith(".")) {
+        const startStr = shift.replace(".", "").trim();
+        const startTime = parseTime(startStr);
+        const now = new Date();
+        const diffHrs = Math.max(0, (now - startTime) / 36e5);
+        hoursCell.innerHTML = `🟢 ${diffHrs.toFixed(1)}h`;
+        hoursCell.style.color = "#33ff66";
+        hoursCell.style.fontWeight = "600";
+        hoursCell.style.textShadow = "0 0 10px rgba(51,255,102,0.6)";
+      } 
+      // Turno completado o cerrado
+      else if (shift.includes("-")) {
+        hoursCell.textContent = (data.total ?? 0).toFixed(1);
+        hoursCell.style.color = "#ffffff";
+        hoursCell.style.fontWeight = "500";
+      } 
+      // Día libre u otro caso
+      else {
+        hoursCell.textContent = (data.total ?? 0).toFixed(1);
+        hoursCell.style.color = "#aaa";
+        hoursCell.style.fontWeight = "400";
+      }
+    }
+  } catch (err) {
+    console.warn("TeamView live badge error:", err);
+  }
+}
+
+// 🔄 Actualiza cada 2 minutos automáticamente
+setInterval(updateTeamViewLiveStatus, 120000);
+
+/* ============================================================
    🧩 Employee Modal — Full Rebuild (v4.9.4 Stable Clone)
    + ⏱️ Live Shift Integration (v2.3 Instant Total)
    ============================================================ */
