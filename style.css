@@ -512,7 +512,7 @@ td {
 }
 
 /* ============================================================
-   🧩 EMPLOYEE PANEL — GLASS WHITE SOLID FIX (v4.8.3c)
+   🧩 EMPLOYEE PANEL — LAYOUT FIX (v4.8.3d)
    ============================================================ */
 .employee-modal.emp-panel {
   position: fixed;
@@ -521,84 +521,101 @@ td {
   transform: translate(-50%, -50%) scale(1);
   width: 420px;
   max-width: 90vw;
-  background: rgba(255, 255, 255, 0.98); /* fondo casi sólido */
+  background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(12px) saturate(150%);
   -webkit-backdrop-filter: blur(12px) saturate(150%);
   border: 1px solid rgba(255,255,255,0.3);
   border-radius: 18px;
-  padding: 30px 28px;
+  padding: 32px 26px 28px 26px;
   box-shadow: 0 0 45px rgba(0,120,255,0.35);
   text-align: center;
   z-index: 9999;
   animation: fadeIn 0.4s ease;
 }
 
-/* ✅ Quita el fondo transparente global */
-.employee-modal {
-  background: none !important;
-}
+/* Elimina cualquier overlay o fondo oscuro */
+.employee-modal { background: none !important; }
 
-/* ===== Text & layout inside panel ===== */
+/* ---------- Header ---------- */
+.emp-header {
+  margin-bottom: 10px;
+  text-align: center;
+}
 .emp-header h3 {
-  font-size: 20px;
+  font-size: 22px;
   color: #000;
-  margin-bottom: 4px;
   font-weight: 700;
+  margin: 0;
 }
-
 .emp-phone {
-  margin: 4px 0 6px 0;
+  margin-top: 4px;
   color: #0078ff;
   font-size: 15px;
   font-weight: 600;
 }
-
 .emp-role {
-  color: #777;
+  margin-top: 2px;
+  color: #888;
   font-size: 14px;
-  margin-bottom: 10px;
 }
 
+/* ---------- Table ---------- */
 .schedule-mini {
   width: 100%;
   border-collapse: collapse;
-  margin: 10px auto;
+  margin-top: 14px;
   font-size: 16px;
+  text-align: center;
 }
 .schedule-mini th {
   background: rgba(0,120,255,0.05);
   color: #0078ff;
   border-bottom: 2px solid rgba(0,120,255,0.2);
-  padding: 6px;
+  padding: 8px;
 }
 .schedule-mini td {
   padding: 6px;
   border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
+/* ---------- Totals + Refresh ---------- */
 .total {
+  margin-top: 16px;
   color: #e60000;
   font-size: 18px;
-  margin-top: 12px;
   font-weight: 600;
 }
-
 .emp-refresh {
-  margin-top: 12px;
+  margin-top: 14px;
   background: #0078ff;
   color: #fff;
   border: none;
   border-radius: 8px;
-  padding: 8px 14px;
+  padding: 8px 16px;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 16px rgba(0,120,255,0.25);
 }
 .emp-refresh:hover { background: #0096ff; }
 
+/* ---------- Live Hours ---------- */
 .live-hours {
-  margin-top: 8px;
+  margin-top: 10px;
   color: #0078ff;
   font-weight: 600;
   font-size: 16px;
 }
+
+/* ---------- Close button ---------- */
+.emp-close {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  color: #777;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.emp-close:hover { color: #e60000; transform: scale(1.1); }
