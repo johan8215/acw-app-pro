@@ -762,3 +762,32 @@ button.signin-btn:hover {
   from {opacity:1;}
   to {opacity:0;}
 }
+
+/* === TEAM VIEW FIX (v5.5.3 visual) === */
+.directory-wrapper.tv-wrapper {
+  position: fixed !important;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: auto;
+  max-width: 520px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  box-shadow: 0 0 30px rgba(0,0,0,0.45);
+  padding: 20px 25px;
+  animation: fadeIn 0.25s ease;
+  z-index: 999;
+  backdrop-filter: blur(12px);
+}
+
+.directory-table th, .directory-table td {
+  text-align: center;
+  padding: 8px 10px;
+  font-size: 0.95em;
+}
+
+.tv-live {
+  color: #33ff66;
+  text-shadow: 0 0 10px rgba(51,255,102,0.6);
+}
