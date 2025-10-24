@@ -1,6 +1,13 @@
 /* ============================================================
-   🧠 ACW-App v4.7.4 — Blue Glass White Edition (Stable Clean Build)
-   Johan A. Giraldo (JAG15) & Sky — Oct 2025
+   🧠 ACW-App v5.5.3 — Blue Glass White Edition (Stable Live Totals)
+   Johan A. Giraldo (JAG15) & Sky — October 2025
+   ============================================================
+   ✅ Mejoras incluidas:
+   - FIX: Cálculo en vivo del total semanal sin duplicar horas.
+   - Añadido dataset.baseHours → suma visual precisa (+x.x).
+   - Limpieza automática al cerrar turno (🕓 se detiene).
+   - Mantiene sincronía entre Team View y Employee Modal.
+   - Optimización visual estable en cronómetro + total.
    ============================================================ */
 
 let currentUser = null;
