@@ -710,47 +710,53 @@ function enableModalLiveShift(modal, days) {
     const cellHours = row.cells[2];
     cellHours.dataset.locked = "true";
 
-    // 🟢 Turno activo (ej. "7:30.")
-    if (shift.endsWith(".")) {
-      const startStr = shift.replace(".", "").trim();
-      const startTime = parseTime(startStr);
+   // 💡 Guardar las horas base del total (una sola vez)
+const totalEl = modal.querySelector(".total b");
+if (totalEl && !totalEl.dataset.baseHours) {
+  totalEl.dataset.baseHours = totalEl.textContent;
+}
 
-      const update = () => {
-        const now = new Date();
-        const diffHrs = Math.max(0, (now - startTime) / 36e5);
+// 🟢 Turno activo (ej. "7:30.")
+if (shift.endsWith(".")) {
+  const startStr = shift.replace(".", "").trim();
+  const startTime = parseTime(startStr);
 
-        // Mostrar horas vivas ⏱️
-        cellHours.innerHTML = `⏱️ ${diffHrs.toFixed(1)}h`;
-        cellHours.style.color = "#33a0ff";
-        cellHours.style.fontWeight = "600";
+  const update = () => {
+    const now = new Date();
+    const diffHrs = Math.max(0, (now - startTime) / 36e5);
 
-        // 💡 Sumar al total (solo visual)
-        const totalEl = modal.querySelector(".total b");
-        if (totalEl) {
-          const base = parseFloat(totalEl.textContent) || 0;
-          const combined = base + diffHrs;
-          totalEl.innerHTML = `${combined.toFixed(1)} <span style="color:#33a0ff;font-size:0.85em;">(+${diffHrs.toFixed(1)})</span>`;
-        }
+    // Mostrar horas vivas ⏱️
+    cellHours.innerHTML = `⏱️ ${diffHrs.toFixed(1)}h`;
+    cellHours.style.color = "#33a0ff";
+    cellHours.style.fontWeight = "600";
 
-        // Mostrar 🟢 Working si aún no existe
-        if (!modal.querySelector(".emp-working")) {
-          const header = modal.querySelector(".emp-header h3");
-          const badge = document.createElement("span");
-          badge.className = "emp-working";
-          badge.textContent = "🟢 Working";
-          badge.style.display = "block";
-          badge.style.fontWeight = "600";
-          badge.style.color = "#33ff66";
-          badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
-          badge.style.marginBottom = "4px";
-          header.parentNode.insertBefore(badge, header);
-        }
-      };
-
-      update();
-      clearInterval(modal.liveTimer);
-      modal.liveTimer = setInterval(update, 60000);
+    // 💡 Sumar al total (solo visual)
+    const totalEl = modal.querySelector(".total b");
+    if (totalEl) {
+      const base = parseFloat(totalEl.dataset.baseHours || totalEl.textContent) || 0;
+      const combined = base + diffHrs;
+      totalEl.innerHTML = `${combined.toFixed(1)} <span style="color:#33a0ff;font-size:0.85em;">(+${diffHrs.toFixed(1)})</span>`;
     }
+
+    // Mostrar 🟢 Working si aún no existe
+    if (!modal.querySelector(".emp-working")) {
+      const header = modal.querySelector(".emp-header h3");
+      const badge = document.createElement("span");
+      badge.className = "emp-working";
+      badge.textContent = "🟢 Working";
+      badge.style.display = "block";
+      badge.style.fontWeight = "600";
+      badge.style.color = "#33ff66";
+      badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
+      badge.style.marginBottom = "4px";
+      header.parentNode.insertBefore(badge, header);
+    }
+  };
+
+  update();
+  clearInterval(modal.liveTimer);
+  modal.liveTimer = setInterval(update, 60000);
+}
 
     // 🔚 Turno cerrado → mostrar horas totales normales
     else {
