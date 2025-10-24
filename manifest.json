@@ -1,10 +1,12 @@
 {
-  "name": "Allston Car Wash",
+  "name": "ACW-App | Allston Car Wash",
   "short_name": "ACW",
+  "description": "Allston Car Wash – Employee Live Schedule & Team View",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "orientation": "portrait",
+  "background_color": "#081a33",
+  "theme_color": "#0e2a59",
   "icons": [
     {
       "src": "acw-icon-512.png",
