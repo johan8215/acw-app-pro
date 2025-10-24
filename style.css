@@ -741,3 +741,24 @@ button.signin-btn:hover {
   50% { opacity: 1; text-shadow: 0 0 16px rgba(51,255,102,0.9); }
   100% { opacity: 0.8; text-shadow: 0 0 6px rgba(51,255,102,0.3); }
 }
+
+/* === TEAM VIEW CLEAN STYLE === */
+.tv-table th, .tv-table td {
+  text-align: center;
+  padding: 6px 10px;
+}
+.tv-live {
+  color: #33ff66;
+  text-shadow: 0 0 8px rgba(51,255,102,0.5);
+}
+@keyframes fadeIn {
+  from {opacity:0; filter:blur(3px);}
+  to {opacity:1; filter:blur(0);}
+}
+.fade-out {
+  animation: fadeOut 0.25s forwards;
+}
+@keyframes fadeOut {
+  from {opacity:1;}
+  to {opacity:0;}
+}
