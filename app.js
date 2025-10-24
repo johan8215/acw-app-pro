@@ -1,9 +1,10 @@
 /* ============================================================
-   🎨 ACW-App v5.4.7 — Blue Glass White Edition (Unified Stable)
-   Johan A. Giraldo | JAG15 | Allston Car Wash © 2025
+   🧠 ACW-App v4.7.4 — Blue Glass White Edition (Stable Clean Build)
+   Johan A. Giraldo (JAG15) & Sky — Oct 2025
    ============================================================ */
 
 let currentUser = null;
+let scheduleData = null;
 
 /* ============================================================
    🔐 LOGIN
@@ -34,7 +35,6 @@ async function loginUser() {
     currentUser = data;
     localStorage.setItem("acwUser", JSON.stringify(data));
     diag.textContent = "✅ Welcome, " + data.name + "!";
-
     showWelcome(data.name, data.role);
     await loadSchedule(email);
   } catch (err) {
@@ -48,7 +48,6 @@ async function loginUser() {
 
 /* ============================================================
    👋 SHOW WELCOME DASHBOARD — with delayed phone render
-   (ÚNICA definición; sin duplicados)
    ============================================================ */
 async function showWelcome(name, role) {
   document.getElementById("login").style.display = "none";
@@ -56,21 +55,25 @@ async function showWelcome(name, role) {
   document.getElementById("welcomeName").innerHTML = `<b>${name}</b>`;
   document.getElementById("welcomeRole").textContent = role;
 
-  if (["manager", "supervisor"].includes((role || "").toLowerCase())) {
-    addTeamButton();
-  }
+  // Solo managers o supervisores ven el botón "Team View"
+  if (["manager", "supervisor"].includes(role.toLowerCase())) addTeamButton();
 
-  // Render teléfono desde directorio
+  // 🔍 Buscar teléfono desde Employees list
   try {
     const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
     const data = await res.json();
+
     if (data.ok && data.directory) {
       const match = data.directory.find(e =>
         e.email?.toLowerCase() === (currentUser?.email || "").toLowerCase()
       );
-      if (match?.phone) {
+
+      if (match && match.phone) {
         setTimeout(() => {
-          document.querySelector(".user-phone")?.remove();
+          const existing = document.querySelector(".user-phone");
+          if (existing) existing.remove();
+
+          // Teléfono clickeable con efecto azul
           const phoneHTML = `<p class="user-phone">📞 <a href="tel:${match.phone}" style="color:#0078ff;text-decoration:none;font-weight:600;">${match.phone}</a></p>`;
           const nameEl = document.getElementById("welcomeName");
           if (nameEl) nameEl.insertAdjacentHTML("afterend", phoneHTML);
@@ -83,7 +86,7 @@ async function showWelcome(name, role) {
 }
 
 /* ============================================================
-   📅 LOAD SCHEDULE — with Auto Live Timer + Safe Total
+   📅 LOAD SCHEDULE — with Auto Live Timer (v4.7.5)
    ============================================================ */
 async function loadSchedule(email) {
   const schedDiv = document.getElementById("schedule");
@@ -98,11 +101,12 @@ async function loadSchedule(email) {
       return;
     }
 
-    // Tabla principal
+    // 🧾 Construir la tabla principal
     let html = `
-      <table id="mainSchedule">
+      <table>
         <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
     `;
+
     data.days.forEach(d => {
       const isToday = new Date()
         .toLocaleString("en-US", { weekday: "short" })
@@ -116,35 +120,50 @@ async function loadSchedule(email) {
           <td>${d.hours || "0"}</td>
         </tr>`;
     });
-    html += `</table>
-      <p class="total">⚪ Total Hours: <b id="mainTotal">${(Number(data.total)||0).toFixed(1)}</b></p>
+
+    html += `
+      </table>
+      <p class="total">Total Hours: <b>${data.total || 0}</b></p>
     `;
 
     schedDiv.innerHTML = html;
 
-    // Observador para evitar que el total desaparezca
-    const totalEl = document.getElementById("mainTotal");
-    if (totalEl) {
-      const fixedVal = totalEl.textContent;
-      const obs = new MutationObserver(() => {
-        if (totalEl.textContent.trim() === "") totalEl.textContent = fixedVal;
-      });
-      obs.observe(totalEl, { childList: true, characterData: true, subtree: true });
-    }
-
-    // Iniciar live timer e inyectar horas vivas en la celda del día
+    // ⏱️ Activar cronómetro 1 segundo después de mostrar la tabla
     setTimeout(() => {
       if (data.ok && data.days) {
         startLiveTimer(data.days, Number(data.total || 0));
-        const tableEl = document.getElementById("mainSchedule");
-        if (tableEl) injectLiveHoursInTable(data.days, tableEl);
       }
-    }, 600);
+    }, 1000);
 
   } catch (err) {
     console.error("Error loading schedule:", err);
     schedDiv.innerHTML = `<p style="color:#c00;">Error loading schedule. Please try again later.</p>`;
   }
+}
+
+/* ============================================================
+   ⚙️ SETTINGS + REFRESH
+   ============================================================ */
+function openSettings() {
+  document.getElementById("settingsModal").style.display = "block";
+}
+function closeSettings() {
+  document.getElementById("settingsModal").style.display = "none";
+}
+function refreshApp() {
+  closeSettings?.();
+  if ("caches" in window) caches.keys().then(names => names.forEach(n => caches.delete(n)));
+  const btn = document.querySelector(".settings-section button:first-child");
+  if (btn) {
+    btn.innerHTML = "⏳ Updating...";
+    btn.style.opacity = "0.7";
+  }
+  setTimeout(() => window.location.reload(true), 1200);
+}
+function logoutUser() {
+  localStorage.removeItem("acwUser");
+  closeSettings();
+  setTimeout(() => window.location.reload(true), 600);
 }
 
 /* ============================================================
@@ -161,31 +180,32 @@ window.addEventListener("load", () => {
 });
 
 /* ============================================================
-   ⏱️ Live Shift + 🟢 Online Badge
+   ⏱️ ACW-App v5.3.6 — Live Shift + 🟢 Online Badge (Stable)
+   Johan A. Giraldo | Allston Car Wash © 2025
    ============================================================ */
 function startLiveTimer(days, total) {
   try {
-    const todayKey = new Date().toLocaleString("en-US", { weekday: "short" }).slice(0,3).toLowerCase();
-    const today = days.find(d => d.name.slice(0,3).toLowerCase() === todayKey);
-    if (!today || !today.shift || /off/i.test(today.shift)) {
-      removeOnlineBadge();
-      safeUpdateTotal(total, false);
-      return;
-    }
+    // Buscar el día actual
+    const todayName = new Date().toLocaleString("en-US", { weekday: "short" }).slice(0,3).toLowerCase();
+   const today = days.find(d => d.name.slice(0,3).toLowerCase() === todayName);
+     console.log("🧭 Hoy detectado:", todayName, today);
+    if (!today || !today.shift || /off/i.test(today.shift)) return;
 
     const shift = today.shift.trim();
+
+    // El badge 🟢 solo aparece si el turno está activo (7:30.)
     removeOnlineBadge();
 
-    // Turno activo: "7:30."
     if (shift.endsWith(".")) {
       addOnlineBadge();
+
       const startStr = shift.replace(".", "").trim();
       const startTime = parseTime(startStr);
 
       const update = () => {
         const now = new Date();
         const diffHrs = Math.max(0, (now - startTime) / 36e5);
-        safeUpdateTotal(total + diffHrs, true);
+        updateTotalDisplay(total + diffHrs, true);
         showLiveHours(diffHrs, true);
       };
 
@@ -195,23 +215,31 @@ function startLiveTimer(days, total) {
       return;
     }
 
-    // Turno cerrado: "7:30 - 6"
+    // Turno cerrado ("7:30 - 6") → sin cronómetro ni badge
     const parts = shift.split("-");
-    if (parts.length === 2) {
-      const startTime = parseTime(parts[0].trim());
-      const endTime   = parseTime(parts[1].trim());
-      const diffHrs   = Math.max(0, (endTime - startTime) / 36e5);
-      showLiveHours(diffHrs, false);
-      safeUpdateTotal(total, false);
-      removeOnlineBadge();
-    }
+    if (parts.length < 2) return;
+
+    const startStr = parts[0].trim();
+    const endStr = parts[1].trim();
+    if (!startStr || !endStr) return;
+
+    const startTime = parseTime(startStr);
+    const endTime = parseTime(endStr);
+    const diffHrs = Math.max(0, (endTime - startTime) / 36e5);
+
+    updateTotalDisplay(total, false);
+    showLiveHours(diffHrs, false);
+    removeOnlineBadge();
+     // Mostrar también ⏱️ dentro de la tabla principal (o modal)
+const tableEl = document.querySelector("#schedule table") || document.querySelector(".schedule-mini");
+if (tableEl) injectLiveHoursInTable(days, tableEl);
   } catch (err) {
     console.warn("⏱️ Live shift inactive:", err);
   }
 }
 
 /* ============================================================
-   💡 LIVE HOURS + TOTAL (seguros)
+   💡 LIVE HOURS + TOTAL
    ============================================================ */
 function showLiveHours(hours, active = true) {
   let el = document.querySelector(".live-hours");
@@ -223,28 +251,33 @@ function showLiveHours(hours, active = true) {
     el.style.textShadow = "0 0 10px rgba(0,120,255,0.4)";
     document.querySelector("#schedule")?.appendChild(el);
   }
-  el.innerHTML = active ? `⏱️ <b style="color:#33a0ff">${hours.toFixed(1)}h</b>` : "";
-}
 
-// Wrapper seguro para evitar parpadeos o vacíos
-function safeUpdateTotal(value, active) {
-  if (isNaN(value)) return;
-  const totalEl = document.getElementById("mainTotal");
-  if (!totalEl) return;
-  const prev = parseFloat(totalEl.textContent || "0");
-  if (Math.abs(prev - value) < 0.01 && totalEl.textContent.trim() !== "") return;
-
-  totalEl.textContent = value.toFixed(1);
-  const p = totalEl.closest(".total");
-  if (p) {
-    const color = active ? "#33a0ff" : "#ffffff";
-    p.innerHTML = `<span style="color:${color}">⚪ Total Hours: <b id="mainTotal">${value.toFixed(1)}</b></span>`;
+  if (!active) {
+    el.textContent = "";
+    return;
   }
+
+  el.innerHTML = `⏱️ <b style="color:#33a0ff">${hours.toFixed(1)}h</b>`;
 }
 
 function updateTotalDisplay(value, active = false) {
-  // compat antigua
-  safeUpdateTotal(value, active);
+  const totalEl = document.querySelector(".total");
+  if (!totalEl) return;
+
+  // Verificar si el valor es válido
+  if (isNaN(value) || value === null || value === undefined) {
+    console.warn("⚠️ Invalid total value, keeping previous total.");
+    return; // No actualizar si el valor no es válido
+  }
+
+  const current = totalEl.innerText.match(/[\d.]+/);
+  const currentVal = current ? parseFloat(current[0]) : 0;
+
+  // Solo actualizar si cambia realmente o si el texto está vacío
+  if (Math.abs(currentVal - value) > 0.01 || totalEl.textContent.trim() === "") {
+    const color = active ? "#33a0ff" : "#ffffff";
+    totalEl.innerHTML = `<span style="color:${color}">⚪ Total Hours: <b>${value.toFixed(1)}</b></span>`;
+  }
 }
 
 /* ============================================================
@@ -256,7 +289,7 @@ function addOnlineBadge() {
 
   const badge = document.createElement("span");
   badge.id = "onlineBadge";
-  badge.textContent = "🟢 Working";
+  badge.textContent = "🟢 Online";
   badge.style.display = "block";
   badge.style.fontWeight = "600";
   badge.style.color = "#33ff66";
@@ -265,6 +298,7 @@ function addOnlineBadge() {
 
   nameEl.parentNode.insertBefore(badge, nameEl);
 }
+
 function removeOnlineBadge() {
   document.getElementById("onlineBadge")?.remove();
 }
@@ -273,38 +307,46 @@ function removeOnlineBadge() {
    🕓 Parsear hora AM/PM o 24h
    ============================================================ */
 function parseTime(str) {
-  const clean = String(str).replace(/[^\d:apm ]/gi, "").trim();
-  const parts = clean.split(" ");
-  const time = parts[0] || "";
-  const meridian = (parts[1] || "").toLowerCase();
-  let [h, m] = time.split(":").map(n => parseInt(n || "0", 10));
-  if (isNaN(h)) h = 0;
-  if (isNaN(m)) m = 0;
-  if (meridian === "pm" && h !== 12) h += 12;
-  if (meridian === "am" && h === 12) h = 0;
+  const clean = str.replace(/[^\d:apm]/gi, "").trim();
+  const [time, meridian] = clean.split(" ");
+  let [h, m] = (time || "").split(":").map(Number);
+  if (meridian?.toLowerCase() === "pm" && h !== 12) h += 12;
+  if (meridian?.toLowerCase() === "am" && h === 12) h = 0;
   const d = new Date();
-  d.setHours(h, m, 0, 0);
+  d.setHours(h, m || 0, 0, 0);
   return d;
 }
 
 /* ============================================================
-   ⏱️ Live Hours en celda del día (tabla principal o modal)
+   ⏱️ ACW-App v5.4.5 — Live Hours Visible in Table (Fixed)
+   Johan A. Giraldo | Allston Car Wash © 2025
    ============================================================ */
 function injectLiveHoursInTable(days, tableEl) {
   try {
-    const todayKey = new Date().toLocaleString("en-US", { weekday: "short" }).slice(0,3).toLowerCase();
-    const today = days.find(d => d.name.slice(0,3).toLowerCase() === todayKey);
+    const todayName = new Date()
+      .toLocaleString("en-US", { weekday: "short" })
+      .slice(0, 3)
+      .toLowerCase();
+    const today = days.find(
+      d => d.name.slice(0, 3).toLowerCase() === todayName
+    );
     if (!today || !today.shift || /off/i.test(today.shift)) return;
 
-    const row = Array.from(tableEl.querySelectorAll("tr")).find(
-      r => r.cells?.[0]?.textContent.slice(0,3).toLowerCase() === todayKey
+    const shift = today.shift.trim();
+    const allRows = Array.from(tableEl.querySelectorAll("tr"));
+    const row = allRows.find(
+      r =>
+        r.cells[0]?.textContent.slice(0, 3).toLowerCase() === todayName
     );
     if (!row) return;
-    const cellHours = row.cells[2];
-    const shift = today.shift.trim();
 
+    const cellHours = row.cells[2];
+
+    // Turno activo ("7:30.")
     if (shift.endsWith(".")) {
-      const startTime = parseTime(shift.replace(".", "").trim());
+      const startStr = shift.replace(".", "").trim();
+      const startTime = parseTime(startStr);
+
       const update = () => {
         const now = new Date();
         const diffHrs = Math.max(0, (now - startTime) / 36e5);
@@ -312,9 +354,10 @@ function injectLiveHoursInTable(days, tableEl) {
         cellHours.style.color = "#33a0ff";
         cellHours.style.fontWeight = "600";
       };
+
       update();
-      clearInterval(tableEl._cellTimer);
-      tableEl._cellTimer = setInterval(update, 60000);
+      clearInterval(window.cellTimer);
+      window.cellTimer = setInterval(update, 60000);
     }
   } catch (err) {
     console.warn("Live hours in table inactive:", err);
@@ -322,9 +365,49 @@ function injectLiveHoursInTable(days, tableEl) {
 }
 
 /* ============================================================
-   👥 TEAM VIEW — Paged + Employee Panels
+   👋 SHOW WELCOME DASHBOARD — with delayed phone render
    ============================================================ */
-const TEAM_PAGE_SIZE = 8;
+async function showWelcome(name, role) {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("welcome").style.display = "block";
+  document.getElementById("welcomeName").innerHTML = `<b>${name}</b>`;
+  document.getElementById("welcomeRole").textContent = role;
+
+  // Solo managers o supervisores ven el botón "Team View"
+  if (role === "manager" || role === "supervisor") addTeamButton();
+
+  // 🔍 Buscar teléfono desde Employees list
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
+    const data = await res.json();
+
+    if (data.ok && data.directory) {
+      const match = data.directory.find(e =>
+        e.email?.toLowerCase() === (currentUser?.email || "").toLowerCase()
+      );
+
+      if (match && match.phone) {
+        setTimeout(() => {
+          const existing = document.querySelector(".user-phone");
+          if (existing) existing.remove();
+
+          // clickable + glow azul
+          const phoneHTML = `<p class="user-phone">📞 <a href="tel:${match.phone}" style="color:#0078ff;text-decoration:none;font-weight:600;">${match.phone}</a></p>`;
+          const nameEl = document.getElementById("welcomeName");
+          if (nameEl) nameEl.insertAdjacentHTML("afterend", phoneHTML);
+        }, 300);
+      }
+    }
+  } catch (err) {
+    console.warn("Could not load phone number:", err);
+  }
+}
+
+/* ============================================================
+   👥 TEAM VIEW — Paged + Employee Panels (safe drop-in)
+   ============================================================ */
+
+const TEAM_PAGE_SIZE = 8;       // empleados por página
 let __teamList = [];
 let __teamPage = 0;
 
@@ -352,10 +435,11 @@ async function loadEmployeeDirectory() {
     __teamList = data.directory || [];
     __teamPage = 0;
     renderTeamViewPage();
-  } catch (e) { console.warn(e); }
+  } catch(e){ console.warn(e); }
 }
 
 function renderTeamViewPage() {
+  // contenedor principal
   document.getElementById("directoryWrapper")?.remove();
 
   const box = document.createElement("div");
@@ -380,6 +464,7 @@ function renderTeamViewPage() {
   `;
   document.body.appendChild(box);
 
+  // página actual
   const start = __teamPage * TEAM_PAGE_SIZE;
   const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
   const body = box.querySelector("#tvBody");
@@ -392,21 +477,20 @@ function renderTeamViewPage() {
     </tr>
   `).join("");
 
+  // navegación
   box.querySelector("#tvPrev").onclick = () => { __teamPage=Math.max(0,__teamPage-1); renderTeamViewPage(); };
   box.querySelector("#tvNext").onclick = () => { __teamPage=Math.min(Math.ceil(__teamList.length/TEAM_PAGE_SIZE)-1,__teamPage+1); renderTeamViewPage(); };
 
+  // hidratar horas de la página (ligero, asincrónico)
   slice.forEach(async emp => {
     try {
       const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`);
       const d = await r.json();
       const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
       if (!tr) return;
-      tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total||0)).toFixed(1) : "0.0";
+      tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (d.total ?? 0) : "0";
     } catch(e){}
   });
-
-  // Primer render: estado en vivo
-  updateTeamViewLiveStatus();
 }
 
 /* ============================================================
@@ -425,12 +509,18 @@ async function updateTeamViewLiveStatus() {
       const data = await res.json();
       if (!data.ok || !data.days) continue;
 
-      const todayKey = new Date().toLocaleString("en-US", { weekday: "short" }).slice(0,3).toLowerCase();
-      const today = data.days.find(d => d.name.slice(0,3).toLowerCase() === todayKey);
+      const todayName = new Date()
+        .toLocaleString("en-US", { weekday: "short" })
+        .slice(0, 3)
+        .toLowerCase();
+      const today = data.days.find(
+        d => d.name.slice(0, 3).toLowerCase() === todayName
+      );
       if (!today || !today.shift) continue;
 
       const shift = today.shift.trim();
 
+      // Turno activo (ej. "7:30.")
       if (shift.endsWith(".")) {
         const startStr = shift.replace(".", "").trim();
         const startTime = parseTime(startStr);
@@ -439,28 +529,32 @@ async function updateTeamViewLiveStatus() {
         hoursCell.innerHTML = `🟢 ${diffHrs.toFixed(1)}h`;
         hoursCell.style.color = "#33ff66";
         hoursCell.style.fontWeight = "600";
-        hoursCell.classList.add("glow");
-      } else if (shift.includes("-")) {
-        hoursCell.textContent = (Number(data.total||0)).toFixed(1);
+        hoursCell.style.textShadow = "0 0 10px rgba(51,255,102,0.6)";
+      } 
+      // Turno completado o cerrado
+      else if (shift.includes("-")) {
+        hoursCell.textContent = (data.total ?? 0).toFixed(1);
         hoursCell.style.color = "#ffffff";
         hoursCell.style.fontWeight = "500";
-        hoursCell.classList.remove("glow");
-      } else {
-        hoursCell.textContent = (Number(data.total||0)).toFixed(1);
+      } 
+      // Día libre u otro caso
+      else {
+        hoursCell.textContent = (data.total ?? 0).toFixed(1);
         hoursCell.style.color = "#aaa";
         hoursCell.style.fontWeight = "400";
-        hoursCell.classList.remove("glow");
       }
     }
   } catch (err) {
     console.warn("TeamView live badge error:", err);
   }
 }
-// Auto-refresh Team View en vivo
+
+// 🔄 Actualiza cada 2 minutos automáticamente
 setInterval(updateTeamViewLiveStatus, 120000);
 
 /* ============================================================
-   🧩 Employee Modal — Full Rebuild + Live
+   🧩 Employee Modal — Full Rebuild (v4.9.4 Stable Clone)
+   + ⏱️ Live Shift Integration (v2.3 Instant Total)
    ============================================================ */
 async function openEmployeePanel(btnEl) {
   const tr = btnEl.closest("tr");
@@ -474,7 +568,9 @@ async function openEmployeePanel(btnEl) {
 
   let data = null;
   try {
-    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
+    const res = await fetch(
+      `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`
+    );
     data = await res.json();
     if (!data.ok) throw new Error("No schedule");
   } catch (e) {
@@ -482,6 +578,7 @@ async function openEmployeePanel(btnEl) {
     return;
   }
 
+  // === Crear modal estructurado ===
   const m = document.createElement("div");
   m.className = "employee-modal emp-panel";
   m.id = modalId;
@@ -495,115 +592,168 @@ async function openEmployeePanel(btnEl) {
       </div>
       <table class="schedule-mini">
         <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-        ${data.days.map(d => `
+        ${data.days
+          .map(
+            (d) => `
           <tr data-day="${d.name.slice(0,3)}" data-shift="${d.shift}">
             <td>${d.name}</td>
             <td>${d.shift || "-"}</td>
             <td>${d.hours || 0}</td>
-          </tr>`).join("")}
+          </tr>`
+          )
+          .join("")}
       </table>
-      <p class="total">⚪ Total Hours: <b>${(Number(data.total)||0).toFixed(1)}</b></p>
-      <p class="live-hours"></p>
+      <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g, "_")}">${data.total || 0}</b></p>
+      <p class="live-hours" id="lh-${name.replace(/\s+/g, "_")}"></p>
       <button class="emp-refresh">⚙️ Check for Updates</button>
     </div>
   `;
   document.body.appendChild(m);
 
+   /* === LIVE FIX: prevent total hours from disappearing === */
+setTimeout(() => {
+  const totalEl = m.querySelector(".total b");
+  if (totalEl && totalEl.textContent.trim() === "") {
+    totalEl.textContent = data.total || 0;
+  }
+}, 800);
+
+/* Forzar persistencia visual del total */
+const totalEl = m.querySelector(".total b");
+if (totalEl) {
+  const totalValue = totalEl.textContent;
+  const observer = new MutationObserver(() => {
+    if (totalEl.textContent.trim() === "") totalEl.textContent = totalValue;
+  });
+  observer.observe(totalEl, { childList: true, characterData: true, subtree: true });
+}
+
   requestAnimationFrame(() => m.classList.add("in"));
 
-  m.querySelector(".emp-close").onclick = () => {
-    clearInterval(m._liveTimer);
-    m.remove();
-  };
+  // Eventos
+  m.querySelector(".emp-close").onclick = () => m.remove();
   m.querySelector(".emp-refresh").onclick = () => checkForUpdatesInModal(m);
 
-  // Live en tabla del modal y badge Working si aplica
-  enableModalLiveShift(m, data.days);
+  /* === Detectar si el empleado tiene un shift activo hoy === */
+  const today = new Date();
+  const currentDay = today.toLocaleString("en-US", { weekday: "short" }); // "Mon", "Tue", etc.
+  const rowToday = m.querySelector(`tr[data-day^="${currentDay}"]`);
+  if (rowToday) {
+    const shift = rowToday.dataset.shift || rowToday.cells[1]?.textContent || "";
+    const [startStr, endStr] = shift.split("-").map(s => s.trim());
+    if (startStr && endStr)
+      startLiveShift(m, startStr, endStr, m.querySelector(".total"));
+
+       /* === Mostrar 🟢 Working si tiene turno activo === */
+  if (rowToday && rowToday.dataset.shift && rowToday.dataset.shift.endsWith(".")) {
+    const header = m.querySelector(".emp-header h3");
+    if (header && !m.querySelector(".emp-working")) {
+      const badge = document.createElement("span");
+      badge.className = "emp-working";
+      badge.textContent = "🟢 Working";
+      badge.style.display = "block";
+      badge.style.fontWeight = "600";
+      badge.style.color = "#33ff66";
+      badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
+      badge.style.marginBottom = "4px";
+      header.parentNode.insertBefore(badge, header);
+    }
+  }
+     // === Activar monitoreo en vivo dentro del modal ===
+enableModalLiveShift(m, data.days);
+  }
 }
 
 /* ============================================================
    ⏱️ Employee Modal Live Tracker (Working + Live Hours)
+   v5.4.2 — Prevent overwriting total (Stable)
    ============================================================ */
 function enableModalLiveShift(modal, days) {
   try {
-    const todayKey = new Date().toLocaleString("en-US", { weekday: "short" }).slice(0,3).toLowerCase();
-    const today = days.find(d => d.name.slice(0,3).toLowerCase() === todayKey);
+    const todayName = new Date()
+      .toLocaleString("en-US", { weekday: "short" })
+      .slice(0, 3)
+      .toLowerCase();
+
+    const today = days.find(
+      d => d.name.slice(0, 3).toLowerCase() === todayName
+    );
     if (!today || !today.shift || /off/i.test(today.shift)) return;
 
+    const shift = today.shift.trim();
     const table = modal.querySelector(".schedule-mini");
     const row = Array.from(table.querySelectorAll("tr")).find(
-      r => r.cells?.[0]?.textContent.slice(0,3).toLowerCase() === todayKey
+      r => r.cells[0]?.textContent.slice(0, 3).toLowerCase() === todayName
     );
     if (!row) return;
     const cellHours = row.cells[2];
-    const shift = today.shift.trim();
 
+    // 🔒 evita que otro proceso borre el contenido
+    cellHours.dataset.locked = "true";
+
+    // Turno activo (ej. "7:30.")
     if (shift.endsWith(".")) {
-      // badge
-      if (!modal.querySelector(".emp-working")) {
-        const header = modal.querySelector(".emp-header h3");
-        const badge = document.createElement("span");
-        badge.className = "emp-working";
-        badge.textContent = "🟢 Working";
-        badge.style.display = "block";
-        badge.style.fontWeight = "600";
-        badge.style.color = "#33ff66";
-        badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
-        badge.style.marginBottom = "4px";
-        header.parentNode.insertBefore(badge, header);
-      }
+      const startStr = shift.replace(".", "").trim();
+      const startTime = parseTime(startStr);
 
-      const startTime = parseTime(shift.replace(".", "").trim());
       const update = () => {
         const now = new Date();
         const diffHrs = Math.max(0, (now - startTime) / 36e5);
         cellHours.innerHTML = `⏱️ ${diffHrs.toFixed(1)}h`;
         cellHours.style.color = "#33a0ff";
         cellHours.style.fontWeight = "600";
-      };
-      update();
-      clearInterval(modal._liveTimer);
-      modal._liveTimer = setInterval(update, 60000);
 
-    } else if (shift.includes("-")) {
-      const [s, e] = shift.split("-").map(s => s.trim());
-      const startTime = parseTime(s);
-      const endTime   = parseTime(e);
-      const diffHrs   = Math.max(0, (endTime - startTime) / 36e5);
-      cellHours.innerHTML = `${diffHrs.toFixed(1)}h`;
-      cellHours.style.color = "#999";
-      cellHours.style.fontWeight = "500";
-      modal.querySelector(".emp-working")?.remove();
-      clearInterval(modal._liveTimer);
+        // Mostrar 🟢 Working si aún no existe
+        if (!modal.querySelector(".emp-working")) {
+          const header = modal.querySelector(".emp-header h3");
+          const badge = document.createElement("span");
+          badge.className = "emp-working";
+          badge.textContent = "🟢 Working";
+          badge.style.display = "block";
+          badge.style.fontWeight = "600";
+          badge.style.color = "#33ff66";
+          badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
+          badge.style.marginBottom = "4px";
+          header.parentNode.insertBefore(badge, header);
+        }
+      };
+
+      update();
+      clearInterval(modal.liveTimer);
+      modal.liveTimer = setInterval(update, 60000);
+    } 
+    // 🔚 Turno cerrado → mostrar horas totales y quitar "Working"
+    else {
+      const parts = shift.split("-");
+      if (parts.length === 2) {
+        const startStr = parts[0].trim();
+        const endStr = parts[1].trim();
+        const startTime = parseTime(startStr);
+        const endTime = parseTime(endStr);
+        const diffHrs = Math.max(0, (endTime - startTime) / 36e5);
+        cellHours.innerHTML = `${diffHrs.toFixed(1)}h`;
+        cellHours.style.color = "#999";
+        cellHours.style.fontWeight = "500";
+      }
+
+      // Eliminar 🟢 Working si existía
+      const badge = modal.querySelector(".emp-working");
+      if (badge) badge.remove();
     }
+
+    // ✅ Refuerzo: si otra función intenta limpiar la celda, la restauramos
+    const observer = new MutationObserver(() => {
+      if (cellHours.dataset.locked === "true" && cellHours.textContent.trim() === "") {
+        cellHours.textContent = cellHours.dataset.lastValue || cellHours.textContent;
+      } else {
+        cellHours.dataset.lastValue = cellHours.textContent;
+      }
+    });
+    observer.observe(cellHours, { childList: true, characterData: true, subtree: true });
+
   } catch (err) {
     console.warn("Modal live tracker inactive:", err);
   }
-}
-
-/* ============================================================
-   ⚙️ SETTINGS + REFRESH
-   ============================================================ */
-function openSettings() {
-  document.getElementById("settingsModal").style.display = "block";
-}
-function closeSettings() {
-  document.getElementById("settingsModal").style.display = "none";
-}
-function refreshApp() {
-  closeSettings?.();
-  if ("caches" in window) caches.keys().then(names => names.forEach(n => caches.delete(n)));
-  const btn = document.querySelector(".settings-section button:first-child");
-  if (btn) {
-    btn.innerHTML = "⏳ Updating...";
-    btn.style.opacity = "0.7";
-  }
-  setTimeout(() => window.location.reload(true), 1200);
-}
-function logoutUser() {
-  localStorage.removeItem("acwUser");
-  closeSettings();
-  setTimeout(() => window.location.reload(true), 600);
 }
 
 /* ============================================================
