@@ -75,32 +75,35 @@
     }
   </script>
 
-<!-- 📲 INSTALL HANDLER -->
+<!-- 📲 INSTALL HANDLER — v2.1 (iOS friendly) -->
 <script>
   let deferredPrompt;
   const installBtn = document.getElementById("installToPhoneBtn");
   const tip = document.getElementById("installTip");
 
-  function isIOS() {
-    return /iphone|ipad|ipod/i.test(navigator.userAgent);
-  }
+  // Detecta plataforma
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
 
-  // Detect Chrome / Android prompt
+  // 1️⃣ Chrome / Android
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredPrompt = e;
     tip.textContent = "Install ACW-App for faster access 🚀";
   });
 
-  // Mostrar guía automáticamente si es iPhone/iPad
+  // 2️⃣ iPhone / Safari: mostrar guía automáticamente
   window.addEventListener("load", () => {
-    if (isIOS() && !window.matchMedia('(display-mode: standalone)').matches) {
+    if (isIOS && !isStandalone) {
       tip.innerHTML = "📲 On iPhone: Tap <b>Share</b> → <b>Add to Home Screen</b>";
       tip.style.color = "#33a0ff";
+      installBtn.disabled = false;
     }
   });
 
+  // 3️⃣ Acción del botón
   installBtn.addEventListener("click", async () => {
+    // Chrome / Android
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
@@ -109,15 +112,22 @@
           ? "✅ App installed successfully!"
           : "ℹ️ Installation canceled.";
       deferredPrompt = null;
-    } else if (isIOS()) {
-      tip.innerHTML = "📲 On iPhone: Tap <b>Share</b> → <b>Add to Home Screen</b>";
-      tip.style.color = "#33a0ff";
-    } else {
-      tip.textContent = "⚙️ Installation not supported on this browser.";
+      return;
     }
+
+    // Safari / iPhone
+    if (isIOS) {
+      tip.innerHTML = "📲 Tap <b>Share</b> → <b>Add to Home Screen</b>";
+      tip.style.color = "#33a0ff";
+      return;
+    }
+
+    // Otros navegadores
+    tip.textContent = "⚙️ This browser does not support installation prompts.";
+    tip.style.color = "#ccc";
   });
 
-  // Hide button if already installed
+  // 4️⃣ Si ya está instalada, ocultar el botón
   window.addEventListener("appinstalled", () => {
     installBtn.style.display = "none";
     tip.textContent = "✅ ACW-App already installed.";
