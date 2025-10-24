@@ -527,6 +527,7 @@ async function updateTeamViewLiveStatus() {
     for (const row of rows) {
       const email = row.dataset.email;
       const liveCell = row.querySelector(".tv-live");
+      const totalCell = row.querySelector(".tv-hours");
 
       const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
       const data = await res.json();
@@ -542,10 +543,20 @@ async function updateTeamViewLiveStatus() {
         const startTime = parseTime(startStr);
         const now = new Date();
         const diffHrs = Math.max(0, (now - startTime) / 36e5);
+
+        // 🟢 Live
         liveCell.innerHTML = `🟢 ${diffHrs.toFixed(1)}h`;
         liveCell.style.color = "#33ff66";
         liveCell.style.fontWeight = "600";
         liveCell.style.textShadow = "0 0 10px rgba(51,255,102,0.6)";
+
+        // 💡 Mostrar total + live (+x.x)
+        if (totalCell && !isNaN(parseFloat(totalCell.textContent))) {
+          const staticHours = parseFloat(totalCell.textContent);
+          const combined = staticHours + diffHrs;
+          totalCell.innerHTML = `${combined.toFixed(1)} <span style="color:#33a0ff;font-size:0.85em;">(+${diffHrs.toFixed(1)})</span>`;
+        }
+
       } else {
         liveCell.innerHTML = "—";
         liveCell.style.color = "#aaa";
