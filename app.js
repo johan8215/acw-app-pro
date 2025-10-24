@@ -699,8 +699,7 @@ function enableModalLiveShift(modal, days) {
 
     // 🔒 evita que otro proceso borre el contenido
     cellHours.dataset.locked = "true";
-     
-// Turno activo (ej. "7:30.")
+ // Turno activo (ej. "7:30.")
 if (shift.endsWith(".")) {
   const startStr = shift.replace(".", "").trim();
   const startTime = parseTime(startStr);
@@ -714,7 +713,7 @@ if (shift.endsWith(".")) {
     cellHours.style.color = "#33a0ff";
     cellHours.style.fontWeight = "600";
 
-    // 💡 Sumar visualmente al total (sin alterar el backend)
+    // 💡 Actualizar total con suma en vivo (solo visual)
     const totalEl = modal.querySelector(".total b");
     if (totalEl) {
       const base = parseFloat(totalEl.textContent) || 0;
@@ -741,7 +740,6 @@ if (shift.endsWith(".")) {
   clearInterval(modal.liveTimer);
   modal.liveTimer = setInterval(update, 60000);
 }
-
     } 
     // 🔚 Turno cerrado → mostrar horas totales y quitar "Working"
     else {
