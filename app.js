@@ -706,53 +706,53 @@ function enableModalLiveShift(modal, days) {
       r => r.cells[0]?.textContent.slice(0, 3).toLowerCase() === todayName
     );
     if (!row) return;
+
     const cellHours = row.cells[2];
-
-    // 🔒 evita que otro proceso borre el contenido
     cellHours.dataset.locked = "true";
- // Turno activo (ej. "7:30.")
-if (shift.endsWith(".")) {
-  const startStr = shift.replace(".", "").trim();
-  const startTime = parseTime(startStr);
 
-  const update = () => {
-    const now = new Date();
-    const diffHrs = Math.max(0, (now - startTime) / 36e5);
+    // 🟢 Turno activo (ej. "7:30.")
+    if (shift.endsWith(".")) {
+      const startStr = shift.replace(".", "").trim();
+      const startTime = parseTime(startStr);
 
-    // Mostrar horas vivas ⏱️
-    cellHours.innerHTML = `⏱️ ${diffHrs.toFixed(1)}h`;
-    cellHours.style.color = "#33a0ff";
-    cellHours.style.fontWeight = "600";
+      const update = () => {
+        const now = new Date();
+        const diffHrs = Math.max(0, (now - startTime) / 36e5);
 
-    // 💡 Actualizar total con suma en vivo (solo visual)
-    const totalEl = modal.querySelector(".total b");
-    if (totalEl) {
-      const base = parseFloat(totalEl.textContent) || 0;
-      const combined = base + diffHrs;
-      totalEl.innerHTML = `${combined.toFixed(1)} <span style="color:#33a0ff;font-size:0.85em;">(+${diffHrs.toFixed(1)})</span>`;
+        // Mostrar horas vivas ⏱️
+        cellHours.innerHTML = `⏱️ ${diffHrs.toFixed(1)}h`;
+        cellHours.style.color = "#33a0ff";
+        cellHours.style.fontWeight = "600";
+
+        // 💡 Sumar al total (solo visual)
+        const totalEl = modal.querySelector(".total b");
+        if (totalEl) {
+          const base = parseFloat(totalEl.textContent) || 0;
+          const combined = base + diffHrs;
+          totalEl.innerHTML = `${combined.toFixed(1)} <span style="color:#33a0ff;font-size:0.85em;">(+${diffHrs.toFixed(1)})</span>`;
+        }
+
+        // Mostrar 🟢 Working si aún no existe
+        if (!modal.querySelector(".emp-working")) {
+          const header = modal.querySelector(".emp-header h3");
+          const badge = document.createElement("span");
+          badge.className = "emp-working";
+          badge.textContent = "🟢 Working";
+          badge.style.display = "block";
+          badge.style.fontWeight = "600";
+          badge.style.color = "#33ff66";
+          badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
+          badge.style.marginBottom = "4px";
+          header.parentNode.insertBefore(badge, header);
+        }
+      };
+
+      update();
+      clearInterval(modal.liveTimer);
+      modal.liveTimer = setInterval(update, 60000);
     }
 
-    // Mostrar 🟢 Working si aún no existe
-    if (!modal.querySelector(".emp-working")) {
-      const header = modal.querySelector(".emp-header h3");
-      const badge = document.createElement("span");
-      badge.className = "emp-working";
-      badge.textContent = "🟢 Working";
-      badge.style.display = "block";
-      badge.style.fontWeight = "600";
-      badge.style.color = "#33ff66";
-      badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
-      badge.style.marginBottom = "4px";
-      header.parentNode.insertBefore(badge, header);
-    }
-  };
-
-  update();
-  clearInterval(modal.liveTimer);
-  modal.liveTimer = setInterval(update, 60000);
-}
-    } 
-    // 🔚 Turno cerrado → mostrar horas totales y quitar "Working"
+    // 🔚 Turno cerrado → mostrar horas totales normales
     else {
       const parts = shift.split("-");
       if (parts.length === 2) {
@@ -766,12 +766,11 @@ if (shift.endsWith(".")) {
         cellHours.style.fontWeight = "500";
       }
 
-      // Eliminar 🟢 Working si existía
       const badge = modal.querySelector(".emp-working");
       if (badge) badge.remove();
     }
 
-    // ✅ Refuerzo: si otra función intenta limpiar la celda, la restauramos
+    // ✅ Protección: evita que otra función borre los valores
     const observer = new MutationObserver(() => {
       if (cellHours.dataset.locked === "true" && cellHours.textContent.trim() === "") {
         cellHours.textContent = cellHours.dataset.lastValue || cellHours.textContent;
