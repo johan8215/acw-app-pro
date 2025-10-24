@@ -402,14 +402,17 @@ async function showWelcome(name, role) {
     console.warn("Could not load phone number:", err);
   }
 }
+
 /* ============================================================
-   👥 TEAM VIEW — Paged + Employee Panels (safe drop-in)
+   👥 TEAM VIEW — v5.5.2 (Centered + Live Column + Fast Open)
+   Johan A. Giraldo (JAG15) | Allston Car Wash © 2025
    ============================================================ */
 
-const TEAM_PAGE_SIZE = 8;       // empleados por página
+const TEAM_PAGE_SIZE = 8;
 let __teamList = [];
 let __teamPage = 0;
 
+/* === Mostrar botón Team View solo a managers/supervisores === */
 function addTeamButton() {
   if (document.getElementById("teamBtn")) return;
   const btn = document.createElement("button");
@@ -420,12 +423,18 @@ function addTeamButton() {
   document.body.appendChild(btn);
 }
 
+/* === Abrir/cerrar vista de equipo === */
 function toggleTeamOverview() {
   const wrapper = document.getElementById("directoryWrapper");
-  if (wrapper) { wrapper.remove(); return; }
+  if (wrapper) {
+    wrapper.classList.add("fade-out");
+    setTimeout(() => wrapper.remove(), 250);
+    return;
+  }
   loadEmployeeDirectory();
 }
 
+/* === Cargar lista de empleados === */
 async function loadEmployeeDirectory() {
   try {
     const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
@@ -434,20 +443,27 @@ async function loadEmployeeDirectory() {
     __teamList = data.directory || [];
     __teamPage = 0;
     renderTeamViewPage();
-  } catch(e){ console.warn(e); }
+  } catch (e) {
+    console.warn(e);
+  }
 }
 
+/* === Renderizar tabla centrada con 3 columnas === */
 function renderTeamViewPage() {
-  // contenedor principal
   document.getElementById("directoryWrapper")?.remove();
 
   const box = document.createElement("div");
   box.id = "directoryWrapper";
   box.className = "directory-wrapper tv-wrapper";
+  box.style.display = "flex";
+  box.style.flexDirection = "column";
+  box.style.alignItems = "center";
+  box.style.justifyContent = "center";
+  box.style.animation = "fadeIn 0.3s ease";
   box.innerHTML = `
     <div class="tv-head">
-      <h3>Team View</h3>
-      <button class="tv-close" onclick="document.getElementById('directoryWrapper').remove()">✖️</button>
+      <h3 style="margin-bottom:6px;">Team View</h3>
+      <button class="tv-close" onclick="toggleTeamOverview()">✖️</button>
     </div>
 
     <div class="tv-pager">
@@ -456,76 +472,18 @@ function renderTeamViewPage() {
       <button class="tv-nav" id="tvNext" ${(__teamPage+1)>=Math.ceil(__teamList.length/TEAM_PAGE_SIZE)?'disabled':''}>Next ›</button>
     </div>
 
-    <table class="directory-table tv-table">
-      <tr><th>Name</th><th>Hours</th><th></th></tr>
-      <tbody id="tvBody"></tbody>
-    </table>
-  `;
-  document.body.appendChild(box);
-
-  // página actual
-  const start = __teamPage * TEAM_PAGE_SIZE;
-  const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
-  const body = box.querySelector("#tvBody");
-
-  body.innerHTML = slice.map(emp => `
-    <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role||''}" data-phone="${emp.phone||''}">
-      <td><b>${emp.name}</b></td>
-      <td class="tv-hours">—</td>
-      <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
-    </tr>
-  `).join("");
-
-  // navegación
-  box.querySelector("#tvPrev").onclick = () => { __teamPage=Math.max(0,__teamPage-1); renderTeamViewPage(); };
-  box.querySelector("#tvNext").onclick = () => { __teamPage=Math.min(Math.ceil(__teamList.length/TEAM_PAGE_SIZE)-1,__teamPage+1); renderTeamViewPage(); };
-
-  // hidratar horas de la página (ligero, asincrónico)
-  slice.forEach(async emp => {
-    try {
-      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`);
-      const d = await r.json();
-      const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
-      if (!tr) return;
-      tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (d.total ?? 0) : "0";
-    } catch(e){}
-  });
-}
-
-/* ============================================================
-   👥 TEAM VIEW — Updated with Live (Working) Column
-   ============================================================ */
-
-function renderTeamViewPage() {
-  document.getElementById("directoryWrapper")?.remove();
-
-  const box = document.createElement("div");
-  box.id = "directoryWrapper";
-  box.className = "directory-wrapper tv-wrapper";
-  box.innerHTML = `
-    <div class="tv-head">
-      <h3>Team View</h3>
-      <button class="tv-close" onclick="document.getElementById('directoryWrapper').remove()">✖️</button>
-    </div>
-
-    <div class="tv-pager">
-      <button class="tv-nav" id="tvPrev" ${__teamPage===0?'disabled':''}>‹ Prev</button>
-      <span class="tv-index">Page ${__teamPage+1} / ${Math.max(1, Math.ceil(__teamList.length/TEAM_PAGE_SIZE))}</span>
-      <button class="tv-nav" id="tvNext" ${(__teamPage+1)>=Math.ceil(__teamList.length/TEAM_PAGE_SIZE)?'disabled':''}>Next ›</button>
-    </div>
-
-    <table class="directory-table tv-table">
+    <table class="directory-table tv-table" style="margin-top:10px;min-width:450px;text-align:center;">
       <tr><th>Name</th><th>Hours</th><th>Live (Working)</th><th></th></tr>
       <tbody id="tvBody"></tbody>
     </table>
   `;
   document.body.appendChild(box);
 
-  // Página actual
   const start = __teamPage * TEAM_PAGE_SIZE;
   const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
   const body = box.querySelector("#tvBody");
 
+  // === filas ===
   body.innerHTML = slice.map(emp => `
     <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role||''}" data-phone="${emp.phone||''}">
       <td><b>${emp.name}</b></td>
@@ -535,11 +493,17 @@ function renderTeamViewPage() {
     </tr>
   `).join("");
 
-  // Navegación
-  box.querySelector("#tvPrev").onclick = () => { __teamPage=Math.max(0,__teamPage-1); renderTeamViewPage(); };
-  box.querySelector("#tvNext").onclick = () => { __teamPage=Math.min(Math.ceil(__teamList.length/TEAM_PAGE_SIZE)-1,__teamPage+1); renderTeamViewPage(); };
+  // === Navegación ===
+  box.querySelector("#tvPrev").onclick = () => {
+    __teamPage = Math.max(0, __teamPage - 1);
+    renderTeamViewPage();
+  };
+  box.querySelector("#tvNext").onclick = () => {
+    __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1);
+    renderTeamViewPage();
+  };
 
-  // Hidratar horas (total)
+  // === Cargar horas totales por empleado ===
   slice.forEach(async emp => {
     try {
       const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`);
@@ -549,11 +513,12 @@ function renderTeamViewPage() {
       tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (d.total ?? 0).toFixed(1) : "0";
     } catch(e){}
   });
+
+  // === Refrescar estado LIVE (Working) ===
+  updateTeamViewLiveStatus();
 }
 
-/* ============================================================
-   🟢 Team View Live (Working) Status — Fixed Update
-   ============================================================ */
+/* === Actualización Live: columna “Live (Working)” === */
 async function updateTeamViewLiveStatus() {
   try {
     const rows = document.querySelectorAll(".tv-table tr[data-email]");
@@ -567,19 +532,16 @@ async function updateTeamViewLiveStatus() {
       const data = await res.json();
       if (!data.ok || !data.days) continue;
 
-      const todayName = new Date().toLocaleString("en-US", { weekday: "short" }).slice(0, 3).toLowerCase();
-      const today = data.days.find(d => d.name.slice(0, 3).toLowerCase() === todayName);
+      const todayName = new Date().toLocaleString("en-US", { weekday: "short" }).slice(0,3).toLowerCase();
+      const today = data.days.find(d => d.name.slice(0,3).toLowerCase() === todayName);
       if (!today || !today.shift) continue;
 
       const shift = today.shift.trim();
-
-      // Turno activo (ej. "7:30.")
       if (shift.endsWith(".")) {
         const startStr = shift.replace(".", "").trim();
         const startTime = parseTime(startStr);
         const now = new Date();
         const diffHrs = Math.max(0, (now - startTime) / 36e5);
-
         liveCell.innerHTML = `🟢 ${diffHrs.toFixed(1)}h`;
         liveCell.style.color = "#33ff66";
         liveCell.style.fontWeight = "600";
@@ -592,7 +554,7 @@ async function updateTeamViewLiveStatus() {
       }
     }
   } catch (err) {
-    console.warn("TeamView live badge error:", err);
+    console.warn("Team View Live update error:", err);
   }
 }
 
