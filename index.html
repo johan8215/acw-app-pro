@@ -75,59 +75,60 @@
     }
   </script>
 
-<!-- 📲 INSTALL HANDLER — v2.1 (iOS friendly) -->
+<!-- 📲 INSTALL HANDLER — Final iOS + Android + Desktop Version -->
 <script>
-  let deferredPrompt;
   const installBtn = document.getElementById("installToPhoneBtn");
   const tip = document.getElementById("installTip");
+  let deferredPrompt;
 
-  // Detecta plataforma
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+  function isIOS() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  }
+  function isInStandaloneMode() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  }
 
-  // 1️⃣ Chrome / Android
+  // Android / Chrome
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredPrompt = e;
     tip.textContent = "Install ACW-App for faster access 🚀";
   });
 
-  // 2️⃣ iPhone / Safari: mostrar guía automáticamente
+  // Mostrar guía automática en iPhone
   window.addEventListener("load", () => {
-    if (isIOS && !isStandalone) {
+    if (isIOS() && !isInStandaloneMode()) {
       tip.innerHTML = "📲 On iPhone: Tap <b>Share</b> → <b>Add to Home Screen</b>";
       tip.style.color = "#33a0ff";
-      installBtn.disabled = false;
+      installBtn.textContent = "📲 How to Install on iPhone";
     }
   });
 
-  // 3️⃣ Acción del botón
   installBtn.addEventListener("click", async () => {
     // Chrome / Android
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      tip.textContent =
-        outcome === "accepted"
-          ? "✅ App installed successfully!"
-          : "ℹ️ Installation canceled.";
+      tip.textContent = outcome === "accepted"
+        ? "✅ App installed successfully!"
+        : "ℹ️ Installation canceled.";
       deferredPrompt = null;
       return;
     }
 
     // Safari / iPhone
-    if (isIOS) {
-      tip.innerHTML = "📲 Tap <b>Share</b> → <b>Add to Home Screen</b>";
+    if (isIOS()) {
+      tip.innerHTML = "📲 On iPhone: Tap <b>Share</b> → <b>Add to Home Screen</b>";
       tip.style.color = "#33a0ff";
       return;
     }
 
-    // Otros navegadores
-    tip.textContent = "⚙️ This browser does not support installation prompts.";
+    // Desktop u otros navegadores
+    tip.textContent = "💻 On desktop: use Chrome or Edge to install.";
     tip.style.color = "#ccc";
   });
 
-  // 4️⃣ Si ya está instalada, ocultar el botón
+  // Ya instalada
   window.addEventListener("appinstalled", () => {
     installBtn.style.display = "none";
     tip.textContent = "✅ ACW-App already installed.";
