@@ -72,57 +72,5 @@
         .catch(err => console.warn('SW registration failed:', err));
     }
   </script>
-  <!-- 📲 INSTALL APP BUTTON -->
-<button id="installBtn" style="
-  display:none;
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: linear-gradient(135deg, #007bff, #33a0ff);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  padding: 12px 20px;
-  font-size: 1.1em;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  cursor: pointer;
-  transition: all 0.25s ease;
-  z-index: 9999;
-">
-  📲 Install ACW-App
-</button>
-
-<script>
-  let deferredPrompt;
-  const installBtn = document.getElementById("installBtn");
-
-  window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    installBtn.style.display = "block";
-  });
-
-  installBtn.addEventListener("click", async () => {
-    installBtn.style.display = "none";
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") {
-        console.log("✅ App installed successfully");
-      } else {
-        console.log("ℹ️ Installation dismissed");
-      }
-      deferredPrompt = null;
-    }
-  });
-
-  // Detectar si ya está instalada
-  window.addEventListener("appinstalled", () => {
-    installBtn.style.display = "none";
-    console.log("✅ ACW-App is already installed");
-  });
-</script>
 </body>
 </html>
