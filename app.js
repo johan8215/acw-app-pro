@@ -402,7 +402,6 @@ async function showWelcome(name, role) {
     console.warn("Could not load phone number:", err);
   }
 }
-
 /* ============================================================
    👥 TEAM VIEW — Paged + Employee Panels (safe drop-in)
    ============================================================ */
@@ -494,7 +493,66 @@ function renderTeamViewPage() {
 }
 
 /* ============================================================
-   🟢 Team View Live Badges — Online + Working
+   👥 TEAM VIEW — Updated with Live (Working) Column
+   ============================================================ */
+
+function renderTeamViewPage() {
+  document.getElementById("directoryWrapper")?.remove();
+
+  const box = document.createElement("div");
+  box.id = "directoryWrapper";
+  box.className = "directory-wrapper tv-wrapper";
+  box.innerHTML = `
+    <div class="tv-head">
+      <h3>Team View</h3>
+      <button class="tv-close" onclick="document.getElementById('directoryWrapper').remove()">✖️</button>
+    </div>
+
+    <div class="tv-pager">
+      <button class="tv-nav" id="tvPrev" ${__teamPage===0?'disabled':''}>‹ Prev</button>
+      <span class="tv-index">Page ${__teamPage+1} / ${Math.max(1, Math.ceil(__teamList.length/TEAM_PAGE_SIZE))}</span>
+      <button class="tv-nav" id="tvNext" ${(__teamPage+1)>=Math.ceil(__teamList.length/TEAM_PAGE_SIZE)?'disabled':''}>Next ›</button>
+    </div>
+
+    <table class="directory-table tv-table">
+      <tr><th>Name</th><th>Hours</th><th>Live (Working)</th><th></th></tr>
+      <tbody id="tvBody"></tbody>
+    </table>
+  `;
+  document.body.appendChild(box);
+
+  // Página actual
+  const start = __teamPage * TEAM_PAGE_SIZE;
+  const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
+  const body = box.querySelector("#tvBody");
+
+  body.innerHTML = slice.map(emp => `
+    <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role||''}" data-phone="${emp.phone||''}">
+      <td><b>${emp.name}</b></td>
+      <td class="tv-hours">—</td>
+      <td class="tv-live">—</td>
+      <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
+    </tr>
+  `).join("");
+
+  // Navegación
+  box.querySelector("#tvPrev").onclick = () => { __teamPage=Math.max(0,__teamPage-1); renderTeamViewPage(); };
+  box.querySelector("#tvNext").onclick = () => { __teamPage=Math.min(Math.ceil(__teamList.length/TEAM_PAGE_SIZE)-1,__teamPage+1); renderTeamViewPage(); };
+
+  // Hidratar horas (total)
+  slice.forEach(async emp => {
+    try {
+      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`);
+      const d = await r.json();
+      const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
+      if (!tr) return;
+      tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (d.total ?? 0).toFixed(1) : "0";
+    } catch(e){}
+  });
+}
+
+/* ============================================================
+   🟢 Team View Live (Working) Status — Fixed Update
    ============================================================ */
 async function updateTeamViewLiveStatus() {
   try {
@@ -503,19 +561,14 @@ async function updateTeamViewLiveStatus() {
 
     for (const row of rows) {
       const email = row.dataset.email;
-      const hoursCell = row.querySelector(".tv-hours");
+      const liveCell = row.querySelector(".tv-live");
 
       const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
       const data = await res.json();
       if (!data.ok || !data.days) continue;
 
-      const todayName = new Date()
-        .toLocaleString("en-US", { weekday: "short" })
-        .slice(0, 3)
-        .toLowerCase();
-      const today = data.days.find(
-        d => d.name.slice(0, 3).toLowerCase() === todayName
-      );
+      const todayName = new Date().toLocaleString("en-US", { weekday: "short" }).slice(0, 3).toLowerCase();
+      const today = data.days.find(d => d.name.slice(0, 3).toLowerCase() === todayName);
       if (!today || !today.shift) continue;
 
       const shift = today.shift.trim();
@@ -526,22 +579,16 @@ async function updateTeamViewLiveStatus() {
         const startTime = parseTime(startStr);
         const now = new Date();
         const diffHrs = Math.max(0, (now - startTime) / 36e5);
-        hoursCell.innerHTML = `🟢 ${diffHrs.toFixed(1)}h`;
-        hoursCell.style.color = "#33ff66";
-        hoursCell.style.fontWeight = "600";
-        hoursCell.style.textShadow = "0 0 10px rgba(51,255,102,0.6)";
-      } 
-      // Turno completado o cerrado
-      else if (shift.includes("-")) {
-        hoursCell.textContent = (data.total ?? 0).toFixed(1);
-        hoursCell.style.color = "#ffffff";
-        hoursCell.style.fontWeight = "500";
-      } 
-      // Día libre u otro caso
-      else {
-        hoursCell.textContent = (data.total ?? 0).toFixed(1);
-        hoursCell.style.color = "#aaa";
-        hoursCell.style.fontWeight = "400";
+
+        liveCell.innerHTML = `🟢 ${diffHrs.toFixed(1)}h`;
+        liveCell.style.color = "#33ff66";
+        liveCell.style.fontWeight = "600";
+        liveCell.style.textShadow = "0 0 10px rgba(51,255,102,0.6)";
+      } else {
+        liveCell.innerHTML = "—";
+        liveCell.style.color = "#aaa";
+        liveCell.style.fontWeight = "400";
+        liveCell.style.textShadow = "none";
       }
     }
   } catch (err) {
@@ -549,7 +596,7 @@ async function updateTeamViewLiveStatus() {
   }
 }
 
-// 🔄 Actualiza cada 2 minutos automáticamente
+// 🔄 Actualiza cada 2 minutos
 setInterval(updateTeamViewLiveStatus, 120000);
 
 /* ============================================================
