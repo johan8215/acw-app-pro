@@ -1,77 +1,60 @@
-<p align="center">
-  <img src="https://i.imgur.com/1LqoqYp.png" width="120" alt="ACW Logo"><br>
-  <h2 align="center">🚘 Allston Car Wash — ACW-App v4.7.4</h2>
-  <p align="center">
-    <b>Blue Glass White Edition (Stable Clean Build)</b><br>
-    Johan A. Giraldo (JAG15) & Sky — October 2025
-  </p>
-</p>
+# 🧠 ACW-App – Blue Glass White Edition  
+**Developed by Johan A. Giraldo (JAG15)**  
+Allston Car Wash © 2025  
 
 ---
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Version-4.7.4-blue?style=for-the-badge&logo=vercel">
-  <img src="https://img.shields.io/badge/Status-Stable-success?style=for-the-badge&logo=github">
-  <img src="https://img.shields.io/badge/Platform-PWA%20|%20Web%20|%20iOS%20|%20Android-lightgrey?style=for-the-badge&logo=googlechrome">
-  <img src="https://img.shields.io/badge/Made%20with-%E2%9D%A4%EF%B8%8F%20in%20Boston-red?style=for-the-badge">
-</p>
+## 🚀 Overview
+**ACW-App** is a modern, web-based management system designed for **Allston Car Wash** employees and supervisors.  
+It allows users to view schedules, monitor live working hours, and manage staff visibility — all from a clean, mobile-friendly interface.
 
 ---
 
-## 🧠 Overview
+## 🧩 Features
 
-**ACW-App** is a modern Progressive Web Application (PWA) built for  
-**Allston Car Wash (Boston, MA)** to manage employee schedules, live shift tracking,  
-and internal communication.  
+### 👤 Employee View
+- Secure login with Google Apps Script backend  
+- Daily and weekly schedule viewer  
+- Live working hours tracker (🕓 updates every minute)  
+- Auto-cleanup after shift ends  
+- Offline-friendly (PWA-ready)
 
-The **Blue Glass White Edition** introduces a clean white interface with glassy blue shadows,  
-enhanced real-time hour updates, and optimized session handling.
+### 👥 Team View (Managers & Supervisors)
+- Paginated employee directory  
+- Total weekly hours per employee  
+- Live “🟢 Working” column with real-time updates  
+- Quick access to each employee’s detailed modal
 
----
-
-## 🎨 UI & Design
-
-| Element | Description |
-|----------|-------------|
-| **Theme** | White minimalist + Blue-glass glow |
-| **Accent Color** | `#0078ff` Metallic Blue |
-| **Typography** | Segoe UI / Roboto (centered layout) |
-| **Components** | Floating panels, blur-glass modals, glowing buttons |
-
-<p align="center">
-  <img src="https://i.imgur.com/QLxFoRy.png" width="420" alt="UI Preview">
-</p>
+### 💡 Interface & Design
+- “Blue Glass White” minimalist theme  
+- Smooth centered modal transitions  
+- Smart persistence of totals and live hours  
+- Dynamic UI for mobile & desktop  
 
 ---
 
-## 🧩 Core Features
-
-### 🔐 Login System
-- Secure login with server validation  
-- Fetches user phone and role dynamically  
-- Persistent sessions using `localStorage`
-
-### 📅 Smart Schedule
-- Loads from Google Sheets backend (`getSmartSchedule`)  
-- Highlights current day automatically  
-- Displays total weekly hours  
-
-### ⏱️ Live Hours Indicator
-- Real-time shift timer (auto-updates every 60s)  
-- Adds live worked hours to total dynamically  
-- Overtime (>9h) shown in **red 🔴**
-
-### 👥 Team View
-- Floating glass panel with full directory (Name / Role / Email / Phone)  
-- ✖️ Close button for easy exit  
-- Optimized for iPhone, iPad, and desktop  
-
-### ⚙️ Settings Modal
-- Floating blue-glass settings button ⚙️  
-- Inside:  
-  - 🔄 **Check for Updates** → Clears cache + reloads app  
-  - 🚪 **Log Out** → Resets session instantly  
+## 📦 Latest Version
+### **v5.5.3 – Stable Live Totals**
+✅ Visual total-hour correction  
+✅ Live hour addition without duplication  
+✅ TeamView & Modal fully synced  
+✅ Clean automatic reset after closing shift  
 
 ---
 
-## 📁 File Structure
+## 🗓️ Version History
+| Version | Title | Highlights |
+|----------|--------|-------------|
+| v4.7.4 | Stable Clean Build | Base framework, login, schedule table |
+| v5.4.5 | Live Hours Fix | Fixed table-hour rendering & refresh |
+| v5.5.2 | Team View Centered | Added Live Column, faster open |
+| v5.5.3 | Stable Live Totals | Visual live hours, stable calculations |
+
+---
+
+## ⚙️ Configuration
+Edit your `config.js` file:
+```js
+const CONFIG = {
+  BASE_URL: "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"
+};
