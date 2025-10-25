@@ -609,40 +609,40 @@ async function openEmployeePanel(btnEl) {
   const m = document.createElement("div");
   m.className = "employee-modal emp-panel";
   m.id = modalId;
-  m.innerHTML = `
-    <div class="emp-box">
-      <button class="emp-close">×</button>
-      <div class="emp-header">
-        <h3>${name}</h3>
-        ${phone ? `<p class="emp-phone"><a href="tel:${phone}">${phone}</a></p>` : ""}
-        <p class="emp-role">${role}</p>
-      </div>
-      <table class="schedule-mini">
-        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-        ${data.days
-          .map(
-            (d) => `
-          <tr data-day="${d.name.slice(0,3)}" data-shift="${d.shift}">
-            <td>${d.name}</td>
-            <td>${d.shift || "-"}</td>
-            <td>${d.hours || 0}</td>
-          </tr>`
-          )
-          .join("")}
-      </table>
-      <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g, "_")}">${data.total || 0}</b></p>
-      <p class="live-hours" id="lh-${name.replace(/\s+/g, "_")}"></p>
-      <button class="emp-refresh">⚙️ Check for Updates</button>
+ m.innerHTML = `
+  <div class="emp-box">
+    <button class="emp-close">×</button>
+    <div class="emp-header">
+      <h3>${name}</h3>
+      ${phone ? `<p class="emp-phone"><a href="tel:${phone}">${phone}</a></p>` : ""}
+      <p class="emp-role">${role}</p>
     </div>
-  `;
+    <table class="schedule-mini">
+      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+      ${data.days
+        .map(
+          (d) => `
+        <tr data-day="${d.name.slice(0,3)}" data-shift="${d.shift}">
+          <td>${d.name}</td>
+          <td>${d.shift || "-"}</td>
+          <td>${d.hours || 0}</td>
+        </tr>`
+        )
+        .join("")}
+    </table>
+    <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g, "_")}">${data.total || 0}</b></p>
+    <p class="live-hours" id="lh-${name.replace(/\s+/g, "_")}"></p>
+    <button class="emp-refresh">⚙️ Check for Updates</button>
 
-       <!-- 🔘 ACTION BUTTONS -->
+    <!-- 🔘 ACTION BUTTONS -->
     <div class="emp-actions">
       <button class="btn-update" onclick="updateShiftFromModal('${email}')">✏️ Update Shift</button>
       <button class="btn-today" onclick="sendShiftMessage('${email}','sendtoday')">📤 Send Today</button>
       <button class="btn-tomorrow" onclick="sendShiftMessage('${email}','sendtomorrow')">📤 Send Tomorrow</button>
       <p id="empStatusMsg-${email.replace(/[@.]/g,'_')}" class="emp-status-msg"></p>
     </div>
+  </div>
+`;
 
   document.body.appendChild(m);
 
