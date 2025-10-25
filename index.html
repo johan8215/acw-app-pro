@@ -41,10 +41,31 @@
       <span class="close" onclick="closeSettings()">×</span>
       <h3>⚙️ Settings</h3>
 
+      <!-- 🔑 CHANGE PASSWORD MODAL -->
+<div id="changePasswordModal" class="modal">
+  <div class="modal-content glass">
+    <span class="close" onclick="closeChangePassword()">×</span>
+    <h3>🔑 Change Password</h3>
+
+    <div class="settings-section">
+      <input id="oldPass" type="password" placeholder="Current password" autocomplete="current-password" />
+      <input id="newPass" type="password" placeholder="New password" autocomplete="new-password" />
+      <input id="confirmPass" type="password" placeholder="Confirm new password" autocomplete="new-password" />
+      <button onclick="submitChangePassword()">✅ Save New Password</button>
+      <p id="passDiag" class="error" style="margin-top:8px;"></p>
+    </div>
+  </div>
+</div>
+
       <div class="settings-section">
         <button onclick="refreshApp()">🔄 Check for Updates</button>
         <button onclick="logoutUser()">🚪 Log Out</button>
       </div>
+
+      <!-- 🔑 CHANGE PASSWORD -->
+<div class="settings-section" style="margin-top:10px;">
+  <button onclick="openChangePassword()">🔑 Change Password</button>
+</div>
 
       <!-- 📲 DOWNLOAD TO PHONE -->
       <div class="settings-section" style="margin-top:18px;text-align:center;">
