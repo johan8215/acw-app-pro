@@ -839,3 +839,61 @@ button.signin-btn:hover {
   background: #ff3333;
   transform: translateY(-1px);
 }
+
+/* ============================================================
+   🧭 EMPLOYEE MODAL ACTION BUTTONS (v5.5)
+   ============================================================ */
+.emp-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.emp-actions button {
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* ✏️ Update */
+.emp-actions .btn-update {
+  background: linear-gradient(135deg, #007bff, #0096ff);
+}
+.emp-actions .btn-update:hover {
+  background: linear-gradient(135deg, #0096ff, #33a0ff);
+  transform: translateY(-2px);
+}
+
+/* 📤 Send Today */
+.emp-actions .btn-today {
+  background: linear-gradient(135deg, #e60000, #ff3333);
+}
+.emp-actions .btn-today:hover {
+  background: linear-gradient(135deg, #ff3333, #ff6666);
+  transform: translateY(-2px);
+}
+
+/* 📤 Send Tomorrow */
+.emp-actions .btn-tomorrow {
+  background: linear-gradient(135deg, #ff8800, #ffaa33);
+}
+.emp-actions .btn-tomorrow:hover {
+  background: linear-gradient(135deg, #ffaa33, #ffbb55);
+  transform: translateY(-2px);
+}
+
+/* Estado del envío */
+.emp-status-msg {
+  width: 100%;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9em;
+  margin-top: 6px;
+}
