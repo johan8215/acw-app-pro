@@ -635,6 +635,15 @@ async function openEmployeePanel(btnEl) {
       <button class="emp-refresh">⚙️ Check for Updates</button>
     </div>
   `;
+
+       <!-- 🔘 ACTION BUTTONS -->
+    <div class="emp-actions">
+      <button class="btn-update" onclick="updateShiftFromModal('${email}')">✏️ Update Shift</button>
+      <button class="btn-today" onclick="sendShiftMessage('${email}','sendtoday')">📤 Send Today</button>
+      <button class="btn-tomorrow" onclick="sendShiftMessage('${email}','sendtomorrow')">📤 Send Tomorrow</button>
+      <p id="empStatusMsg-${email.replace(/[@.]/g,'_')}" class="emp-status-msg"></p>
+    </div>
+
   document.body.appendChild(m);
 
    /* === LIVE FIX: prevent total hours from disappearing === */
