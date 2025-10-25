@@ -579,57 +579,6 @@ async function updateTeamViewLiveStatus() {
 // 🔄 Actualiza cada 2 minutos
 setInterval(updateTeamViewLiveStatus, 120000);
 
-/* ============================================================
-   🧩 Employee Modal — Manager Edition v5.5.9
-   Johan A. Giraldo (JAG15) & Sky — October 2025
-   ============================================================ */
-async function openEmployeePanel(btnEl) {
-  const tr = btnEl.closest("tr");
-  const email = tr.dataset.email;
-  const name = tr.dataset.name;
-  const role = tr.dataset.role || "";
-  const phone = tr.dataset.phone || "";
-
-  const modalId = `emp-${email.replace(/[@.]/g, "_")}`;
-  if (document.getElementById(modalId)) return;
-
-  let data = null;
-  try {
-    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
-    data = await res.json();
-    if (!data.ok) throw new Error("No schedule");
-  } catch (e) {
-    alert("No schedule found for this employee.");
-    return;
-  }
-
-  // === Crear modal principal ===
-  const m = document.createElement("div");
-  m.className = "employee-modal emp-panel";
-  m.id = modalId;
-  m.innerHTML = `
-    <div class="emp-box">
-      <button class="emp-close">×</button>
-      <div class="emp-header">
-        <h3>${name}</h3>
-        ${phone ? `<p class="emp-phone"><a href="tel:${phone}">${phone}</a></p>` : ""}
-        <p class="emp-role">${role}</p>
-      </div>
-      <table class="schedule-mini">
-        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-        ${data.days.map(d => `
-          <tr data-day="${d.name.slice(0,3)}" data-shift="${d.shift}">
-            <td>${d.name}</td>
-            <td contenteditable="${["manager","supervisor"].includes((currentUser?.role||"").toLowerCase())}">${d.shift || "-"}</td>
-            <td>${d.hours || 0}</td>
-          </tr>
-        `).join("")}
-      </table>
-      <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g, "_")}">${data.total || 0}</b></p>
-      <p class="live-hours" id="lh-${name.replace(/\s+/g, "_")}"></p>
-      <button class="emp-refresh">⚙️ Check for Updates</button>
-    </div>
-  `;
 
   /* ============================================================
      🔘 Manager Buttons (Dynamic Injection)
@@ -1071,190 +1020,125 @@ window.sendShiftMessage = async (...args) => {
   }
 };
 
-/* =====================================================================
-   ACW-App v5.5.6 — Secure Ultra-Fast Manager Patch (Bottom Toast)
-   Author: JAG15 & Sky — Oct 2025
-   Safe add-on: no overrides; only binds if not already patched
-===================================================================== */
-(() => {
-  if (window.__ACW556_PATCHED__) return;
-  window.__ACW556_PATCHED__ = true;
+/* ============================================================
+   🧩 ACW Manager Tools — Unified (v5.6.1)
+   Johan A. Giraldo (JAG15) & Sky — Oct 2025
+   ============================================================ */
 
-  // ---- Config guard (no rompe si ya existe en config.js)
-  const ACW_BASE = (typeof CONFIG !== "undefined" && CONFIG.BASE_URL)
-    ? CONFIG.BASE_URL
-    : "https://script.google.com/macros/s/AKfycbwgwpnpeB9ZUxn241xITDlsTNSOdiDqNqh0fWpfX7QCiAPGjEWwTfnDD4si88fIEI7O/exec";
+// === Abre el panel del empleado ===
+async function openEmployeePanel(btnEl) {
+  const tr = btnEl.closest("tr");
+  const email = tr.dataset.email;
+  const name = tr.dataset.name;
+  const role = tr.dataset.role || "";
+  const phone = tr.dataset.phone || "";
 
-  // ---- Util: role check
-  function isManagerRole(role) {
-    return typeof role === "string" && ["manager","supervisor"].includes(role.toLowerCase());
-  }
-  function isManagerUser() {
-    try {
-      const u = window.currentUser || JSON.parse(localStorage.getItem("acwUser") || "{}");
-      return u && isManagerRole(u.role || "");
-    } catch { return false; }
-  }
+  const modalId = `emp-${email.replace(/[@.]/g, "_")}`;
+  if (document.getElementById(modalId)) return;
 
-  // ---- Toast (bottom centered)
-  (function injectToastStyles() {
-    if (document.getElementById("acw-toast-style")) return;
-    const css = `
-      #acwToast {
-        position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
-        min-width: 220px; max-width: 92vw; padding: 10px 14px; border-radius: 10px;
-        background: rgba(20,20,20,.85); color:#fff; font-weight:600; font-size:.95em;
-        box-shadow: 0 10px 30px rgba(0,0,0,.25);
-        backdrop-filter: blur(6px);
-        z-index: 99999; opacity: 0; pointer-events: none; transition: opacity .2s ease;
-        text-align:center;
-      }
-      #acwToast.show { opacity: 1; }
-      #acwToast .ok { color:#51e37b; }
-      #acwToast .err{ color:#ff6b6b; }
-      #acwToast .info{ color:#58aaff; }
-    `;
-    const s = document.createElement("style");
-    s.id = "acw-toast-style";
-    s.textContent = css;
-    document.head.appendChild(s);
-  })();
-  function toast(html, type="info", ms=1600) {
-    let el = document.getElementById("acwToast");
-    if (!el) {
-      el = document.createElement("div");
-      el.id = "acwToast";
-      document.body.appendChild(el);
-    }
-    el.innerHTML = `<span class="${type}">${html}</span>`;
-    el.classList.add("show");
-    clearTimeout(el.__t);
-    el.__t = setTimeout(() => el.classList.remove("show"), ms);
+  let data = null;
+  try {
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
+    data = await res.json();
+    if (!data.ok) throw new Error("No schedule");
+  } catch {
+    alert("No schedule found for this employee.");
+    return;
   }
 
-  // ---- Safe JSON fetch
-  async function jget(url) {
-    const res = await fetch(url, { credentials: "omit", cache: "no-store" });
-    try { return await res.json(); } catch { return { ok:false, error:"bad_json" }; }
-  }
-
-  // ---- Public actions (bind only once)
-  async function sendShiftMessage(targetEmail, action) {
-    const actor = (window.currentUser && currentUser.email) || (JSON.parse(localStorage.getItem("acwUser")||"{}").email);
-    if (!actor) { toast("⚠️ Session expired. Please log in.", "err"); return; }
-    if (!/^(sendtoday|sendtomorrow)$/i.test(action)) { toast("⚠️ Invalid action", "err"); return; }
-
-    toast("📡 Sending…", "info");
-    const url = `${ACW_BASE}?action=${action.toLowerCase()}&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}`;
-    const data = await jget(url);
-    if (data && data.ok) {
-      toast(action.toLowerCase()==="sendtoday" ? "✅ Sent Today" : "✅ Sent Tomorrow", "ok");
-    } else {
-      toast(`❌ ${data?.error || "Error sending"}`, "err", 2200);
-    }
-  }
-  async function updateShiftFromModal(email) {
-    // Esta acción es local/rápida (placeholder); evita romper nada en sheets.
-    toast("✏️ Shift updated (local)", "ok");
-  }
-
-  // ---- Make handlers globally visible (si la app los llama desde HTML)
-  window.sendShiftMessage = window.sendShiftMessage || sendShiftMessage;
-  window.updateShiftFromModal = window.updateShiftFromModal || updateShiftFromModal;
-
-  // ---- Helper: crear bloque de botones
-  function buildManagerActions(email) {
-    const safeId = email.replace(/[@.]/g, "_");
-    const wrap = document.createElement("div");
-    wrap.className = "emp-actions";
-    wrap.style.marginTop = "10px";
-    wrap.innerHTML = `
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn-update"   data-email="${email}">✏️ Update Shift</button>
-        <button class="btn-today"    data-email="${email}">📤 Send Today</button>
-        <button class="btn-tomorrow" data-email="${email}">📤 Send Tomorrow</button>
+  // Crear modal
+  const m = document.createElement("div");
+  m.className = "employee-modal emp-panel";
+  m.id = modalId;
+  m.innerHTML = `
+    <div class="emp-box">
+      <button class="emp-close">×</button>
+      <div class="emp-header">
+        <h3>${name}</h3>
+        ${phone ? `<p><a href="tel:${phone}">${phone}</a></p>` : ""}
+        <p>${role}</p>
       </div>
-      <p id="empStatusMsg-${safeId}" class="emp-status-msg" style="min-height:18px;margin-top:6px;"></p>
-    `;
-    // styles suaves
-    wrap.querySelectorAll("button").forEach(b=>{
-      b.style.padding="8px 10px";
-      b.style.border="none";
-      b.style.borderRadius="8px";
-      b.style.cursor="pointer";
-      b.style.fontWeight="600";
-      b.style.boxShadow="0 4px 12px rgba(0,0,0,.12)";
-    });
-    wrap.querySelector(".btn-update").style.background="#e9efff";
-    wrap.querySelector(".btn-today").style.background="#e7fff0";
-    wrap.querySelector(".btn-tomorrow").style.background="#e7f5ff";
-    return wrap;
-  }
+      <table class="schedule-mini">
+        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+        ${data.days.map(d => `
+          <tr data-day="${d.name.slice(0,3)}">
+            <td>${d.name}</td>
+            <td contenteditable="${["manager","supervisor"].includes((currentUser?.role||"").toLowerCase())}">${d.shift || "-"}</td>
+            <td>${d.hours || 0}</td>
+          </tr>`).join("")}
+      </table>
+      <p class="total">Total Hours: <b>${data.total || 0}</b></p>
+      <div class="emp-actions">
+        <button class="btn-update">✏️ Update Shift</button>
+        <button class="btn-today">📤 Send Today</button>
+        <button class="btn-tomorrow">📤 Send Tomorrow</button>
+        <p id="empStatusMsg-${email.replace(/[@.]/g,'_')}" style="margin-top:6px;font-size:.9em;"></p>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(m);
 
-  // ---- Inyección segura en Employee Modal (cuando se abre)
-  const modalObserver = new MutationObserver((mList) => {
-    if (!isManagerUser()) return;
-    for (const m of mList) {
-      for (const node of m.addedNodes) {
-        if (!(node instanceof HTMLElement)) continue;
-        // detecta el modal por clase existente en tu app
-        if (node.classList && node.classList.contains("emp-panel")) {
-          try {
-            // ya existen? no duplicar
-            if (node.querySelector(".emp-actions")) continue;
+  m.querySelector(".emp-close").onclick = () => m.remove();
 
-            const trData = (node.__sourceRowEl || document.querySelector('.tv-table tr[data-email][data-name]')); // fallback
-            // si tu modal tiene header con el phone/email en dataset, léelo directo del botón que lo abrió.
-            // mejor: intenta extraer el email desde el id del modal: emp-name@acw_com → ya lo pones al crear
-            let email = (function(){
-              const id = node.id || "";
-              const fromId = id.replace(/^emp-/, "").replace(/_/g, ".");
-              return /@/.test(fromId) ? fromId : (trData?.dataset?.email || "");
-            })();
+  // 🎨 estilos de botones
+  m.querySelectorAll(".emp-actions button").forEach(b=>{
+    b.style.padding="8px 12px";
+    b.style.border="none";
+    b.style.borderRadius="8px";
+    b.style.cursor="pointer";
+    b.style.fontWeight="600";
+    b.style.margin="3px";
+  });
+  m.querySelector(".btn-update").style.background="#e9efff";
+  m.querySelector(".btn-today").style.background="#e7fff0";
+  m.querySelector(".btn-tomorrow").style.background="#e7f5ff";
 
-            if (!email) continue;
-            const box = node.querySelector(".emp-box") || node;
-            const actions = buildManagerActions(email);
-            box.appendChild(actions);
+  // === Click actions
+  const msgEl = m.querySelector(`#empStatusMsg-${email.replace(/[@.]/g,'_')}`);
 
-            // delega clicks
-            actions.addEventListener("click", (ev) => {
-              const btn = ev.target.closest("button");
-              if (!btn) return;
-              const target = btn.getAttribute("data-email");
-              if (btn.classList.contains("btn-update"))   return updateShiftFromModal(target);
-              if (btn.classList.contains("btn-today"))    return sendShiftMessage(target, "sendtoday");
-              if (btn.classList.contains("btn-tomorrow")) return sendShiftMessage(target, "sendtomorrow");
-            });
+  m.querySelector(".btn-update").onclick = async () => {
+    msgEl.textContent = "✏️ Updating...";
+    msgEl.style.color = "#007bff";
 
-            toast("🧰 Manager tools ready", "ok", 1000);
-          } catch (e) {
-            console.warn("Emp-actions inject error:", e);
-          }
-        }
-      }
+    const rows = m.querySelectorAll(".schedule-mini tr[data-day]");
+    for (const r of rows) {
+      const day = r.dataset.day;
+      const shift = r.cells[1].innerText.trim();
+      const url = `${CONFIG.BASE_URL}?action=updateShiftAPI&apikey=${encodeURIComponent(currentUser.apikey)}&target=${encodeURIComponent(email)}&day=${day}&shift=${encodeURIComponent(shift)}`;
+      const res = await fetch(url);
+      const data = await res.json().catch(()=>({}));
+      if (!data.ok) return msgEl.textContent = `⚠️ ${data.error}`;
     }
-  });
-  modalObserver.observe(document.body, { childList: true, subtree: true });
 
-  // ---- Ocultar “Team View”/botones si NO es manager (por si se renderizaron antes)
-  function enforceManagerVisibility() {
-    const isMgr = isManagerUser();
-    const teamBtn = document.getElementById("teamBtn");
-    if (teamBtn) teamBtn.style.display = isMgr ? "block" : "none";
+    msgEl.textContent = "✅ Updated!";
+    msgEl.style.color = "#33cc33";
+  };
 
-    // Si ya hay modales abiertos, limpia acciones si no es manager
-    document.querySelectorAll(".emp-panel .emp-actions").forEach(el=>{
-      if (!isMgr) el.remove();
-    });
+  m.querySelector(".btn-today").onclick = () => sendShiftMessage(email, "sendtoday");
+  m.querySelector(".btn-tomorrow").onclick = () => sendShiftMessage(email, "sendtomorrow");
+}
+
+// === Envío de mensaje real ===
+async function sendShiftMessage(targetEmail, action) {
+  const msg = document.getElementById(`empStatusMsg-${targetEmail.replace(/[@.]/g,'_')}`);
+  if (!msg) return;
+  msg.textContent = "💬 Sending...";
+  msg.style.color = "#007bff";
+
+  try {
+    const url = `${CONFIG.BASE_URL}?action=sendShiftAPI&apikey=${encodeURIComponent(currentUser.apikey)}&target=${encodeURIComponent(targetEmail)}&mode=${action.replace("send","")}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.ok) {
+      msg.textContent = `✅ ${action.includes("today") ? "Sent Today" : "Sent Tomorrow"}`;
+      msg.style.color = "#33cc33";
+    } else {
+      msg.textContent = `⚠️ ${data.error || "Failed"}`;
+      msg.style.color = "#e63946";
+    }
+  } catch (err) {
+    msg.textContent = "⚠️ Network error";
+    msg.style.color = "#e63946";
   }
-
-  // Corre al cargar y cuando cambie sesión
-  enforceManagerVisibility();
-  window.addEventListener("storage", (e)=> {
-    if (e.key === "acwUser") enforceManagerVisibility();
-  });
-
-  // Debug mínimo
-  console.log("✅ ACW v5.5.6 Manager Patch loaded. Base:", ACW_BASE);
-})();
+}
