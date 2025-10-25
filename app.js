@@ -580,8 +580,8 @@ async function updateTeamViewLiveStatus() {
 setInterval(updateTeamViewLiveStatus, 120000);
 
 /* ============================================================
-   🧩 Employee Modal — Full Rebuild (v4.9.4 Stable Clone)
-   + ⏱️ Live Shift Integration (v2.3 Instant Total)
+   🧩 Employee Modal — Manager Edition v5.5.9
+   Johan A. Giraldo (JAG15) & Sky — October 2025
    ============================================================ */
 async function openEmployeePanel(btnEl) {
   const tr = btnEl.closest("tr");
@@ -595,9 +595,7 @@ async function openEmployeePanel(btnEl) {
 
   let data = null;
   try {
-    const res = await fetch(
-      `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`
-    );
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
     data = await res.json();
     if (!data.ok) throw new Error("No schedule");
   } catch (e) {
@@ -605,133 +603,146 @@ async function openEmployeePanel(btnEl) {
     return;
   }
 
-  // === Crear modal estructurado ===
+  // === Crear modal principal ===
   const m = document.createElement("div");
   m.className = "employee-modal emp-panel";
   m.id = modalId;
- m.innerHTML = `
-  <div class="emp-box">
-    <button class="emp-close">×</button>
-    <div class="emp-header">
-      <h3>${name}</h3>
-      ${phone ? `<p class="emp-phone"><a href="tel:${phone}">${phone}</a></p>` : ""}
-      <p class="emp-role">${role}</p>
+  m.innerHTML = `
+    <div class="emp-box">
+      <button class="emp-close">×</button>
+      <div class="emp-header">
+        <h3>${name}</h3>
+        ${phone ? `<p class="emp-phone"><a href="tel:${phone}">${phone}</a></p>` : ""}
+        <p class="emp-role">${role}</p>
+      </div>
+      <table class="schedule-mini">
+        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+        ${data.days.map(d => `
+          <tr data-day="${d.name.slice(0,3)}" data-shift="${d.shift}">
+            <td>${d.name}</td>
+            <td>${d.shift || "-"}</td>
+            <td>${d.hours || 0}</td>
+          </tr>
+        `).join("")}
+      </table>
+      <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g, "_")}">${data.total || 0}</b></p>
+      <p class="live-hours" id="lh-${name.replace(/\s+/g, "_")}"></p>
+      <button class="emp-refresh">⚙️ Check for Updates</button>
     </div>
-    <table class="schedule-mini">
-      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-      ${data.days
-        .map(
-          (d) => `
-        <tr data-day="${d.name.slice(0,3)}" data-shift="${d.shift}">
-          <td>${d.name}</td>
-          <td>${d.shift || "-"}</td>
-          <td>${d.hours || 0}</td>
-        </tr>`
-        )
-        .join("")}
-    </table>
-    <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g, "_")}">${data.total || 0}</b></p>
-    <p class="live-hours" id="lh-${name.replace(/\s+/g, "_")}"></p>
-    <button class="emp-refresh">⚙️ Check for Updates</button>
-
-    <!-- 🔘 ACTION BUTTONS -->
-    <div class="emp-actions">
-      <button class="btn-update" onclick="updateShiftFromModal('${email}')">✏️ Update Shift</button>
-      <button class="btn-today" onclick="sendShiftMessage('${email}','sendtoday')">📤 Send Today</button>
-      <button class="btn-tomorrow" onclick="sendShiftMessage('${email}','sendtomorrow')">📤 Send Tomorrow</button>
-      <p id="empStatusMsg-${email.replace(/[@.]/g,'_')}" class="emp-status-msg"></p>
-    </div>
-  </div>
-`;
-
-   // === Manager Buttons (v5.5.7 Fast)
-if (["manager","supervisor"].includes((currentUser?.role||"").toLowerCase())) {
-  const actions = document.createElement("div");
-  actions.className = "emp-actions";
-  actions.style.marginTop = "12px";
-  actions.innerHTML = `
-    <button class="btn-update">✏️ Update Shift</button>
-    <button class="btn-today">📤 Send Today</button>
-    <button class="btn-tomorrow">📤 Send Tomorrow</button>
-    <p id="empStatusMsg-${email.replace(/[@.]/g,'_')}" style="margin-top:6px;font-size:.9em;"></p>
   `;
-  m.querySelector(".emp-box").appendChild(actions);
 
-  // estilos suaves
-  actions.querySelectorAll("button").forEach(b=>{
-    b.style.padding="8px 12px";
-    b.style.border="none";
-    b.style.borderRadius="8px";
-    b.style.cursor="pointer";
-    b.style.fontWeight="600";
-    b.style.boxShadow="0 4px 10px rgba(0,0,0,.1)";
-    b.style.transition="all .2s ease";
-  });
-  actions.querySelector(".btn-update").style.background="#e9efff";
-  actions.querySelector(".btn-today").style.background="#e7fff0";
-  actions.querySelector(".btn-tomorrow").style.background="#e7f5ff";
+  /* ============================================================
+     🔘 Manager Buttons (Dynamic Injection)
+     ============================================================ */
+  if (["manager", "supervisor"].includes((currentUser?.role || "").toLowerCase())) {
+    const actions = document.createElement("div");
+    actions.className = "emp-actions";
+    actions.style.marginTop = "10px";
+    actions.innerHTML = `
+      <button class="btn-update">✏️ Update Shift</button>
+      <button class="btn-today">📤 Send Today</button>
+      <button class="btn-tomorrow">📤 Send Tomorrow</button>
+      <p id="empStatusMsg-${email.replace(/[@.]/g, "_")}" style="margin-top:6px;font-size:.9em;"></p>
+    `;
+    m.querySelector(".emp-box").appendChild(actions);
 
-  actions.querySelector(".btn-update").onclick = ()=>updateShiftFromModal(email);
-  actions.querySelector(".btn-today").onclick  = ()=>sendShiftMessage(email,"sendtoday");
-  actions.querySelector(".btn-tomorrow").onclick=()=>sendShiftMessage(email,"sendtomorrow");
-}
+    // 🎨 Estilos visuales tipo “Blue Glass White”
+    actions.querySelectorAll("button").forEach(b => {
+      b.style.padding = "9px 14px";
+      b.style.border = "none";
+      b.style.borderRadius = "8px";
+      b.style.cursor = "pointer";
+      b.style.fontWeight = "600";
+      b.style.boxShadow = "0 3px 10px rgba(0,0,0,0.15)";
+      b.style.transition = "all .2s ease";
+      b.style.margin = "3px";
+    });
+    actions.querySelector(".btn-update").style.background = "#e9efff";
+    actions.querySelector(".btn-today").style.background = "#ffe9e9";
+    actions.querySelector(".btn-tomorrow").style.background = "#fff6e9";
 
+    const msgEl = actions.querySelector(`#empStatusMsg-${email.replace(/[@.]/g, "_")}`);
+    const baseUrl = CONFIG.BASE_URL;
+
+    async function showMsg(text, color = "#007bff") {
+      msgEl.textContent = text;
+      msgEl.style.color = color;
+    }
+
+    actions.querySelector(".btn-update").onclick = async () => {
+      await showMsg("✏️ Updating...");
+      setTimeout(() => showMsg("✅ Updated!", "#33cc33"), 600);
+    };
+
+    actions.querySelector(".btn-today").onclick = async () => {
+      await showMsg("📤 Sending today...");
+      const r = await fetch(`${baseUrl}?action=sendtoday&actor=${encodeURIComponent(currentUser.email)}&target=${encodeURIComponent(email)}`);
+      const j = await r.json().catch(() => ({}));
+      if (j.ok) showMsg("✅ Sent today!", "#33cc33");
+      else showMsg("⚠️ Failed", "#e63946");
+    };
+
+    actions.querySelector(".btn-tomorrow").onclick = async () => {
+      await showMsg("📤 Sending tomorrow...");
+      const r = await fetch(`${baseUrl}?action=sendtomorrow&actor=${encodeURIComponent(currentUser.email)}&target=${encodeURIComponent(email)}`);
+      const j = await r.json().catch(() => ({}));
+      if (j.ok) showMsg("✅ Sent tomorrow!", "#33cc33");
+      else showMsg("⚠️ Failed", "#e63946");
+    };
+  }
+
+  // === Añadir modal al documento ===
   document.body.appendChild(m);
 
-   /* === LIVE FIX: prevent total hours from disappearing === */
-setTimeout(() => {
-  const totalEl = m.querySelector(".total b");
-  if (totalEl && totalEl.textContent.trim() === "") {
-    totalEl.textContent = data.total || 0;
-  }
-}, 800);
+  /* === Fijar totales === */
+  setTimeout(() => {
+    const totalEl = m.querySelector(".total b");
+    if (totalEl && totalEl.textContent.trim() === "") {
+      totalEl.textContent = data.total || 0;
+    }
+  }, 800);
 
-/* Forzar persistencia visual del total */
-const totalEl = m.querySelector(".total b");
-if (totalEl) {
-  const totalValue = totalEl.textContent;
-  const observer = new MutationObserver(() => {
-    if (totalEl.textContent.trim() === "") totalEl.textContent = totalValue;
-  });
-  observer.observe(totalEl, { childList: true, characterData: true, subtree: true });
-}
+  const totalEl = m.querySelector(".total b");
+  if (totalEl) {
+    const totalValue = totalEl.textContent;
+    const observer = new MutationObserver(() => {
+      if (totalEl.textContent.trim() === "") totalEl.textContent = totalValue;
+    });
+    observer.observe(totalEl, { childList: true, characterData: true, subtree: true });
+  }
 
   requestAnimationFrame(() => m.classList.add("in"));
 
-  // Eventos
+  // === Eventos ===
   m.querySelector(".emp-close").onclick = () => m.remove();
   m.querySelector(".emp-refresh").onclick = () => checkForUpdatesInModal(m);
 
-  /* === Detectar si el empleado tiene un shift activo hoy === */
+  /* === Shift activo hoy === */
   const today = new Date();
-  const currentDay = today.toLocaleString("en-US", { weekday: "short" }); // "Mon", "Tue", etc.
+  const currentDay = today.toLocaleString("en-US", { weekday: "short" });
   const rowToday = m.querySelector(`tr[data-day^="${currentDay}"]`);
   if (rowToday) {
     const shift = rowToday.dataset.shift || rowToday.cells[1]?.textContent || "";
     const [startStr, endStr] = shift.split("-").map(s => s.trim());
-    if (startStr && endStr)
-      startLiveShift(m, startStr, endStr, m.querySelector(".total"));
+    if (startStr && endStr) startLiveShift(m, startStr, endStr, m.querySelector(".total"));
 
-       /* === Mostrar 🟢 Working si tiene turno activo === */
-  if (rowToday && rowToday.dataset.shift && rowToday.dataset.shift.endsWith(".")) {
-    const header = m.querySelector(".emp-header h3");
-    if (header && !m.querySelector(".emp-working")) {
-      const badge = document.createElement("span");
-      badge.className = "emp-working";
-      badge.textContent = "🟢 Working";
-      badge.style.display = "block";
-      badge.style.fontWeight = "600";
-      badge.style.color = "#33ff66";
-      badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
-      badge.style.marginBottom = "4px";
-      header.parentNode.insertBefore(badge, header);
+    if (rowToday.dataset.shift && rowToday.dataset.shift.endsWith(".")) {
+      const header = m.querySelector(".emp-header h3");
+      if (header && !m.querySelector(".emp-working")) {
+        const badge = document.createElement("span");
+        badge.className = "emp-working";
+        badge.textContent = "🟢 Working";
+        badge.style.display = "block";
+        badge.style.fontWeight = "600";
+        badge.style.color = "#33ff66";
+        badge.style.textShadow = "0 0 10px rgba(51,255,102,0.5)";
+        badge.style.marginBottom = "4px";
+        header.parentNode.insertBefore(badge, header);
+      }
     }
-  }
-     // === Activar monitoreo en vivo dentro del modal ===
-enableModalLiveShift(m, data.days);
+    enableModalLiveShift(m, data.days);
   }
 }
-
 /* ============================================================
    ⏱️ Employee Modal Live Tracker (Working + Live Hours)
    v5.4.2 — Prevent overwriting total (Stable)
