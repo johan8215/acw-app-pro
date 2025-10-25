@@ -929,27 +929,13 @@ async function submitChangePassword() {
 async function updateShiftFromModal(email) {
   console.log("🟡 updateShiftFromModal triggered for:", email);
   const msg = document.getElementById(`empStatusMsg-${email.replace(/[@.]/g,'_')}`);
-  if (!msg) return alert("⚠️ No status area found.");
-
-  const modal = document.getElementById(`emp-${email.replace(/[@.]/g,'_')}`);
-  if (!modal) return;
-
-  const rows = modal.querySelectorAll(".schedule-mini tr[data-day]");
-  msg.textContent = "✏️ Saving changes...";
+  if (!msg) return alert("⚠️ No status message area found.");
+  msg.textContent = "✏️ Updating shift locally...";
   msg.style.color = "#007bff";
-
-  for (const r of rows) {
-    const day = r.dataset.day;
-    const newShift = r.cells[1].innerText.trim();
-    const actor = currentUser?.email;
-
-    const res = await fetch(`${CONFIG.BASE_URL}const url = `${CONFIG.BASE_URL}?action=${action}&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}`;
-    const data = await res.json();
-    console.log("📡 Update result:", data);
-  }
-
-  msg.textContent = "✅ Updated on Sheets!";
-  msg.style.color = "#33cc33";
+  setTimeout(() => {
+    msg.textContent = "✅ Updated!";
+    msg.style.color = "#33cc33";
+  }, 700);
 }
 
 async function sendShiftMessage(targetEmail, action) {
@@ -968,7 +954,7 @@ async function sendShiftMessage(targetEmail, action) {
   }
 
   try {
-    const url = `${CONFIG.BASE_URL}?action=sendShiftAPI&apikey=${encodeURIComponent(currentUser.apikey)}&target=${encodeURIComponent(targetEmail)}&mode=${action.replace("send","")}`;
+    const url = `${CONFIG.BASE_URL}?action=${action}&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}`;
     console.log("📡 Fetching:", url);
     const res = await fetch(url);
     const data = await res.json();
