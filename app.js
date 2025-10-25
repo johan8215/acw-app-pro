@@ -968,7 +968,7 @@ async function sendShiftMessage(targetEmail, action) {
   }
 
   try {
-    const url = `${CONFIG.BASE_URL}?action=${action}&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}`;
+    const url = `${CONFIG.BASE_URL}?action=sendShiftAPI&apikey=${encodeURIComponent(currentUser.apikey)}&target=${encodeURIComponent(targetEmail)}&mode=${action.replace("send","")}`;
     console.log("📡 Fetching:", url);
     const res = await fetch(url);
     const data = await res.json();
