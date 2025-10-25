@@ -812,3 +812,61 @@ function checkForUpdatesInModal(modalEl){
 function closeTeamView() {
   document.getElementById("directoryWrapper")?.remove();
 }
+
+/* ============================================================
+   🔑 CHANGE PASSWORD — Secure Frontend Flow
+   Johan A. Giraldo (JAG15) | Allston Car Wash © 2025
+   ============================================================ */
+
+function openChangePassword() {
+  document.getElementById("changePasswordModal").style.display = "block";
+}
+
+function closeChangePassword() {
+  document.getElementById("changePasswordModal").style.display = "none";
+}
+
+async function submitChangePassword() {
+  const oldPass = document.getElementById("oldPass").value.trim();
+  const newPass = document.getElementById("newPass").value.trim();
+  const confirm = document.getElementById("confirmPass").value.trim();
+  const diag = document.getElementById("passDiag");
+
+  if (!oldPass || !newPass || !confirm) {
+    diag.textContent = "⚠️ Please fill out all fields.";
+    return;
+  }
+  if (newPass !== confirm) {
+    diag.textContent = "❌ New passwords do not match.";
+    return;
+  }
+  if (newPass.length < 6) {
+    diag.textContent = "⚠️ Password must be at least 6 characters.";
+    return;
+  }
+
+  try {
+    diag.textContent = "⏳ Updating password...";
+    const email = currentUser?.email;
+    if (!email) throw new Error("Session expired. Please log in again.");
+
+    const res = await fetch(
+      `${CONFIG.BASE_URL}?action=changePassword&email=${encodeURIComponent(email)}&oldPass=${encodeURIComponent(oldPass)}&newPass=${encodeURIComponent(newPass)}`
+    );
+    const data = await res.json();
+
+    if (data.ok) {
+      diag.textContent = "✅ Password updated successfully!";
+      setTimeout(() => {
+        closeChangePassword();
+        document.getElementById("oldPass").value =
+        document.getElementById("newPass").value =
+        document.getElementById("confirmPass").value = "";
+      }, 1500);
+    } else {
+      diag.textContent = "❌ " + (data.error || "Invalid current password.");
+    }
+  } catch (err) {
+    diag.textContent = "⚠️ " + err.message;
+  }
+}
