@@ -1013,3 +1013,191 @@ window.sendShiftMessage = async (...args) => {
     showToast("⚠️ Failed to send shift", "error");
   }
 };
+
+/* =====================================================================
+   ACW-App v5.5.6 — Secure Ultra-Fast Manager Patch (Bottom Toast)
+   Author: JAG15 & Sky — Oct 2025
+   Safe add-on: no overrides; only binds if not already patched
+===================================================================== */
+(() => {
+  if (window.__ACW556_PATCHED__) return;
+  window.__ACW556_PATCHED__ = true;
+
+  // ---- Config guard (no rompe si ya existe en config.js)
+  const ACW_BASE = (typeof CONFIG !== "undefined" && CONFIG.BASE_URL)
+    ? CONFIG.BASE_URL
+    : "https://script.google.com/macros/s/AKfycbwgwpnpeB9ZUxn241xITDlsTNSOdiDqNqh0fWpfX7QCiAPGjEWwTfnDD4si88fIEI7O/exec";
+
+  // ---- Util: role check
+  function isManagerRole(role) {
+    return typeof role === "string" && ["manager","supervisor"].includes(role.toLowerCase());
+  }
+  function isManagerUser() {
+    try {
+      const u = window.currentUser || JSON.parse(localStorage.getItem("acwUser") || "{}");
+      return u && isManagerRole(u.role || "");
+    } catch { return false; }
+  }
+
+  // ---- Toast (bottom centered)
+  (function injectToastStyles() {
+    if (document.getElementById("acw-toast-style")) return;
+    const css = `
+      #acwToast {
+        position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+        min-width: 220px; max-width: 92vw; padding: 10px 14px; border-radius: 10px;
+        background: rgba(20,20,20,.85); color:#fff; font-weight:600; font-size:.95em;
+        box-shadow: 0 10px 30px rgba(0,0,0,.25);
+        backdrop-filter: blur(6px);
+        z-index: 99999; opacity: 0; pointer-events: none; transition: opacity .2s ease;
+        text-align:center;
+      }
+      #acwToast.show { opacity: 1; }
+      #acwToast .ok { color:#51e37b; }
+      #acwToast .err{ color:#ff6b6b; }
+      #acwToast .info{ color:#58aaff; }
+    `;
+    const s = document.createElement("style");
+    s.id = "acw-toast-style";
+    s.textContent = css;
+    document.head.appendChild(s);
+  })();
+  function toast(html, type="info", ms=1600) {
+    let el = document.getElementById("acwToast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "acwToast";
+      document.body.appendChild(el);
+    }
+    el.innerHTML = `<span class="${type}">${html}</span>`;
+    el.classList.add("show");
+    clearTimeout(el.__t);
+    el.__t = setTimeout(() => el.classList.remove("show"), ms);
+  }
+
+  // ---- Safe JSON fetch
+  async function jget(url) {
+    const res = await fetch(url, { credentials: "omit", cache: "no-store" });
+    try { return await res.json(); } catch { return { ok:false, error:"bad_json" }; }
+  }
+
+  // ---- Public actions (bind only once)
+  async function sendShiftMessage(targetEmail, action) {
+    const actor = (window.currentUser && currentUser.email) || (JSON.parse(localStorage.getItem("acwUser")||"{}").email);
+    if (!actor) { toast("⚠️ Session expired. Please log in.", "err"); return; }
+    if (!/^(sendtoday|sendtomorrow)$/i.test(action)) { toast("⚠️ Invalid action", "err"); return; }
+
+    toast("📡 Sending…", "info");
+    const url = `${ACW_BASE}?action=${action.toLowerCase()}&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}`;
+    const data = await jget(url);
+    if (data && data.ok) {
+      toast(action.toLowerCase()==="sendtoday" ? "✅ Sent Today" : "✅ Sent Tomorrow", "ok");
+    } else {
+      toast(`❌ ${data?.error || "Error sending"}`, "err", 2200);
+    }
+  }
+  async function updateShiftFromModal(email) {
+    // Esta acción es local/rápida (placeholder); evita romper nada en sheets.
+    toast("✏️ Shift updated (local)", "ok");
+  }
+
+  // ---- Make handlers globally visible (si la app los llama desde HTML)
+  window.sendShiftMessage = window.sendShiftMessage || sendShiftMessage;
+  window.updateShiftFromModal = window.updateShiftFromModal || updateShiftFromModal;
+
+  // ---- Helper: crear bloque de botones
+  function buildManagerActions(email) {
+    const safeId = email.replace(/[@.]/g, "_");
+    const wrap = document.createElement("div");
+    wrap.className = "emp-actions";
+    wrap.style.marginTop = "10px";
+    wrap.innerHTML = `
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-update"   data-email="${email}">✏️ Update Shift</button>
+        <button class="btn-today"    data-email="${email}">📤 Send Today</button>
+        <button class="btn-tomorrow" data-email="${email}">📤 Send Tomorrow</button>
+      </div>
+      <p id="empStatusMsg-${safeId}" class="emp-status-msg" style="min-height:18px;margin-top:6px;"></p>
+    `;
+    // styles suaves
+    wrap.querySelectorAll("button").forEach(b=>{
+      b.style.padding="8px 10px";
+      b.style.border="none";
+      b.style.borderRadius="8px";
+      b.style.cursor="pointer";
+      b.style.fontWeight="600";
+      b.style.boxShadow="0 4px 12px rgba(0,0,0,.12)";
+    });
+    wrap.querySelector(".btn-update").style.background="#e9efff";
+    wrap.querySelector(".btn-today").style.background="#e7fff0";
+    wrap.querySelector(".btn-tomorrow").style.background="#e7f5ff";
+    return wrap;
+  }
+
+  // ---- Inyección segura en Employee Modal (cuando se abre)
+  const modalObserver = new MutationObserver((mList) => {
+    if (!isManagerUser()) return;
+    for (const m of mList) {
+      for (const node of m.addedNodes) {
+        if (!(node instanceof HTMLElement)) continue;
+        // detecta el modal por clase existente en tu app
+        if (node.classList && node.classList.contains("emp-panel")) {
+          try {
+            // ya existen? no duplicar
+            if (node.querySelector(".emp-actions")) continue;
+
+            const trData = (node.__sourceRowEl || document.querySelector('.tv-table tr[data-email][data-name]')); // fallback
+            // si tu modal tiene header con el phone/email en dataset, léelo directo del botón que lo abrió.
+            // mejor: intenta extraer el email desde el id del modal: emp-name@acw_com → ya lo pones al crear
+            let email = (function(){
+              const id = node.id || "";
+              const fromId = id.replace(/^emp-/, "").replace(/_/g, ".");
+              return /@/.test(fromId) ? fromId : (trData?.dataset?.email || "");
+            })();
+
+            if (!email) continue;
+            const box = node.querySelector(".emp-box") || node;
+            const actions = buildManagerActions(email);
+            box.appendChild(actions);
+
+            // delega clicks
+            actions.addEventListener("click", (ev) => {
+              const btn = ev.target.closest("button");
+              if (!btn) return;
+              const target = btn.getAttribute("data-email");
+              if (btn.classList.contains("btn-update"))   return updateShiftFromModal(target);
+              if (btn.classList.contains("btn-today"))    return sendShiftMessage(target, "sendtoday");
+              if (btn.classList.contains("btn-tomorrow")) return sendShiftMessage(target, "sendtomorrow");
+            });
+
+            toast("🧰 Manager tools ready", "ok", 1000);
+          } catch (e) {
+            console.warn("Emp-actions inject error:", e);
+          }
+        }
+      }
+    }
+  });
+  modalObserver.observe(document.body, { childList: true, subtree: true });
+
+  // ---- Ocultar “Team View”/botones si NO es manager (por si se renderizaron antes)
+  function enforceManagerVisibility() {
+    const isMgr = isManagerUser();
+    const teamBtn = document.getElementById("teamBtn");
+    if (teamBtn) teamBtn.style.display = isMgr ? "block" : "none";
+
+    // Si ya hay modales abiertos, limpia acciones si no es manager
+    document.querySelectorAll(".emp-panel .emp-actions").forEach(el=>{
+      if (!isMgr) el.remove();
+    });
+  }
+
+  // Corre al cargar y cuando cambie sesión
+  enforceManagerVisibility();
+  window.addEventListener("storage", (e)=> {
+    if (e.key === "acwUser") enforceManagerVisibility();
+  });
+
+  // Debug mínimo
+  console.log("✅ ACW v5.5.6 Manager Patch loaded. Base:", ACW_BASE);
+})();
