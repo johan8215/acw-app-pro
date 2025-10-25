@@ -943,7 +943,7 @@ async function updateShiftFromModal(email) {
     const newShift = r.cells[1].innerText.trim();
     const actor = currentUser?.email;
 
-    const res = await fetch(`${CONFIG.BASE_URL}?action=updateShiftAPI&apikey=${encodeURIComponent(currentUser.apikey)}
+    const res = await fetch(`${CONFIG.BASE_URL}?action=updateShiftAPI&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(email)}&day=${encodeURIComponent(day)}&newShift=${encodeURIComponent(newShift)}`);
     const data = await res.json();
     console.log("📡 Update result:", data);
   }
