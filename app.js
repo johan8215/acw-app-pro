@@ -930,3 +930,8 @@ async function sendShiftMessage(targetEmail, action) {
     msg.style.color = "#e60000";
   }
 }
+// ============================================================
+// 🧩 FIX — Global Bind for Manager Buttons (v5.5.4 Stable)
+// ============================================================
+window.updateShiftFromModal = updateShiftFromModal;
+window.sendShiftMessage = sendShiftMessage;
