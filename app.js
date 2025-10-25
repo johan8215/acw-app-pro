@@ -935,3 +935,81 @@ async function sendShiftMessage(targetEmail, action) {
 // ============================================================
 window.updateShiftFromModal = updateShiftFromModal;
 window.sendShiftMessage = sendShiftMessage;
+
+/* ============================================================
+   ✅ ACW Toast Notifications + Manager Button Hooks (v5.5.5 Safe)
+   Johan A. Giraldo (JAG15) & Sky — October 2025
+   ============================================================ */
+
+// 🧊 Crear toast container si no existe
+if (!document.getElementById("toastContainer")) {
+  const c = document.createElement("div");
+  c.id = "toastContainer";
+  c.style.position = "fixed";
+  c.style.top = "18px";
+  c.style.right = "18px";
+  c.style.zIndex = "9999";
+  c.style.display = "flex";
+  c.style.flexDirection = "column";
+  c.style.alignItems = "flex-end";
+  document.body.appendChild(c);
+}
+
+// 🔔 Función global segura
+window.showToast = (msg, type = "info") => {
+  const t = document.createElement("div");
+  t.className = "acw-toast";
+  t.textContent = msg;
+
+  t.style.background =
+    type === "success"
+      ? "linear-gradient(135deg,#00c851,#007e33)"
+      : type === "error"
+      ? "linear-gradient(135deg,#ff4444,#cc0000)"
+      : "linear-gradient(135deg,#007bff,#33a0ff)";
+  t.style.color = "#fff";
+  t.style.padding = "10px 18px";
+  t.style.marginTop = "8px";
+  t.style.borderRadius = "8px";
+  t.style.fontWeight = "600";
+  t.style.boxShadow = "0 6px 14px rgba(0,0,0,0.25)";
+  t.style.opacity = "0";
+  t.style.transform = "translateY(-10px)";
+  t.style.transition = "all .35s ease";
+
+  document.getElementById("toastContainer").appendChild(t);
+  requestAnimationFrame(() => {
+    t.style.opacity = "1";
+    t.style.transform = "translateY(0)";
+  });
+
+  setTimeout(() => {
+    t.style.opacity = "0";
+    t.style.transform = "translateY(-10px)";
+    setTimeout(() => t.remove(), 400);
+  }, 2800);
+};
+
+// 🎯 Integrar con tus funciones sin reemplazarlas
+const _oldUpdate = window.updateShiftFromModal;
+window.updateShiftFromModal = async (...args) => {
+  try {
+    await _oldUpdate(...args);
+    showToast("✅ Shift updated locally", "success");
+  } catch (e) {
+    console.warn(e);
+    showToast("⚠️ Error updating shift", "error");
+  }
+};
+
+const _oldSend = window.sendShiftMessage;
+window.sendShiftMessage = async (...args) => {
+  try {
+    await _oldSend(...args);
+    const act = args[1] === "sendtoday" ? "today" : "tomorrow";
+    showToast(`✅ Shift sent ${act}`, "success");
+  } catch (e) {
+    console.error(e);
+    showToast("⚠️ Failed to send shift", "error");
+  }
+};
