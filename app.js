@@ -881,10 +881,12 @@ async function submitChangePassword() {
 }
 
 /* ============================================================
-   ✏️ UPDATE / SEND BUTTONS — Manager Actions
+   ✏️ UPDATE / SEND BUTTONS — Manager Actions (Debug Edition)
    ============================================================ */
 async function updateShiftFromModal(email) {
+  console.log("🟡 updateShiftFromModal triggered for:", email);
   const msg = document.getElementById(`empStatusMsg-${email.replace(/[@.]/g,'_')}`);
+  if (!msg) return alert("⚠️ No status message area found.");
   msg.textContent = "✏️ Updating shift locally...";
   msg.style.color = "#007bff";
   setTimeout(() => {
@@ -894,7 +896,9 @@ async function updateShiftFromModal(email) {
 }
 
 async function sendShiftMessage(targetEmail, action) {
+  console.log("🟢 sendShiftMessage called:", { targetEmail, action });
   const msg = document.getElementById(`empStatusMsg-${targetEmail.replace(/[@.]/g,'_')}`);
+  if (!msg) return alert("⚠️ No status message area found.");
   msg.textContent = "💬 Sending...";
   msg.style.color = "#007bff";
 
@@ -902,13 +906,16 @@ async function sendShiftMessage(targetEmail, action) {
   if (!actor) {
     msg.textContent = "⚠️ Session expired, please login again.";
     msg.style.color = "#e60000";
+    console.warn("❌ No currentUser or email in session.");
     return;
   }
 
   try {
     const url = `${CONFIG.BASE_URL}?action=${action}&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}`;
+    console.log("📡 Fetching:", url);
     const res = await fetch(url);
     const data = await res.json();
+    console.log("✅ Response received:", data);
 
     if (data.ok) {
       msg.textContent = `✅ ${action === 'sendtoday' ? 'Sent Today' : 'Sent Tomorrow'}`;
@@ -918,6 +925,7 @@ async function sendShiftMessage(targetEmail, action) {
       msg.style.color = "#e60000";
     }
   } catch (err) {
+    console.error("🚨 Fetch error:", err);
     msg.textContent = "⚠️ Connection error";
     msg.style.color = "#e60000";
   }
