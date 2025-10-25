@@ -644,6 +644,38 @@ async function openEmployeePanel(btnEl) {
   </div>
 `;
 
+   // === Manager Buttons (v5.5.7 Fast)
+if (["manager","supervisor"].includes((currentUser?.role||"").toLowerCase())) {
+  const actions = document.createElement("div");
+  actions.className = "emp-actions";
+  actions.style.marginTop = "12px";
+  actions.innerHTML = `
+    <button class="btn-update">✏️ Update Shift</button>
+    <button class="btn-today">📤 Send Today</button>
+    <button class="btn-tomorrow">📤 Send Tomorrow</button>
+    <p id="empStatusMsg-${email.replace(/[@.]/g,'_')}" style="margin-top:6px;font-size:.9em;"></p>
+  `;
+  m.querySelector(".emp-box").appendChild(actions);
+
+  // estilos suaves
+  actions.querySelectorAll("button").forEach(b=>{
+    b.style.padding="8px 12px";
+    b.style.border="none";
+    b.style.borderRadius="8px";
+    b.style.cursor="pointer";
+    b.style.fontWeight="600";
+    b.style.boxShadow="0 4px 10px rgba(0,0,0,.1)";
+    b.style.transition="all .2s ease";
+  });
+  actions.querySelector(".btn-update").style.background="#e9efff";
+  actions.querySelector(".btn-today").style.background="#e7fff0";
+  actions.querySelector(".btn-tomorrow").style.background="#e7f5ff";
+
+  actions.querySelector(".btn-update").onclick = ()=>updateShiftFromModal(email);
+  actions.querySelector(".btn-today").onclick  = ()=>sendShiftMessage(email,"sendtoday");
+  actions.querySelector(".btn-tomorrow").onclick=()=>sendShiftMessage(email,"sendtomorrow");
+}
+
   document.body.appendChild(m);
 
    /* === LIVE FIX: prevent total hours from disappearing === */
