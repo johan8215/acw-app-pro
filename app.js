@@ -879,3 +879,46 @@ async function submitChangePassword() {
     diag.textContent = "⚠️ " + err.message;
   }
 }
+
+/* ============================================================
+   ✏️ UPDATE / SEND BUTTONS — Manager Actions
+   ============================================================ */
+async function updateShiftFromModal(email) {
+  const msg = document.getElementById(`empStatusMsg-${email.replace(/[@.]/g,'_')}`);
+  msg.textContent = "✏️ Updating shift locally...";
+  msg.style.color = "#007bff";
+  setTimeout(() => {
+    msg.textContent = "✅ Updated!";
+    msg.style.color = "#33cc33";
+  }, 700);
+}
+
+async function sendShiftMessage(targetEmail, action) {
+  const msg = document.getElementById(`empStatusMsg-${targetEmail.replace(/[@.]/g,'_')}`);
+  msg.textContent = "💬 Sending...";
+  msg.style.color = "#007bff";
+
+  const actor = currentUser?.email;
+  if (!actor) {
+    msg.textContent = "⚠️ Session expired, please login again.";
+    msg.style.color = "#e60000";
+    return;
+  }
+
+  try {
+    const url = `${CONFIG.BASE_URL}?action=${action}&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.ok) {
+      msg.textContent = `✅ ${action === 'sendtoday' ? 'Sent Today' : 'Sent Tomorrow'}`;
+      msg.style.color = "#33cc33";
+    } else {
+      msg.textContent = `⚠️ ${data.error || 'Error'}`;
+      msg.style.color = "#e60000";
+    }
+  } catch (err) {
+    msg.textContent = "⚠️ Connection error";
+    msg.style.color = "#e60000";
+  }
+}
