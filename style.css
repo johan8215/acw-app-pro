@@ -791,3 +791,51 @@ button.signin-btn:hover {
   color: #33ff66;
   text-shadow: 0 0 10px rgba(51,255,102,0.6);
 }
+
+/* ============================================================
+   🔑 CHANGE PASSWORD MODAL — Blue Glass+ Match
+   ============================================================ */
+#changePasswordModal .modal-content {
+  background: rgba(255,255,255,0.97);
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(0,128,255,0.3);
+  padding: 30px 28px;
+  width: 340px;
+  text-align: center;
+  animation: popIn 0.3s ease;
+}
+
+#changePasswordModal input {
+  display: block;
+  margin: 10px auto;
+  width: 80%;
+  max-width: 260px;
+  padding: 10px 14px;
+  border: 1px solid rgba(0,120,255,0.25);
+  border-radius: 6px;
+  outline: none;
+  font-size: 15px;
+  transition: 0.25s ease;
+}
+
+#changePasswordModal input:focus {
+  border-color: #0078ff;
+  box-shadow: 0 0 8px rgba(0,120,255,0.25);
+}
+
+#changePasswordModal button {
+  background: #e60000;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 600;
+  margin-top: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+#changePasswordModal button:hover {
+  background: #ff3333;
+  transform: translateY(-1px);
+}
