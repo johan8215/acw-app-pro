@@ -620,7 +620,7 @@ async function openEmployeePanel(btnEl) {
         ${data.days.map(d => `
           <tr data-day="${d.name.slice(0,3)}" data-shift="${d.shift}">
             <td>${d.name}</td>
-            <td>${d.shift || "-"}</td>
+            <td contenteditable="${["manager","supervisor"].includes((currentUser?.role||"").toLowerCase())}">${d.shift || "-"}</td>
             <td>${d.hours || 0}</td>
           </tr>
         `).join("")}
