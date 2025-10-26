@@ -251,13 +251,13 @@ async function submitChangePassword() {
 }
 
 /* ============================================================
-   👥 TEAM VIEW — Glass White Stable Edition (Fixed Oct 2025)
+   👥 TEAM VIEW — Blue Glass White Stable (Fixed Center)
    ============================================================ */
 const TEAM_PAGE_SIZE = 8;
 let __teamList = [], __teamPage = 0;
 
-function addTeamButton() {
-  if (document.getElementById("teamBtn")) return;
+function addTeamButton(){
+  if ($("#teamBtn")) return;
   const btn = document.createElement("button");
   btn.id = "teamBtn";
   btn.className = "team-btn";
@@ -266,143 +266,129 @@ function addTeamButton() {
   document.body.appendChild(btn);
 }
 
-function toggleTeamOverview() {
-  const w = document.getElementById("directoryWrapper");
-  if (w) {
+function toggleTeamOverview(){
+  const w = $("#directoryWrapper");
+  if (w){
     w.classList.add("fade-out");
-    setTimeout(() => w.remove(), 200);
+    setTimeout(()=>w.remove(), 220);
     return;
   }
   loadEmployeeDirectory();
 }
 
-async function loadEmployeeDirectory() {
-  console.log("📡 Starting loadEmployeeDirectory()");
+async function loadEmployeeDirectory(){
+  try{
+    const overlay = document.createElement("div");
+    overlay.id = "loadingTeam";
+    overlay.style.cssText = `
+      position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+      background:rgba(255,255,255,0.95);
+      padding:30px 45px;border-radius:14px;
+      box-shadow:0 0 25px rgba(0,120,255,0.25);
+      color:#0078ff;font-weight:600;
+      z-index:9999;text-align:center;
+      font-size:1.1em;
+    `;
+    overlay.textContent = "Loading Team View...";
+    document.body.appendChild(overlay);
 
-  const overlay = document.createElement("div");
-  overlay.id = "loadingTeam";
-  overlay.style.cssText = `
-    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-    background:rgba(255,255,255,0.97);
-    padding:30px 45px;border-radius:14px;
-    box-shadow:0 0 25px rgba(0,120,255,0.25);
-    color:#0078ff;font-weight:600;
-    z-index:9999;text-align:center;
-    font-size:1.1em;
-  `;
-  overlay.textContent = "Loading Team View...";
-  document.body.appendChild(overlay);
+    const r = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`, {cache:"no-store"});
+    const j = await r.json();
+    if (!j.ok) throw new Error("Invalid directory data");
 
-  try {
-    const url = `${CONFIG.BASE_URL}?action=getEmployeesDirectory`;
-    console.log("🌐 Fetching:", url);
-
-    const res = await fetch(url, { cache: "no-store" });
-    const text = await res.text();
-    console.log("📦 Raw:", text.slice(0, 180));
-
-    let j;
-    try {
-      j = JSON.parse(text);
-    } catch (err) {
-      console.error("❌ JSON parse error:", err);
-      toast("❌ Invalid JSON response", "error");
-      return;
-    }
-
-    if (!j.ok || !Array.isArray(j.directory)) {
-      console.warn("⚠️ Directory invalid:", j);
-      toast("⚠️ Directory not found", "error");
-      __teamList = [];
-    } else {
-      __teamList = j.directory;
-      console.log(`✅ Loaded ${__teamList.length} employees`);
-    }
-
+    __teamList = j.directory || [];
     __teamPage = 0;
     renderTeamViewPage();
-    toast("✅ Team View Ready", "success");
 
-  } catch (err) {
-    console.error("❌ loadEmployeeDirectory error:", err);
-    toast("❌ Could not load directory", "error");
-  } finally {
-    setTimeout(() => overlay.remove(), 400);
+  }catch(e){
+    console.warn("⚠️ loadEmployeeDirectory error:", e);
+    toast("⚠️ Could not load team view", "error");
+  }finally{
+    setTimeout(()=> $("#loadingTeam")?.remove(), 300);
   }
 }
 
-function renderTeamViewPage() {
-  document.getElementById("directoryWrapper")?.remove();
+function renderTeamViewPage(){
+  $("#directoryWrapper")?.remove();
 
   const box = document.createElement("div");
   box.id = "directoryWrapper";
   box.className = "directory-wrapper show";
-  box.style.opacity = "0";
+  Object.assign(box.style, {
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "95%",
+    maxWidth: "760px",
+    maxHeight: "80vh",
+    overflowY: "auto",
+    background: "rgba(255,255,255,0.98)",
+    borderRadius: "14px",
+    padding: "40px 50px",
+    boxShadow: "0 0 45px rgba(0,120,255,0.35)",
+    backdropFilter: "blur(10px)",
+    textAlign: "center",
+    color: "#111",
+    zIndex: "9999",
+    opacity: "0",
+    transition: "opacity 0.3s ease"
+  });
 
   box.innerHTML = `
     <div class="tv-head">
-      <h3>Team View</h3>
+      <h3 style="color:#0078ff;text-shadow:0 0 8px rgba(0,120,255,0.25);">Team View</h3>
       <button class="tv-close" onclick="toggleTeamOverview()">✖️</button>
     </div>
 
     <div class="tv-pager">
-      <button class="tv-nav" id="tvPrev" ${__teamPage === 0 ? "disabled" : ""}>‹ Prev</button>
-      <span class="tv-index">Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}</span>
-      <button class="tv-nav" id="tvNext" ${(__teamPage + 1) >= Math.ceil(__teamList.length / TEAM_PAGE_SIZE) ? "disabled" : ""}>Next ›</button>
+      <button class="tv-nav" id="tvPrev" ${__teamPage===0?"disabled":""}>‹ Prev</button>
+      <span class="tv-index">Page ${__teamPage+1} / ${Math.max(1, Math.ceil(__teamList.length/TEAM_PAGE_SIZE))}</span>
+      <button class="tv-nav" id="tvNext" ${(__teamPage+1)>=Math.ceil(__teamList.length/TEAM_PAGE_SIZE)?"disabled":""}>Next ›</button>
     </div>
 
     <table class="directory-table tv-table" style="margin-top:10px;min-width:460px;text-align:center;">
-      <thead><tr><th>Name</th><th>Hours</th><th>Live</th><th></th></tr></thead>
+      <tr><th>Name</th><th>Hours</th><th>Live (Working)</th><th></th></tr>
       <tbody id="tvBody"></tbody>
     </table>
   `;
-
   document.body.appendChild(box);
-  setTimeout(() => (box.style.opacity = "1"), 150);
+  setTimeout(()=> box.style.opacity = "1", 100);
 
   const start = __teamPage * TEAM_PAGE_SIZE;
   const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
-  const body = box.querySelector("#tvBody");
+  const body = $("#tvBody", box);
 
-  if (!slice.length) {
+  if (!slice.length){
     body.innerHTML = `<tr><td colspan="4" style="padding:20px;color:#999;">No employees found</td></tr>`;
     return;
   }
 
   body.innerHTML = slice.map(emp => `
-    <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role || ''}" data-phone="${emp.phone || ''}">
-      <td><b>${emp.name}</b><br><small style="color:#666;">${emp.role || ''}</small></td>
+    <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role||''}" data-phone="${emp.phone||''}">
+      <td><b>${emp.name}</b></td>
       <td class="tv-hours">—</td>
       <td class="tv-live">—</td>
-      <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
+      <td><button class="open-btn" style="background:#e60000;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-weight:600;cursor:pointer;">Open</button></td>
     </tr>
   `).join("");
 
-  document.getElementById("tvPrev").onclick = () => {
+  $("#tvPrev", box).onclick = () => {
     __teamPage = Math.max(0, __teamPage - 1);
     renderTeamViewPage();
   };
-  document.getElementById("tvNext").onclick = () => {
+  $("#tvNext", box).onclick = () => {
     __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1);
     renderTeamViewPage();
   };
 
-  // load live hours
   slice.forEach(async emp => {
     try {
-      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
+      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, {cache:"no-store"});
       const d = await r.json();
       const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
       if (!tr) return;
-      tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
-    } catch (e) {
-      console.warn("⚠️ Error loading hours for", emp.email, e);
-    }
-  });
-
-  updateTeamViewLiveStatus();
-}
-
+      tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).
 /* ============== EMPLOYEE MODAL (gestión) ============== */
 async function openEmployeePanel(btnEl){
   const tr = btnEl.closest("tr");
