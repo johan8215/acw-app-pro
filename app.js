@@ -521,31 +521,6 @@ function toast(msg, type="info"){
   setTimeout(()=>{ t.style.opacity="0"; t.style.transform="translateY(-10px)"; setTimeout(()=>t.remove(),380); }, 2600);
 }
 
-/* ============== GLOBAL BINDS ============== */
-window.loginUser = loginUser;
-window.openSettings = openSettings;
-window.closeSettings = closeSettings;
-window.refreshApp = refreshApp;
-window.logoutUser = logoutUser;
-window.openChangePassword = openChangePassword;
-window.closeChangePassword = closeChangePassword;
-window.submitChangePassword = submitChangePassword;
-window.openEmployeePanel = openEmployeePanel;
-window.sendShiftMessage = sendShiftMessage;
-window.updateShiftFromModal = updateShiftFromModal;
-
-console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.2"} | Base: ${CONFIG?.BASE_URL||"<no-config>"}`);
-
-// Prevent flicker when opening Team View
-document.addEventListener("DOMContentLoaded", ()=>{
-  const styleFix = document.createElement("style");
-  styleFix.textContent = `
-    #directoryWrapper { opacity:0; }
-    #directoryWrapper.show { opacity:1; transition:opacity .3s ease; }
-  `;
-  document.head.appendChild(styleFix);
-});
-
 // ============================================================
 // 🌐 MAKE FUNCTIONS GLOBAL — For Vercel / PWA Compatibility
 // ============================================================
