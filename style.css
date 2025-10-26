@@ -1,15 +1,22 @@
 /* ============================================================
-   🎨 ACW-App v4.8.3 — Blue Glass+ Edition (Stable UI)
-   Johan A. Giraldo (JAG15) | Allston Car Wash © 2025
+   🎨 ACW-App — Blue Glass White Edition (v5.6.2)
    ============================================================ */
 
+:root{
+  --red:#e60000;
+  --red-2:#ff3333;
+  --blue:#0078ff;
+  --blue-2:#33a0ff;
+  --shadow:0 0 35px rgba(0,120,255,0.35);
+}
+
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
 body {
-  font-family: 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Segoe UI', Roboto, Arial, sans-serif;
   background: #ffffff;
   color: #222;
   text-align: center;
-  margin: 0;
-  padding: 0;
 }
 
 /* ---------- Glass Container ---------- */
@@ -19,14 +26,35 @@ body {
   padding: 40px 50px;
   margin: 70px auto;
   max-width: 420px;
-  box-shadow: 0 0 35px rgba(0, 120, 255, 0.35);
+  box-shadow: var(--shadow);
   transition: all 0.4s ease;
+}
+h1{ margin:0 0 18px; letter-spacing:1px; }
+
+/* ---------- Inputs ---------- */
+input[type="email"],
+input[type="password"] {
+  display: block;
+  margin: 10px auto;
+  width: 80%;
+  max-width: 280px;
+  padding: 10px 14px;
+  font-size: 15px;
+  border: 1px solid rgba(0,120,255,0.25);
+  border-radius: 6px;
+  outline: none;
+  transition: 0.25s ease;
+}
+input[type="email"]:focus,
+input[type="password"]:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 8px rgba(0,120,255,0.25);
 }
 
 /* ---------- Buttons ---------- */
 button {
-  background: #e60000;
-  color: white;
+  background: var(--red);
+  color: #fff;
   border: none;
   border-radius: 6px;
   padding: 10px 22px;
@@ -34,140 +62,34 @@ button {
   font-size: 15px;
   transition: all 0.25s ease;
 }
-button:hover { background: #ff3333; }
-
-/* ---------- Clock & Totals ---------- */
-.clock { color: #0070ff; font-size: 0.9em; margin-top: 6px; }
-.total { color: #e60000; font-weight: bold; margin-top: 10px; }
-
-/* ---------- Error Text ---------- */
-.error { color: #c00; font-size: 13px; margin-top: 10px; }
+button:hover { background: var(--red-2); }
+button:disabled { opacity:.6; cursor:default; }
 
 /* ---------- Gear Button ---------- */
 .gear-btn {
   position: fixed; bottom: 20px; right: 20px;
-  background: #e60000; color: #fff;
+  background: var(--red);
+  color: #fff;
   border: none; border-radius: 50%;
   width: 46px; height: 46px;
   font-size: 22px; cursor: pointer;
   box-shadow: 0 0 25px rgba(0, 120, 255, 0.4);
   transition: 0.3s;
+  z-index:999;
 }
-.gear-btn:hover { background: #ff3333; transform: rotate(25deg); }
+.gear-btn:hover { background: var(--red-2); transform: rotate(25deg); }
 
-/* ---------- Team View Button ---------- */
-.team-btn {
-  position: fixed;
-  top: 25px;
-  right: 40px;
-  background: #ffffff;
-  color: #e60000;
-  border: 2px solid rgba(0, 120, 255, 0.4);
-  border-radius: 10px;
-  padding: 8px 16px;
-  font-weight: 600;
-  box-shadow: 0 4px 20px rgba(0,120,255,0.4);
-  cursor: pointer;
-  z-index: 9999;
-  transition: all 0.3s ease;
-}
-.team-btn:hover {
-  background: #f9f9f9;
-  box-shadow: 0 0 25px rgba(0,136,255,0.6);
-}
+/* ---------- Clock & Totals ---------- */
+.clock { color: #0070ff; font-size: 0.9em; margin-top: 6px; }
+.total { color: var(--red); font-weight: bold; margin-top: 10px; }
 
-/* ============================================================
-   👥 TEAM VIEW — Blue Glass White Edition (Centered)
-   ============================================================ */
-.directory-wrapper {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 16px;
-  padding: 22px 28px;
-  width: 85%;
-  max-width: 800px;
-  max-height: 75vh;
-  overflow-y: auto;
-  box-shadow: 0 0 45px rgba(0, 128, 255, 0.35);
-  backdrop-filter: blur(10px);
-  color: #111;
-  text-align: center;
-  z-index: 9999;
-  animation: fadeIn 0.4s ease;
-}
+/* ---------- Error Text ---------- */
+.error { color: #c00; font-size: 13px; margin-top: 10px; min-height:18px; }
 
-.directory-wrapper h3 {
-  margin-top: 0;
-  font-size: 22px;
-  color: #c00;
-  font-weight: 700;
-  text-shadow: 0 0 10px rgba(0, 136, 255, 0.4);
-}
+/* ---------- Footer ---------- */
+footer.hud { color:#666; font-size:13px; margin: 14px 0 30px; }
 
-.directory-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 14px;
-  font-size: 17px;
-  text-align: center;
-}
-
-.directory-table th {
-  color: #0078ff;
-  border-bottom: 2px solid rgba(0,120,255,0.2);
-  padding: 10px 6px;
-  background: rgba(0,120,255,0.05);
-}
-
-.directory-table td {
-  padding: 10px 6px;
-  border-bottom: 1px solid rgba(0,0,0,0.08);
-}
-
-.directory-table tr:hover {
-  background: rgba(0,120,255,0.08);
-  transition: background 0.2s ease;
-}
-
-/* ============================================================
-   📞 USER PHONE STYLE — Blue Glow
-   ============================================================ */
-.user-phone {
-  color: #0078ff;
-  font-weight: 600;
-  font-size: 17px;
-  margin: 10px 0 16px 0;
-  text-align: center;
-  text-shadow: 0 0 8px rgba(0,120,255,0.25);
-  opacity: 0;
-  animation: fadeIn 0.6s ease forwards;
-}
-
-/* ============================================================
-   ⏱️ LIVE HOURS INDICATOR — Blue Glow
-   ============================================================ */
-.live-hours {
-  margin-top: 14px;
-  color: #007bff;
-  font-size: 18px;
-  font-weight: 600;
-  text-align: center;
-  text-shadow: 0 0 12px rgba(0,120,255,0.35);
-  animation: glowBlue 3s ease-in-out infinite alternate, fadeIn 0.8s ease forwards;
-  opacity: 0;
-}
-
-@keyframes glowBlue {
-  from { text-shadow: 0 0 5px rgba(0,120,255,0.25); }
-  to   { text-shadow: 0 0 18px rgba(0,120,255,0.5); }
-}
-
-/* ============================================================
-   🧾 TABLE & TOTAL — Spacing Adjustments
-   ============================================================ */
+/* ---------- Tables ---------- */
 table {
   margin: 0 auto;
   width: 95%;
@@ -176,40 +98,32 @@ table {
   text-align: center;
   font-size: 18px;
 }
-
 th {
   padding-bottom: 6px;
   color: #000;
   letter-spacing: 0.5px;
+  border-bottom: 2px solid rgba(0,120,255,0.15);
+}
+td { padding: 8px 12px; }
+
+/* today row */
+tr.today td {
+  background: rgba(0,120,255,0.06);
+  border-radius: 8px;
 }
 
-td {
-  padding: 8px 12px;
-}
-
-.total {
-  color: #e60000;
-  font-weight: bold;
-  font-size: 20px;
-  margin-top: 16px;
-  text-align: center;
-}
-
-/* ============================================================
-   ⚙️ SETTINGS PANEL
-   ============================================================ */
+/* ---------- Settings Modal ---------- */
 .modal {
   display: none;
   position: fixed;
-  top: 0; left: 0;
+  top: 0; left: 0; right:0; bottom:0;
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.45);
   z-index: 2000;
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn .25s ease;
 }
-
-.modal-content {
+.modal .modal-content {
   background: rgba(255, 255, 255, 0.97);
   border-radius: 16px;
   padding: 28px 30px;
@@ -217,35 +131,18 @@ td {
   margin: 12% auto;
   text-align: center;
   box-shadow: 0 0 40px rgba(0,128,255,0.3);
-  animation: popIn 0.3s ease;
+  animation: popIn .25s ease;
 }
-
-.modal-content h3 {
-  color: #c00;
-  font-size: 20px;
-  margin-bottom: 15px;
-  text-shadow: 0 0 8px rgba(0,136,255,0.3);
+.modal .close {
+  color: #555; float: right; font-size: 24px; font-weight: bold; cursor: pointer; margin-top: -10px;
 }
-
-.close {
-  color: #555;
-  float: right;
-  font-size: 24px;
-  font-weight: bold;
-  cursor: pointer;
-  margin-top: -10px;
-}
-.close:hover { color: #000; }
+.modal .close:hover { color: #000; }
 
 .settings-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 20px;
-  text-align: center;
+  display: flex; flex-direction: column; gap: 12px; margin-top: 20px; text-align: center;
 }
 .settings-section button {
-  background: #e60000;
+  background: var(--red);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -259,641 +156,142 @@ td {
   transition: all 0.3s ease;
 }
 .settings-section button:hover {
-  background: #ff3333;
+  background: var(--red-2);
   transform: scale(1.05);
 }
 
-/* ============================================================
-   🪶 CLOSE BUTTON FOR TEAM VIEW
-   ============================================================ */
-.directory-close {
-  position: absolute;
-  top: 10px;
-  right: 16px;
-  font-size: 22px;
-  font-weight: bold;
+/* ---------- User phone ---------- */
+.user-phone {
+  color: #0078ff;
+  font-weight: 600;
+  font-size: 17px;
+  margin: 10px 0 16px 0;
+  text-shadow: 0 0 8px rgba(0,120,255,0.25);
+  opacity: 0; animation: fadeIn .4s ease forwards;
+}
+
+/* ---------- Live hours label ---------- */
+.live-hours {
+  margin-top: 10px;
   color: #007bff;
-  cursor: pointer;
-  text-shadow: 0 0 10px rgba(0,120,255,0.3);
-  transition: transform 0.2s ease;
+  font-size: 18px;
+  font-weight: 600;
+  text-shadow: 0 0 12px rgba(0,120,255,0.35);
+  animation: glowBlue 3s ease-in-out infinite alternate;
 }
-.directory-close:hover {
-  transform: scale(1.2);
-  color: #e60000;
-}
-
-/* ============================================================
-   ✨ ANIMATIONS
-   ============================================================ */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes popIn {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
+@keyframes glowBlue {
+  from { text-shadow: 0 0 5px rgba(0,120,255,0.25); }
+  to   { text-shadow: 0 0 18px rgba(0,120,255,0.5); }
 }
 
-/* ============================================================
-   👥 TEAM VIEW CARDS — Blue Glass White Edition
-   ============================================================ */
-.employee-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 18px;
-  margin-top: 15px;
-}
-
-.employee-card {
-  background: rgba(255,255,255,0.95);
-  border-radius: 14px;
-  box-shadow: 0 0 25px rgba(0,120,255,0.25);
-  padding: 18px 25px;
-  width: 200px;
-  text-align: center;
+/* ---------- Team View ---------- */
+.team-btn {
+  position: fixed;
+  top: 25px;
+  right: 40px;
+  background: #ffffff;
+  color: var(--red);
+  border: 2px solid rgba(0, 120, 255, 0.4);
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(0,120,255,0.4);
+  cursor: pointer; z-index: 9999;
   transition: all 0.3s ease;
 }
-
-.employee-card:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 35px rgba(0,136,255,0.4);
+.team-btn:hover {
+  background: #f9f9f9;
+  box-shadow: 0 0 25px rgba(0,136,255,0.6);
 }
 
-.employee-card h4 {
-  margin: 0;
-  font-size: 18px;
-  color: #000;
-}
-
-.employee-card .hours {
-  color: #0078ff;
-  font-size: 15px;
-  margin: 8px 0;
-}
-
-.employee-card .open-btn {
-  background: #e60000;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 14px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: 0.3s;
-}
-.employee-card .open-btn:hover {
-  background: #ff3333;
-}
-
-/* ============================================================
-   🧩 ACW-App v5.1.7 — Employee Modal perfectly aligned to Team View
-   Johan A. Giraldo (JAG15) | Allston Car Wash © 2025
-   ============================================================ */
-
-/* Igual que Team View: centrado absoluto y proporción exacta */
-.employee-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.45);
+.directory-wrapper {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 16px;
+  padding: 22px 28px;
+  width: 85%; max-width: 800px; max-height: 75vh; overflow-y: auto;
+  box-shadow: 0 0 45px rgba(0, 128, 255, 0.35);
   backdrop-filter: blur(10px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100vw;
-  height: 100vh;
-  z-index: 9999;
+  color: #111; text-align: center; z-index: 9999;
+  animation: fadeIn 0.25s ease;
 }
+.directory-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 17px; text-align: center; }
+.directory-table th {
+  color: #0078ff; border-bottom: 2px solid rgba(0,120,255,0.2);
+  padding: 10px 6px; background: rgba(0,120,255,0.05);
+}
+.directory-table td { padding: 10px 6px; border-bottom: 1px solid rgba(0,0,0,0.08); }
+.directory-table tr:hover { background: rgba(0,120,255,0.08); transition: background 0.2s ease; }
 
-/* Caja interna (idéntica a Team View y panel principal) */
-.employee-modal .emp-box {
-  background: rgba(255,255,255,0.96);
-  border-radius: 18px;
-  width: 85%;
-  max-width: 800px;
-  padding: 40px 50px;
-  box-shadow: 0 0 45px rgba(0, 120, 255, 0.35);
-  color: #111;
-  text-align: center;
-  margin: 0 auto;
-}
+.tv-live { color: #33ff66; text-shadow: 0 0 8px rgba(51,255,102,0.5); }
+.fade-out { animation: fadeOut 0.25s forwards; }
+@keyframes fadeOut { from {opacity:1;} to {opacity:0;} }
 
-/* Encabezado igual que Team View */
-.emp-header::before {
-  content: "🚘 Allston Car Wash — ";
-  display: block;
-  font-size: 18px;
-  font-weight: 700;
-  color: #0078ff;
-  text-shadow: 0 0 10px rgba(0,120,255,0.35);
-  margin-bottom: 4px;
-}
-
-.emp-header h3 {
-  margin: 0;
-  font-size: 22px;
-  color: #000;
-  font-weight: 700;
-}
-
-.emp-phone a {
-  color: #0078ff;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 16px;
-}
-
-.emp-role {
-  color: #777;
-  margin-bottom: 12px;
-  font-size: 15px;
-}
-
-/* Tabla centrada y con las mismas proporciones del panel principal */
-.employee-modal .schedule-mini {
-  margin: 0 auto;
-  width: 95%;
-  border-collapse: separate;
-  border-spacing: 20px 10px;
-  text-align: center;
-  font-size: 18px;
-}
-.employee-modal .schedule-mini th {
-  background: rgba(0,120,255,0.05);
-  color: #0078ff;
-  border-bottom: 2px solid rgba(0,120,255,0.2);
-  border-radius: 6px;
-  padding: 6px;
-}
-.employee-modal .schedule-mini td {
-  padding: 6px;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-}
-
-/* Totales y cronómetro */
-.employee-modal .total {
-  color: #e60000;
-  font-weight: 700;
-  margin-top: 14px;
-  font-size: 18px;
-}
-.employee-modal .live-hours {
-  color: #0078ff;
-  font-weight: 600;
-  margin-top: 6px;
-  font-size: 16px;
-}
-
-/* Botón y footer iguales */
-.emp-refresh {
-  background: #0078ff;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
-  margin-top: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 6px 16px rgba(0,120,255,0.35);
-  transition: all 0.3s ease;
-}
-.emp-refresh:hover {
-  background: #0096ff;
-  transform: translateY(-2px);
-}
-
-.employee-modal::after {
-  content: "Powered by JAG15 | Allston Car Wash © 2025";
-  position: absolute;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 13px;
-  font-weight: 600;
-  color: #0078ff;
-  text-shadow: 0 0 10px rgba(0,120,255,0.35);
-}
-
-/* ============================================================
-   💠 ACW-App v5.2 — Unified Employee Modal (Stable Clean Build)
-   Johan A. Giraldo (JAG15) | Allston Car Wash © 2025
-   ============================================================ */
-
-/* === Overlay === */
+/* ---------- Employee Modal ---------- */
 .employee-modal {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,0.45);
   backdrop-filter: blur(10px);
   z-index: 9999;
 }
-
-/* === Modal Box === */
 .employee-modal .emp-box {
   background: rgba(255,255,255,0.97);
   border-radius: 16px;
   box-shadow: 0 0 45px rgba(0,120,255,0.35);
-  width: 85%;
-  max-width: 800px;
+  width: 85%; max-width: 800px;
   padding: 40px 50px 54px;
-  color: #111;
-  text-align: center;
-  margin: 0 auto;
+  color: #111; text-align: center;
 }
-
-/* === Header === */
 .emp-header::before {
   content: "🚘 Allston Car Wash — ";
-  display: block;
-  font-size: 18px;
-  font-weight: 700;
-  color: #0078ff;
-  text-shadow: 0 0 10px rgba(0,120,255,0.35);
-  margin-bottom: 4px;
+  display: block; font-size: 18px; font-weight: 700; color: #0078ff;
+  text-shadow: 0 0 10px rgba(0,120,255,0.35); margin-bottom: 4px;
 }
-.emp-header h3 {
-  font-size: 22px;
-  font-weight: 700;
-  color: #000;
-  margin: 0;
-}
-.emp-phone a {
-  color: #0078ff;
-  font-weight: 600;
-  text-decoration: none;
-  font-size: 16px;
-}
-.emp-role {
-  color: #777;
-  margin-bottom: 12px;
-  font-size: 15px;
-}
+.emp-phone a { color:#0078ff; font-weight:600; text-decoration:none; font-size:16px; }
+.emp-role { color:#777; margin-bottom:12px; font-size:15px; }
 
-/* === Table === */
 .employee-modal .schedule-mini {
-  width: 95%;
-  border-collapse: separate;
-  border-spacing: 20px 10px;
-  text-align: center;
-  font-size: 18px;
-  margin: 0 auto;
+  width: 95%; border-collapse: separate; border-spacing: 20px 10px; text-align: center; font-size: 18px; margin: 0 auto;
 }
 .employee-modal .schedule-mini th {
   background: rgba(0,120,255,0.05);
-  color: #0078ff;
-  border-bottom: 2px solid rgba(0,120,255,0.2);
-  border-radius: 6px;
-  padding: 6px;
+  color: #0078ff; border-bottom: 2px solid rgba(0,120,255,0.2);
+  border-radius: 6px; padding: 6px;
 }
-.employee-modal .schedule-mini td {
-  padding: 6px;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-}
+.employee-modal .schedule-mini td { padding: 6px; border-bottom: 1px solid rgba(0,0,0,0.05); }
 
-/* === Totals === */
-.employee-modal .total {
-  color: #e60000;
-  font-weight: 700;
-  margin-top: 14px;
-  font-size: 18px;
-}
-.employee-modal .live-hours {
-  color: #0078ff;
-  font-weight: 600;
-  margin-top: 6px;
-  font-size: 16px;
-}
+.employee-modal .total { color: var(--red); font-weight: 700; margin-top: 14px; font-size: 18px; }
+.employee-modal .live-hours { color: #0078ff; font-weight: 600; margin-top: 6px; font-size: 16px; }
 
-/* === Button === */
-.emp-refresh {
-  background: #0078ff;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
-  margin-top: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 6px 16px rgba(0,120,255,0.35);
-  transition: all 0.3s ease;
-}
-.emp-refresh:hover {
-  background: #0096ff;
-  transform: translateY(-2px);
-}
-
-/* === Footer === */
-.employee-modal::after {
-  content: "Powered by JAG15 | Allston Car Wash © 2025";
-  position: absolute;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 13px;
-  font-weight: 600;
-  color: #0078ff;
-  text-shadow: 0 0 10px rgba(0,120,255,0.35);
-}
-
-/* ============================================================
-   🧭 ACW-App v5.2.1 — Employee Modal True Match to Team View
-   Johan A. Giraldo | Allston Car Wash © 2025
-   ============================================================ */
-
-/* Fuerza el Employee Modal a usar la misma posición que Team View */
-.employee-modal {
-  position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-  background: rgba(0, 0, 0, 0.45) !important;
-  backdrop-filter: blur(10px) !important;
-  z-index: 9999 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Caja interior con el mismo ancho visual del Team View */
-.employee-modal .emp-box,
-.employee-modal.emp-panel {
-  width: 85% !important;
-  max-width: 800px !important;
-  background: rgba(255,255,255,0.97) !important;
-  border-radius: 18px !important;
-  box-shadow: 0 0 45px rgba(0,120,255,0.35) !important;
-  padding: 40px 50px 50px !important;
-  text-align: center !important;
-  color: #111 !important;
-}
-
-/* Footer centrado como Team View */
-.employee-modal::after {
-  content: "Powered by JAG15 | Allston Car Wash © 2025";
-  position: absolute !important;
-  bottom: 12px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  color: #0078ff !important;
-  text-shadow: 0 0 10px rgba(0,120,255,0.35) !important;
-}
-
-/* ============================================================
-   🔐 ACW-App v5.2.5 — Login Vertical Align (Direct Fix)
-   Johan A. Giraldo | Allston Car Wash © 2025
-   ============================================================ */
-
-/* Hace que email y password estén uno debajo del otro */
-input[type="email"],
-input[type="password"] {
-  display: block;
-  margin: 10px auto;          /* centra los campos */
-  width: 80%;
-  max-width: 280px;
-  padding: 10px 14px;
-  font-size: 15px;
-  border: 1px solid rgba(0,120,255,0.25);
-  border-radius: 6px;
-  outline: none;
-  transition: 0.25s ease;
-}
-
-/* Brillo azul al enfocar */
-input[type="email"]:focus,
-input[type="password"]:focus {
-  border-color: #0078ff;
-  box-shadow: 0 0 8px rgba(0,120,255,0.25);
-}
-
-/* Botón Sign In centrado debajo */
-button[type="submit"],
-button.signin-btn {
-  display: block;
-  margin: 16px auto 0 auto;
-  width: 150px;
-  padding: 10px 20px;
-  background: #e60000;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-button[type="submit"]:hover,
-button.signin-btn:hover {
-  background: #ff3333;
-  transform: translateY(-1px);
-}
-
-.emp-working {
-  animation: pulseGlow 1.8s infinite ease-in-out;
-}
-@keyframes pulseGlow {
-  0% { text-shadow: 0 0 6px rgba(51,255,102,0.4); opacity: 0.8; }
-  50% { text-shadow: 0 0 14px rgba(51,255,102,0.8); opacity: 1; }
-  100% { text-shadow: 0 0 6px rgba(51,255,102,0.4); opacity: 0.8; }
-}
-.emp-completed {
-  opacity: 0.9;
-  animation: fadeIn 0.8s ease-in-out;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-2px); }
-  to   { opacity: 0.9; transform: translateY(0); }
-}
-
-.tv-hours {
-  transition: all 0.4s ease;
-}
-.tv-hours.glow {
-  text-shadow: 0 0 10px rgba(51,255,102,0.7), 0 0 20px rgba(51,255,102,0.4);
-  animation: pulseGlow 1.8s infinite ease-in-out;
-}
-@keyframes pulseGlow {
-  0% { opacity: 0.8; text-shadow: 0 0 8px rgba(51,255,102,0.4); }
-  50% { opacity: 1; text-shadow: 0 0 16px rgba(51,255,102,0.9); }
-  100% { opacity: 0.8; text-shadow: 0 0 8px rgba(51,255,102,0.4); }
-}
-
-/* ============================================================
-   🟢 Pulse Glow Animation (for Working employees)
-   ============================================================ */
-.tv-hours.glow {
-  text-shadow: 0 0 10px rgba(51,255,102,0.7), 0 0 20px rgba(51,255,102,0.5);
-  animation: pulseGlow 1.8s infinite ease-in-out;
-}
-
-@keyframes pulseGlow {
-  0% { opacity: 0.8; text-shadow: 0 0 6px rgba(51,255,102,0.3); }
-  50% { opacity: 1; text-shadow: 0 0 16px rgba(51,255,102,0.9); }
-  100% { opacity: 0.8; text-shadow: 0 0 6px rgba(51,255,102,0.3); }
-}
-
-/* === TEAM VIEW CLEAN STYLE === */
-.tv-table th, .tv-table td {
-  text-align: center;
-  padding: 6px 10px;
-}
-.tv-live {
-  color: #33ff66;
-  text-shadow: 0 0 8px rgba(51,255,102,0.5);
-}
-@keyframes fadeIn {
-  from {opacity:0; filter:blur(3px);}
-  to {opacity:1; filter:blur(0);}
-}
-.fade-out {
-  animation: fadeOut 0.25s forwards;
-}
-@keyframes fadeOut {
-  from {opacity:1;}
-  to {opacity:0;}
-}
-
-/* === TEAM VIEW FIX (v5.5.3 visual) === */
-.directory-wrapper.tv-wrapper {
-  position: fixed !important;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: auto;
-  max-width: 520px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 14px;
-  box-shadow: 0 0 30px rgba(0,0,0,0.45);
-  padding: 20px 25px;
-  animation: fadeIn 0.25s ease;
-  z-index: 999;
-  backdrop-filter: blur(12px);
-}
-
-.directory-table th, .directory-table td {
-  text-align: center;
-  padding: 8px 10px;
-  font-size: 0.95em;
-}
-
-.tv-live {
-  color: #33ff66;
-  text-shadow: 0 0 10px rgba(51,255,102,0.6);
-}
-
-/* ============================================================
-   🔑 CHANGE PASSWORD MODAL — Blue Glass+ Match
-   ============================================================ */
-#changePasswordModal .modal-content {
-  background: rgba(255,255,255,0.97);
-  border-radius: 16px;
-  box-shadow: 0 0 40px rgba(0,128,255,0.3);
-  padding: 30px 28px;
-  width: 340px;
-  text-align: center;
-  animation: popIn 0.3s ease;
-}
-
-#changePasswordModal input {
-  display: block;
-  margin: 10px auto;
-  width: 80%;
-  max-width: 260px;
-  padding: 10px 14px;
-  border: 1px solid rgba(0,120,255,0.25);
-  border-radius: 6px;
-  outline: none;
-  font-size: 15px;
-  transition: 0.25s ease;
-}
-
-#changePasswordModal input:focus {
-  border-color: #0078ff;
-  box-shadow: 0 0 8px rgba(0,120,255,0.25);
-}
-
-#changePasswordModal button {
-  background: #e60000;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
-  font-weight: 600;
-  margin-top: 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-#changePasswordModal button:hover {
-  background: #ff3333;
-  transform: translateY(-1px);
-}
-
-/* ============================================================
-   🧭 EMPLOYEE MODAL ACTION BUTTONS (v5.5)
-   ============================================================ */
 .emp-actions {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 12px;
-  flex-wrap: wrap;
+  display:flex; justify-content:center; gap:10px; margin-top:12px; flex-wrap:wrap;
 }
+.emp-actions button { color:#fff; border:none; border-radius:8px; font-weight:600; padding:8px 14px; cursor:pointer; transition:.25s; box-shadow:0 4px 12px rgba(0,0,0,0.15); }
+.emp-actions .btn-update { background: linear-gradient(135deg, #007bff, #0096ff); }
+.emp-actions .btn-update:hover { background: linear-gradient(135deg, #0096ff, #33a0ff); transform: translateY(-2px); }
+.emp-actions .btn-today { background: linear-gradient(135deg, #e60000, #ff3333); }
+.emp-actions .btn-today:hover { background: linear-gradient(135deg, #ff3333, #ff6666); transform: translateY(-2px); }
+.emp-actions .btn-tomorrow { background: linear-gradient(135deg, #ff8800, #ffaa33); }
+.emp-actions .btn-tomorrow:hover { background: linear-gradient(135deg, #ffaa33, #ffbb55); transform: translateY(-2px); }
 
-.emp-actions button {
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  padding: 8px 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
+.emp-status-msg { width:100%; text-align:center; font-weight:600; font-size:.9em; margin-top:6px; }
 
-/* ✏️ Update */
-.emp-actions .btn-update {
-  background: linear-gradient(135deg, #007bff, #0096ff);
-}
-.emp-actions .btn-update:hover {
-  background: linear-gradient(135deg, #0096ff, #33a0ff);
-  transform: translateY(-2px);
-}
+/* ---------- Animations ---------- */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: translateY(0);} }
+@keyframes popIn { from { opacity: 0; transform: scale(0.96);} to { opacity: 1; transform: scale(1);} }
 
-/* 📤 Send Today */
-.emp-actions .btn-today {
-  background: linear-gradient(135deg, #e60000, #ff3333);
+/* ---------- Download button ---------- */
+.download-btn {
+  display: inline-block; width: 90%; margin-top: 8px; padding: 10px 18px;
+  border: none; border-radius: 8px;
+  background: linear-gradient(135deg, var(--blue), var(--blue-2));
+  color: #fff; font-weight: 600; font-size: 1em;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.35);
+  cursor: pointer; transition: all 0.25s ease;
 }
-.emp-actions .btn-today:hover {
-  background: linear-gradient(135deg, #ff3333, #ff6666);
-  transform: translateY(-2px);
-}
-
-/* 📤 Send Tomorrow */
-.emp-actions .btn-tomorrow {
-  background: linear-gradient(135deg, #ff8800, #ffaa33);
-}
-.emp-actions .btn-tomorrow:hover {
-  background: linear-gradient(135deg, #ffaa33, #ffbb55);
-  transform: translateY(-2px);
-}
-
-/* Estado del envío */
-.emp-status-msg {
-  width: 100%;
-  text-align: center;
-  font-weight: 600;
-  font-size: 0.9em;
-  margin-top: 6px;
+.download-btn:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #1a8cff, #4db8ff);
+  box-shadow: 0 6px 16px rgba(0, 136, 255, 0.45);
 }
