@@ -515,3 +515,21 @@ window.sendShiftMessage = sendShiftMessage;
 window.updateShiftFromModal = updateShiftFromModal;
 
 console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.2"} | Base: ${CONFIG?.BASE_URL||"<no-config>"}`);
+
+// Prevent flicker when opening Team View
+document.addEventListener("DOMContentLoaded", ()=>{
+  const styleFix = document.createElement("style");
+  styleFix.textContent = `
+    #directoryWrapper { opacity:0; }
+    #directoryWrapper.show { opacity:1; transition:opacity .3s ease; }
+  `;
+  document.head.appendChild(styleFix);
+});
+
+function renderTeamViewPage(){
+  $("#directoryWrapper")?.remove();
+  const box=document.createElement("div");
+  box.id="directoryWrapper";
+  box.className="directory-wrapper show"; // ← añade show aquí
+  // ... (el resto de tu código igual)
+}
