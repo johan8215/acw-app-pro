@@ -372,3 +372,86 @@ tr.today td {
   background: linear-gradient(135deg, #1a8cff, #4db8ff);
   box-shadow: 0 6px 16px rgba(0, 136, 255, 0.45);
 }
+
+/* ============================================================
+   ✅ FIX — Team View & Settings Modals (v5.6.2 Patch)
+   ============================================================ */
+
+/* ---------- Fix: Team View visible and centered ---------- */
+.directory-wrapper {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 95%;
+  max-width: 760px;
+  height: auto;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: rgba(255,255,255,0.98);
+  border-radius: 14px;
+  padding: 40px 50px;
+  box-shadow: 0 0 45px rgba(0,120,255,0.35);
+  backdrop-filter: blur(10px);
+  text-align: center;
+  color: #111;
+  z-index: 9999;
+  opacity: 0;
+  transform-origin: center center;
+  transition: opacity .25s ease, transform .25s ease;
+}
+
+.directory-wrapper.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* fade-out when closing */
+.directory-wrapper.fade-out {
+  opacity: 0 !important;
+  transform: translate(-50%, -50%) scale(0.97);
+}
+
+/* Fix scroll bounce on mobile */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* ---------- Fix: Settings Modal (no longer hidden forever) ---------- */
+#settingsModal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(6px);
+  z-index: 5000;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn .25s ease;
+}
+
+#settingsModal.show {
+  display: flex !important;
+  animation: fadeIn .25s ease;
+}
+
+#settingsModal .modal-content {
+  background: rgba(255,255,255,0.98);
+  border-radius: 16px;
+  box-shadow: 0 0 35px rgba(0,120,255,0.35);
+  width: 90%;
+  max-width: 400px;
+  padding: 28px 30px 36px;
+  text-align: center;
+  animation: popIn .25s ease;
+}
+
+/* ---------- Smooth animation ---------- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes popIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
