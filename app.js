@@ -272,50 +272,70 @@ async function loadEmployeeDirectory(){
     __teamList = j.directory||[]; __teamPage=0; renderTeamViewPage();
   }catch(e){ console.warn(e); }
 }
-function renderTeamViewPage(){
+function renderTeamViewPage() {
+  // elimina cualquier vista previa
   $("#directoryWrapper")?.remove();
-  const box=document.createElement("div");
-  box.id="directoryWrapper"; box.className="directory-wrapper tv-wrapper";
-  box.style.display="flex"; box.style.flexDirection="column"; box.style.alignItems="center"; box.style.animation="fadeIn .25s ease";
+
+  // crea el contenedor principal (centrado)
+  const box = document.createElement("div");
+  box.id = "directoryWrapper";
+  box.className = "directory-wrapper show"; // 👈 importante para CSS
+
+  // estructura HTML de la vista
   box.innerHTML = `
     <div class="tv-head">
-      <h3 style="margin-bottom:6px;">Team View</h3>
+      <h3>Team View</h3>
       <button class="tv-close" onclick="toggleTeamOverview()">✖️</button>
     </div>
+
     <div class="tv-pager">
-      <button class="tv-nav" id="tvPrev" ${__teamPage===0?"disabled":""}>‹ Prev</button>
-      <span class="tv-index">Page ${__teamPage+1} / ${Math.max(1, Math.ceil(__teamList.length/TEAM_PAGE_SIZE))}</span>
-      <button class="tv-nav" id="tvNext" ${(__teamPage+1)>=Math.ceil(__teamList.length/TEAM_PAGE_SIZE)?"disabled":""}>Next ›</button>
+      <button class="tv-nav" id="tvPrev" ${__teamPage === 0 ? "disabled" : ""}>‹ Prev</button>
+      <span class="tv-index">Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}</span>
+      <button class="tv-nav" id="tvNext" ${(__teamPage + 1) >= Math.ceil(__teamList.length / TEAM_PAGE_SIZE) ? "disabled" : ""}>Next ›</button>
     </div>
-    <table class="directory-table tv-table" style="margin-top:10px;min-width:460px;text-align:center;">
+
+    <table class="directory-table tv-table">
       <tr><th>Name</th><th>Hours</th><th>Live (Working)</th><th></th></tr>
       <tbody id="tvBody"></tbody>
     </table>
   `;
+
   document.body.appendChild(box);
 
-  const start = __teamPage*TEAM_PAGE_SIZE, slice = __teamList.slice(start, start+TEAM_PAGE_SIZE);
+  // datos paginados
+  const start = __teamPage * TEAM_PAGE_SIZE;
+  const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
   const body = $("#tvBody", box);
-  body.innerHTML = slice.map(emp=>`
-    <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role||''}" data-phone="${emp.phone||''}">
+
+  body.innerHTML = slice.map(emp => `
+    <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role || ''}" data-phone="${emp.phone || ''}">
       <td><b>${emp.name}</b></td>
       <td class="tv-hours">—</td>
       <td class="tv-live">—</td>
       <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
     </tr>`).join("");
 
-  $("#tvPrev",box).onclick = ()=>{ __teamPage=Math.max(0,__teamPage-1); renderTeamViewPage(); };
-  $("#tvNext",box).onclick = ()=>{ __teamPage=Math.min(Math.ceil(__teamList.length/TEAM_PAGE_SIZE)-1,__teamPage+1); renderTeamViewPage(); };
+  // navegación
+  $("#tvPrev", box).onclick = () => {
+    __teamPage = Math.max(0, __teamPage - 1);
+    renderTeamViewPage();
+  };
+  $("#tvNext", box).onclick = () => {
+    __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1);
+    renderTeamViewPage();
+  };
 
-  slice.forEach(async emp=>{
-    try{
-      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, {cache:"no-store"});
+  // carga de horarios
+  slice.forEach(async emp => {
+    try {
+      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
       const d = await r.json();
       const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
-      if (tr) tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total||0)).toFixed(1) : "0";
-    }catch{}
+      if (tr) tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
+    } catch {}
   });
 
+  // actualización de columna Live
   updateTeamViewLiveStatus();
 }
 async function updateTeamViewLiveStatus(){
