@@ -546,6 +546,17 @@ document.addEventListener("DOMContentLoaded", ()=>{
   document.head.appendChild(styleFix);
 });
 
+// ============================================================
+// 🌐 MAKE FUNCTIONS GLOBAL — For Vercel / PWA Compatibility
+// ============================================================
+window.loginUser = loginUser;
+window.openSettings = openSettings;
+window.closeSettings = closeSettings;
+window.toggleTeamOverview = toggleTeamOverview;
+window.loadEmployeeDirectory = loadEmployeeDirectory;
+window.renderTeamViewPage = renderTeamViewPage;
+window.updateTeamViewLiveStatus = updateTeamViewLiveStatus;
+
 function renderTeamViewPage(){
   $("#directoryWrapper")?.remove();
   const box=document.createElement("div");
