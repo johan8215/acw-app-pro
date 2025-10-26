@@ -252,73 +252,51 @@ async function submitChangePassword() {
 
 /* ============== TEAM VIEW (gestión) ============== */
 const TEAM_PAGE_SIZE = 8;
-let __teamList=[], __teamPage=0;
+let __teamList = [], __teamPage = 0;
 
-function addTeamButton(){
+function addTeamButton() {
   if ($("#teamBtn")) return;
   const btn = document.createElement("button");
-  btn.id="teamBtn"; btn.className="team-btn"; btn.textContent="Team View";
-  btn.onclick = toggleTeamOverview; document.body.appendChild(btn);
+  btn.id = "teamBtn";
+  btn.className = "team-btn";
+  btn.textContent = "Team View";
+  btn.onclick = toggleTeamOverview;
+  document.body.appendChild(btn);
 }
-function toggleTeamOverview(){
+
+function toggleTeamOverview() {
   const w = $("#directoryWrapper");
-  if (w){ w.classList.add("fade-out"); setTimeout(()=>w.remove(), 220); return; }
+  if (w) {
+    w.classList.add("fade-out");
+    setTimeout(() => w.remove(), 220);
+    return;
+  }
   loadEmployeeDirectory();
 }
 
-async function loadEmployeeDirectory(){
-  try {
-    const r = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`, {cache:"no-store"});
-    const j = await r.json();
-
-    if (!j || !j.ok || !Array.isArray(j.directory)) {
-      console.warn("⚠️ getEmployeesDirectory returned invalid data:", j);
-      showToast("⚠️ Directory not found on server", "error");
-      // Mostrar modal vacío pero visible para test
-      __teamList = [];
-      __teamPage = 0;
-      renderTeamViewPage();
-      return;
-    }
-
-    __teamList = j.directory || [];
-    __teamPage = 0;
-    renderTeamViewPage();
-    showToast("✅ Team directory loaded", "success");
-
-  } catch (e) {
-    console.error("❌ loadEmployeeDirectory error:", e);
-    showToast("❌ Could not load directory", "error");
-    // Fallback visual (contenedor vacío)
-    __teamList = [];
-    __teamPage = 0;
-    renderTeamViewPage();
-  }
-}
-
 /* ============================================================
-   👥 Team Directory Loader — Stable Connected Edition
+   👥 Team Directory Loader — Stable & Centered Edition
    ============================================================ */
-async function loadEmployeeDirectory(){
-  const schedDiv = document.createElement("div");
-  schedDiv.id = "loadingTeam";
-  schedDiv.style.cssText = `
+async function loadEmployeeDirectory() {
+  // Loading overlay
+  const overlay = document.createElement("div");
+  overlay.id = "loadingTeam";
+  overlay.style.cssText = `
     position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-    background:rgba(255,255,255,0.95);padding:30px 40px;border-radius:12px;
-    box-shadow:0 0 25px rgba(0,120,255,0.25);font-weight:600;color:#0078ff;
-    z-index:9999;text-align:center;
+    background:rgba(255,255,255,0.97);padding:30px 45px;border-radius:12px;
+    box-shadow:0 0 30px rgba(0,120,255,0.25);font-weight:600;
+    color:#0078ff;z-index:9999;text-align:center;font-size:1.1em;
   `;
-  schedDiv.textContent = "Loading Team View...";
-  document.body.appendChild(schedDiv);
+  overlay.textContent = "Loading Team View...";
+  document.body.appendChild(overlay);
 
   try {
-    const url = `${CONFIG.BASE_URL}?action=getEmployeesDirectory`;
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`, { cache: "no-store" });
     const j = await res.json();
 
     if (!j.ok || !Array.isArray(j.directory)) {
       console.warn("⚠️ Invalid directory data:", j);
-      showToast("⚠️ Directory data not found", "error");
+      toast("⚠️ Directory not found", "error");
       __teamList = [];
     } else {
       __teamList = j.directory;
@@ -326,24 +304,29 @@ async function loadEmployeeDirectory(){
 
     __teamPage = 0;
     renderTeamViewPage();
-    showToast("✅ Team View Ready", "success");
+    toast("✅ Team View Ready", "success");
+
   } catch (e) {
-    console.error("❌ Error loading team directory:", e);
-    showToast("❌ Network error loading directory", "error");
+    console.error("❌ Error loading directory:", e);
+    toast("❌ Network error loading directory", "error");
     __teamList = [];
     __teamPage = 0;
     renderTeamViewPage();
   } finally {
-    setTimeout(() => schedDiv.remove(), 400);
+    setTimeout(() => overlay.remove(), 400);
   }
 }
 
+/* ============================================================
+   👥 Team View Renderer — Centered, Fixed Size
+   ============================================================ */
 function renderTeamViewPage() {
   $("#directoryWrapper")?.remove();
 
   const box = document.createElement("div");
   box.id = "directoryWrapper";
-  box.className = "directory-wrapper show"; // 👈 MUY IMPORTANTE
+  box.className = "directory-wrapper show";
+  box.style.opacity = "0";
 
   box.innerHTML = `
     <div class="tv-head">
@@ -352,48 +335,68 @@ function renderTeamViewPage() {
     </div>
 
     <div class="tv-pager">
-      <button class="tv-nav" id="tvPrev" ${__teamPage===0?"disabled":""}>‹ Prev</button>
-      <span class="tv-index">Page ${__teamPage+1} / ${Math.max(1, Math.ceil(__teamList.length/TEAM_PAGE_SIZE))}</span>
-      <button class="tv-nav" id="tvNext" ${(__teamPage+1)>=Math.ceil(__teamList.length/TEAM_PAGE_SIZE)?"disabled":""}>Next ›</button>
+      <button class="tv-nav" id="tvPrev" ${__teamPage === 0 ? "disabled" : ""}>‹ Prev</button>
+      <span class="tv-index">Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}</span>
+      <button class="tv-nav" id="tvNext" ${(__teamPage + 1) >= Math.ceil(__teamList.length / TEAM_PAGE_SIZE) ? "disabled" : ""}>Next ›</button>
     </div>
 
-    <table class="directory-table tv-table" style="margin-top:10px;min-width:460px;text-align:center;">
-      <tr><th>Name</th><th>Hours</th><th>Live (Working)</th><th></th></tr>
+    <table class="directory-table tv-table">
+      <thead>
+        <tr><th>Name</th><th>Hours</th><th>Live</th><th></th></tr>
+      </thead>
       <tbody id="tvBody"></tbody>
     </table>
   `;
 
   document.body.appendChild(box);
-  // ... resto del código ...
-}
+  setTimeout(() => (box.style.opacity = "1"), 150);
 
-async function updateTeamViewLiveStatus(){
-  try{
-    const rows = $all(".tv-table tr[data-email]"); if (!rows.length) return;
-    for (const row of rows){
-      const email=row.dataset.email, liveCell=row.querySelector(".tv-live"), totalCell=row.querySelector(".tv-hours");
-      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, {cache:"no-store"});
-      const d = await r.json(); if (!d.ok || !d.days) continue;
+  const start = __teamPage * TEAM_PAGE_SIZE;
+  const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
+  const body = box.querySelector("#tvBody");
 
-      const todayKey = new Date().toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase();
-      const today = d.days.find(x=> x.name.slice(0,3).toLowerCase()===todayKey);
-      if (!today?.shift) { liveCell.innerHTML="—"; continue; }
+  if (!slice.length) {
+    body.innerHTML = `<tr><td colspan="4" style="padding:20px;color:#999;">No employees found</td></tr>`;
+    return;
+  }
 
-      if (today.shift.trim().endsWith(".")){
-        const startTime = parseTime(today.shift.replace(/\.$/,"").trim());
-        if(!startTime) continue;
-        const diff = Math.max(0,(Date.now()-startTime.getTime())/36e5);
-        liveCell.innerHTML = `🟢 ${diff.toFixed(1)}h`;
-        liveCell.style.color="#33ff66"; liveCell.style.fontWeight="600"; liveCell.style.textShadow="0 0 10px rgba(51,255,102,.6)";
-        const base = parseFloat(totalCell.textContent)||0;
-        totalCell.innerHTML = `${(base+diff).toFixed(1)} <span style="color:#33a0ff;font-size:.85em;">(+${diff.toFixed(1)})</span>`;
-      }else{
-        liveCell.innerHTML="—"; liveCell.style.color="#aaa"; liveCell.style.fontWeight="400"; liveCell.style.textShadow="none";
-      }
+  // Rellenar tabla
+  body.innerHTML = slice
+    .map(emp => `
+      <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role || ''}" data-phone="${emp.phone || ''}">
+        <td><b>${emp.name}</b><br><small style="color:#666;">${emp.role || ''}</small></td>
+        <td class="tv-hours">—</td>
+        <td class="tv-live">—</td>
+        <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
+      </tr>
+    `)
+    .join("");
+
+  // Navegación
+  $("#tvPrev", box).onclick = () => {
+    __teamPage = Math.max(0, __teamPage - 1);
+    renderTeamViewPage();
+  };
+  $("#tvNext", box).onclick = () => {
+    __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1);
+    renderTeamViewPage();
+  };
+
+  // Cargar horas de cada empleado
+  slice.forEach(async emp => {
+    try {
+      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
+      const d = await r.json();
+      const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
+      if (!tr) return;
+      tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
+    } catch (e) {
+      console.warn("Error loading hours for", emp.email, e);
     }
-  }catch(e){ console.warn("Live col error:", e); }
+  });
+
+  updateTeamViewLiveStatus();
 }
-setInterval(updateTeamViewLiveStatus, 120000);
 
 /* ============== EMPLOYEE MODAL (gestión) ============== */
 async function openEmployeePanel(btnEl){
