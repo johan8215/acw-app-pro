@@ -250,12 +250,14 @@ async function submitChangePassword() {
   }
 }
 
-/* ============== TEAM VIEW (gestión) ============== */
+/* ============================================================
+   👥 TEAM VIEW — Glass White Stable Edition (Fixed Oct 2025)
+   ============================================================ */
 const TEAM_PAGE_SIZE = 8;
 let __teamList = [], __teamPage = 0;
 
 function addTeamButton() {
-  if ($("#teamBtn")) return;
+  if (document.getElementById("teamBtn")) return;
   const btn = document.createElement("button");
   btn.id = "teamBtn";
   btn.className = "team-btn";
@@ -265,7 +267,7 @@ function addTeamButton() {
 }
 
 function toggleTeamOverview() {
-  const w = $("#directoryWrapper");
+  const w = document.getElementById("directoryWrapper");
   if (w) {
     w.classList.add("fade-out");
     setTimeout(() => w.remove(), 200);
@@ -274,13 +276,9 @@ function toggleTeamOverview() {
   loadEmployeeDirectory();
 }
 
-/* ============================================================
-   👥 Team Directory Loader — Stable Glass White Edition
-   ============================================================ */
 async function loadEmployeeDirectory() {
-  console.log("📡 Starting loadEmployeeDirectory()...");
+  console.log("📡 Starting loadEmployeeDirectory()");
 
-  // Overlay visual
   const overlay = document.createElement("div");
   overlay.id = "loadingTeam";
   overlay.style.cssText = `
@@ -300,22 +298,20 @@ async function loadEmployeeDirectory() {
     console.log("🌐 Fetching:", url);
 
     const res = await fetch(url, { cache: "no-store" });
-    console.log("✅ Response received:", res.status);
-
     const text = await res.text();
-    console.log("📦 Raw response:", text.slice(0, 200)); // primeros 200 caracteres
+    console.log("📦 Raw:", text.slice(0, 180));
 
     let j;
     try {
       j = JSON.parse(text);
-    } catch (parseErr) {
-      console.error("❌ JSON parse error:", parseErr);
-      toast("❌ Invalid JSON from server", "error");
+    } catch (err) {
+      console.error("❌ JSON parse error:", err);
+      toast("❌ Invalid JSON response", "error");
       return;
     }
 
     if (!j.ok || !Array.isArray(j.directory)) {
-      console.warn("⚠️ Invalid directory data:", j);
+      console.warn("⚠️ Directory invalid:", j);
       toast("⚠️ Directory not found", "error");
       __teamList = [];
     } else {
@@ -327,20 +323,16 @@ async function loadEmployeeDirectory() {
     renderTeamViewPage();
     toast("✅ Team View Ready", "success");
 
-  } catch (e) {
-    console.error("❌ loadEmployeeDirectory() error:", e);
-    toast("❌ Network or script error", "error");
+  } catch (err) {
+    console.error("❌ loadEmployeeDirectory error:", err);
+    toast("❌ Could not load directory", "error");
   } finally {
     setTimeout(() => overlay.remove(), 400);
   }
 }
 
-
-/* ============================================================
-   👥 Team View Renderer — Fixed Glass Centered Table
-   ============================================================ */
 function renderTeamViewPage() {
-  $("#directoryWrapper")?.remove();
+  document.getElementById("directoryWrapper")?.remove();
 
   const box = document.createElement("div");
   box.id = "directoryWrapper";
@@ -359,10 +351,8 @@ function renderTeamViewPage() {
       <button class="tv-nav" id="tvNext" ${(__teamPage + 1) >= Math.ceil(__teamList.length / TEAM_PAGE_SIZE) ? "disabled" : ""}>Next ›</button>
     </div>
 
-    <table class="directory-table tv-table">
-      <thead>
-        <tr><th>Name</th><th>Hours</th><th>Live</th><th></th></tr>
-      </thead>
+    <table class="directory-table tv-table" style="margin-top:10px;min-width:460px;text-align:center;">
+      <thead><tr><th>Name</th><th>Hours</th><th>Live</th><th></th></tr></thead>
       <tbody id="tvBody"></tbody>
     </table>
   `;
@@ -388,16 +378,16 @@ function renderTeamViewPage() {
     </tr>
   `).join("");
 
-  $("#tvPrev", box).onclick = () => {
+  document.getElementById("tvPrev").onclick = () => {
     __teamPage = Math.max(0, __teamPage - 1);
     renderTeamViewPage();
   };
-  $("#tvNext", box).onclick = () => {
+  document.getElementById("tvNext").onclick = () => {
     __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1);
     renderTeamViewPage();
   };
 
-  // Cargar horas de cada empleado
+  // load live hours
   slice.forEach(async emp => {
     try {
       const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
@@ -406,7 +396,7 @@ function renderTeamViewPage() {
       if (!tr) return;
       tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
     } catch (e) {
-      console.warn("Error loading hours for", emp.email, e);
+      console.warn("⚠️ Error loading hours for", emp.email, e);
     }
   });
 
