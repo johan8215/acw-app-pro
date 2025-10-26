@@ -527,10 +527,20 @@ function toast(msg, type="info"){
 window.loginUser = loginUser;
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
+window.refreshApp = refreshApp;
+window.logoutUser = logoutUser;
+window.openChangePassword = openChangePassword;
+window.closeChangePassword = closeChangePassword;
+window.submitChangePassword = submitChangePassword;
+window.openEmployeePanel = openEmployeePanel;
+window.sendShiftMessage = sendShiftMessage;
+window.updateShiftFromModal = updateShiftFromModal;
 window.toggleTeamOverview = toggleTeamOverview;
 window.loadEmployeeDirectory = loadEmployeeDirectory;
 window.renderTeamViewPage = renderTeamViewPage;
 window.updateTeamViewLiveStatus = updateTeamViewLiveStatus;
+
+console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION || "v5.6.2"} | Base: ${CONFIG?.BASE_URL || "<no-config>"}`);
 
 function renderTeamViewPage(){
   $("#directoryWrapper")?.remove();
