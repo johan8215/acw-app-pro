@@ -14,23 +14,23 @@
 </head>
 <body>
 
-  <!-- 🔐 LOGIN SCREEN -->
-  <div id="login" class="container glass">
-    <h1>ALLSTON CAR WASH</h1>
-    <input id="email" type="email" placeholder="Email" autocomplete="email">
-    <input id="password" type="password" placeholder="Password" autocomplete="current-password">
-    <button onclick="loginUser()">Sign In</button>
-    <p id="diag" class="error"></p>
-  </div>
+ <!-- 🔐 LOGIN SCREEN -->
+<div id="login" class="container glass">
+  <h1>ALLSTON CAR WASH</h1>
+  <input id="email" type="email" placeholder="Email" autocomplete="email">
+  <input id="password" type="password" placeholder="Password" autocomplete="current-password">
+  <button onclick="loginUser()">Sign In</button>
+  <p id="diag" class="error" style="margin-top:10px;color:#ff4444;font-weight:600;"></p>
+</div>
 
-  <!-- 👋 WELCOME DASHBOARD -->
-  <div id="welcome" class="container glass" style="display:none;">
-    <h2 id="welcomeName"></h2>
-    <p id="welcomeRole"></p>
-    <div id="schedule"></div>
-    <p id="clock" class="clock"></p>
-    <p id="totalHours" class="total"></p>
-  </div>
+<!-- 👋 WELCOME DASHBOARD -->
+<div id="welcome" class="container glass" style="display:none;">
+  <h2 id="welcomeName"></h2>
+  <p id="welcomeRole"></p>
+  <div id="schedule"></div>
+  <p id="clock" class="clock"></p>
+  <p id="totalHours" class="total"></p>
+</div>
 
   <!-- ⚙️ SETTINGS BUTTON -->
   <button id="settingsBtn" class="gear-btn" onclick="openSettings()">⚙️</button>
