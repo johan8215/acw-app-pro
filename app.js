@@ -268,24 +268,26 @@ function toggleTeamOverview() {
   const w = $("#directoryWrapper");
   if (w) {
     w.classList.add("fade-out");
-    setTimeout(() => w.remove(), 220);
+    setTimeout(() => w.remove(), 200);
     return;
   }
   loadEmployeeDirectory();
 }
 
 /* ============================================================
-   👥 Team Directory Loader — Stable & Centered Edition
+   👥 Team Directory Loader — Stable Glass White Edition
    ============================================================ */
 async function loadEmployeeDirectory() {
-  // Loading overlay
   const overlay = document.createElement("div");
   overlay.id = "loadingTeam";
   overlay.style.cssText = `
     position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-    background:rgba(255,255,255,0.97);padding:30px 45px;border-radius:12px;
-    box-shadow:0 0 30px rgba(0,120,255,0.25);font-weight:600;
-    color:#0078ff;z-index:9999;text-align:center;font-size:1.1em;
+    background:rgba(255,255,255,0.97);
+    padding:30px 45px;border-radius:14px;
+    box-shadow:0 0 25px rgba(0,120,255,0.25);
+    color:#0078ff;font-weight:600;
+    z-index:9999;text-align:center;
+    font-size:1.1em;
   `;
   overlay.textContent = "Loading Team View...";
   document.body.appendChild(overlay);
@@ -295,7 +297,6 @@ async function loadEmployeeDirectory() {
     const j = await res.json();
 
     if (!j.ok || !Array.isArray(j.directory)) {
-      console.warn("⚠️ Invalid directory data:", j);
       toast("⚠️ Directory not found", "error");
       __teamList = [];
     } else {
@@ -318,7 +319,7 @@ async function loadEmployeeDirectory() {
 }
 
 /* ============================================================
-   👥 Team View Renderer — Centered, Fixed Size
+   👥 Team View Renderer — Fixed Glass Centered Table
    ============================================================ */
 function renderTeamViewPage() {
   $("#directoryWrapper")?.remove();
@@ -360,19 +361,15 @@ function renderTeamViewPage() {
     return;
   }
 
-  // Rellenar tabla
-  body.innerHTML = slice
-    .map(emp => `
-      <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role || ''}" data-phone="${emp.phone || ''}">
-        <td><b>${emp.name}</b><br><small style="color:#666;">${emp.role || ''}</small></td>
-        <td class="tv-hours">—</td>
-        <td class="tv-live">—</td>
-        <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
-      </tr>
-    `)
-    .join("");
+  body.innerHTML = slice.map(emp => `
+    <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role || ''}" data-phone="${emp.phone || ''}">
+      <td><b>${emp.name}</b><br><small style="color:#666;">${emp.role || ''}</small></td>
+      <td class="tv-hours">—</td>
+      <td class="tv-live">—</td>
+      <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
+    </tr>
+  `).join("");
 
-  // Navegación
   $("#tvPrev", box).onclick = () => {
     __teamPage = Math.max(0, __teamPage - 1);
     renderTeamViewPage();
