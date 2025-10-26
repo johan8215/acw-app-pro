@@ -540,6 +540,35 @@ window.loadEmployeeDirectory = loadEmployeeDirectory;
 window.renderTeamViewPage = renderTeamViewPage;
 window.updateTeamViewLiveStatus = updateTeamViewLiveStatus;
 
+/* ============================================================
+   ⚙️ Settings Modal Controls (updated for v5.6.2)
+   ============================================================ */
+function openSettings(){
+  const modal = document.getElementById("settingsModal");
+  if(!modal){ console.warn("⚠️ settingsModal not found"); return; }
+  modal.classList.add("show");
+  modal.style.display = "flex";
+  document.body.classList.add("modal-open");
+}
+
+function closeSettings(){
+  const modal = document.getElementById("settingsModal");
+  if(!modal) return;
+  modal.classList.remove("show");
+  setTimeout(()=>{ modal.style.display = "none"; }, 200);
+  document.body.classList.remove("modal-open");
+}
+
+function refreshApp(){
+  try{
+    if("caches" in window){
+      caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+      showToast("🔄 Cache cleared! Reloading...", "info");
+    }
+  }catch(e){ console.warn(e); }
+  setTimeout(()=>location.reload(), 600);
+}
+
 // ============================================================
 // 🧪 DEBUG BUTTON CHECK — Shows alert when buttons respond
 // ============================================================
