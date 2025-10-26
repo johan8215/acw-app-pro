@@ -265,13 +265,37 @@ function toggleTeamOverview(){
   if (w){ w.classList.add("fade-out"); setTimeout(()=>w.remove(), 220); return; }
   loadEmployeeDirectory();
 }
+
 async function loadEmployeeDirectory(){
-  try{
+  try {
     const r = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`, {cache:"no-store"});
-    const j = await r.json(); if (!j.ok) return;
-    __teamList = j.directory||[]; __teamPage=0; renderTeamViewPage();
-  }catch(e){ console.warn(e); }
+    const j = await r.json();
+
+    if (!j || !j.ok || !Array.isArray(j.directory)) {
+      console.warn("⚠️ getEmployeesDirectory returned invalid data:", j);
+      showToast("⚠️ Directory not found on server", "error");
+      // Mostrar modal vacío pero visible para test
+      __teamList = [];
+      __teamPage = 0;
+      renderTeamViewPage();
+      return;
+    }
+
+    __teamList = j.directory || [];
+    __teamPage = 0;
+    renderTeamViewPage();
+    showToast("✅ Team directory loaded", "success");
+
+  } catch (e) {
+    console.error("❌ loadEmployeeDirectory error:", e);
+    showToast("❌ Could not load directory", "error");
+    // Fallback visual (contenedor vacío)
+    __teamList = [];
+    __teamPage = 0;
+    renderTeamViewPage();
+  }
 }
+
 function renderTeamViewPage() {
   // eliminar cualquier vista anterior
   $("#directoryWrapper")?.remove();
