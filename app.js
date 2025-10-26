@@ -338,6 +338,35 @@ async function loadEmployeeDirectory(){
   }
 }
 
+function renderTeamViewPage() {
+  $("#directoryWrapper")?.remove();
+
+  const box = document.createElement("div");
+  box.id = "directoryWrapper";
+  box.className = "directory-wrapper show"; // 👈 MUY IMPORTANTE
+
+  box.innerHTML = `
+    <div class="tv-head">
+      <h3>Team View</h3>
+      <button class="tv-close" onclick="toggleTeamOverview()">✖️</button>
+    </div>
+
+    <div class="tv-pager">
+      <button class="tv-nav" id="tvPrev" ${__teamPage===0?"disabled":""}>‹ Prev</button>
+      <span class="tv-index">Page ${__teamPage+1} / ${Math.max(1, Math.ceil(__teamList.length/TEAM_PAGE_SIZE))}</span>
+      <button class="tv-nav" id="tvNext" ${(__teamPage+1)>=Math.ceil(__teamList.length/TEAM_PAGE_SIZE)?"disabled":""}>Next ›</button>
+    </div>
+
+    <table class="directory-table tv-table" style="margin-top:10px;min-width:460px;text-align:center;">
+      <tr><th>Name</th><th>Hours</th><th>Live (Working)</th><th></th></tr>
+      <tbody id="tvBody"></tbody>
+    </table>
+  `;
+
+  document.body.appendChild(box);
+  // ... resto del código ...
+}
+
 async function updateTeamViewLiveStatus(){
   try{
     const rows = $all(".tv-table tr[data-email]"); if (!rows.length) return;
