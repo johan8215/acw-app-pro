@@ -278,6 +278,9 @@ function toggleTeamOverview() {
    👥 Team Directory Loader — Stable Glass White Edition
    ============================================================ */
 async function loadEmployeeDirectory() {
+  console.log("📡 Starting loadEmployeeDirectory()...");
+
+  // Overlay visual
   const overlay = document.createElement("div");
   overlay.id = "loadingTeam";
   overlay.style.cssText = `
@@ -293,14 +296,31 @@ async function loadEmployeeDirectory() {
   document.body.appendChild(overlay);
 
   try {
-    const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`, { cache: "no-store" });
-    const j = await res.json();
+    const url = `${CONFIG.BASE_URL}?action=getEmployeesDirectory`;
+    console.log("🌐 Fetching:", url);
+
+    const res = await fetch(url, { cache: "no-store" });
+    console.log("✅ Response received:", res.status);
+
+    const text = await res.text();
+    console.log("📦 Raw response:", text.slice(0, 200)); // primeros 200 caracteres
+
+    let j;
+    try {
+      j = JSON.parse(text);
+    } catch (parseErr) {
+      console.error("❌ JSON parse error:", parseErr);
+      toast("❌ Invalid JSON from server", "error");
+      return;
+    }
 
     if (!j.ok || !Array.isArray(j.directory)) {
+      console.warn("⚠️ Invalid directory data:", j);
       toast("⚠️ Directory not found", "error");
       __teamList = [];
     } else {
       __teamList = j.directory;
+      console.log(`✅ Loaded ${__teamList.length} employees`);
     }
 
     __teamPage = 0;
@@ -308,15 +328,13 @@ async function loadEmployeeDirectory() {
     toast("✅ Team View Ready", "success");
 
   } catch (e) {
-    console.error("❌ Error loading directory:", e);
-    toast("❌ Network error loading directory", "error");
-    __teamList = [];
-    __teamPage = 0;
-    renderTeamViewPage();
+    console.error("❌ loadEmployeeDirectory() error:", e);
+    toast("❌ Network or script error", "error");
   } finally {
     setTimeout(() => overlay.remove(), 400);
   }
 }
+
 
 /* ============================================================
    👥 Team View Renderer — Fixed Glass Centered Table
