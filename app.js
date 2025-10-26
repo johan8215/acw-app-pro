@@ -540,6 +540,23 @@ window.loadEmployeeDirectory = loadEmployeeDirectory;
 window.renderTeamViewPage = renderTeamViewPage;
 window.updateTeamViewLiveStatus = updateTeamViewLiveStatus;
 
+// ============================================================
+// 🧪 DEBUG BUTTON CHECK — Shows alert when buttons respond
+// ============================================================
+window.addEventListener("load", ()=>{
+  const teamBtn = document.getElementById("teamBtn");
+  const settingsBtn = document.getElementById("settingsBtn");
+
+  if (teamBtn) teamBtn.onclick = () => { 
+    alert("✅ Team View clicked");
+    toggleTeamOverview(); 
+  };
+  if (settingsBtn) settingsBtn.onclick = () => { 
+    alert("✅ Settings clicked");
+    openSettings(); 
+  };
+});
+
 console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION || "v5.6.2"} | Base: ${CONFIG?.BASE_URL || "<no-config>"}`);
 
 function renderTeamViewPage(){
