@@ -296,72 +296,48 @@ async function loadEmployeeDirectory(){
   }
 }
 
-function renderTeamViewPage() {
-  // eliminar cualquier vista anterior
-  $("#directoryWrapper")?.remove();
-
-  // crear el contenedor principal centrado
-  const box = document.createElement("div");
-  box.id = "directoryWrapper";
-  box.className = "directory-wrapper show"; // 👈 IMPORTANTE
-
-  // contenido principal del Team View
-  box.innerHTML = `
-    <div class="tv-head">
-      <h3>Team View</h3>
-      <button class="tv-close" onclick="toggleTeamOverview()">✖️</button>
-    </div>
-
-    <div class="tv-pager">
-      <button class="tv-nav" id="tvPrev" ${__teamPage === 0 ? "disabled" : ""}>‹ Prev</button>
-      <span class="tv-index">Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}</span>
-      <button class="tv-nav" id="tvNext" ${(__teamPage + 1) >= Math.ceil(__teamList.length / TEAM_PAGE_SIZE) ? "disabled" : ""}>Next ›</button>
-    </div>
-
-    <table class="directory-table tv-table">
-      <tr><th>Name</th><th>Hours</th><th>Live (Working)</th><th></th></tr>
-      <tbody id="tvBody"></tbody>
-    </table>
+/* ============================================================
+   👥 Team Directory Loader — Stable Connected Edition
+   ============================================================ */
+async function loadEmployeeDirectory(){
+  const schedDiv = document.createElement("div");
+  schedDiv.id = "loadingTeam";
+  schedDiv.style.cssText = `
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:rgba(255,255,255,0.95);padding:30px 40px;border-radius:12px;
+    box-shadow:0 0 25px rgba(0,120,255,0.25);font-weight:600;color:#0078ff;
+    z-index:9999;text-align:center;
   `;
+  schedDiv.textContent = "Loading Team View...";
+  document.body.appendChild(schedDiv);
 
-  document.body.appendChild(box);
+  try {
+    const url = `${CONFIG.BASE_URL}?action=getEmployeesDirectory`;
+    const res = await fetch(url, { cache: "no-store" });
+    const j = await res.json();
 
-  // generar las filas visibles
-  const start = __teamPage * TEAM_PAGE_SIZE;
-  const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
-  const body = $("#tvBody", box);
+    if (!j.ok || !Array.isArray(j.directory)) {
+      console.warn("⚠️ Invalid directory data:", j);
+      showToast("⚠️ Directory data not found", "error");
+      __teamList = [];
+    } else {
+      __teamList = j.directory;
+    }
 
-  body.innerHTML = slice.map(emp => `
-    <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role || ''}" data-phone="${emp.phone || ''}">
-      <td><b>${emp.name}</b></td>
-      <td class="tv-hours">—</td>
-      <td class="tv-live">—</td>
-      <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
-    </tr>`).join("");
-
-  // navegación
-  $("#tvPrev", box).onclick = () => {
-    __teamPage = Math.max(0, __teamPage - 1);
+    __teamPage = 0;
     renderTeamViewPage();
-  };
-  $("#tvNext", box).onclick = () => {
-    __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1);
+    showToast("✅ Team View Ready", "success");
+  } catch (e) {
+    console.error("❌ Error loading team directory:", e);
+    showToast("❌ Network error loading directory", "error");
+    __teamList = [];
+    __teamPage = 0;
     renderTeamViewPage();
-  };
-
-  // carga de horas
-  slice.forEach(async emp => {
-    try {
-      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
-      const d = await r.json();
-      const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
-      if (tr) tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
-    } catch {}
-  });
-
-  // actualizar columna Live
-  updateTeamViewLiveStatus();
+  } finally {
+    setTimeout(() => schedDiv.remove(), 400);
+  }
 }
+
 async function updateTeamViewLiveStatus(){
   try{
     const rows = $all(".tv-table tr[data-email]"); if (!rows.length) return;
