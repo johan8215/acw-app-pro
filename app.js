@@ -273,15 +273,15 @@ async function loadEmployeeDirectory(){
   }catch(e){ console.warn(e); }
 }
 function renderTeamViewPage() {
-  // elimina cualquier vista previa
+  // eliminar cualquier vista anterior
   $("#directoryWrapper")?.remove();
 
-  // crea el contenedor principal (centrado)
+  // crear el contenedor principal centrado
   const box = document.createElement("div");
   box.id = "directoryWrapper";
-  box.className = "directory-wrapper show"; // 👈 importante para CSS
+  box.className = "directory-wrapper show"; // 👈 IMPORTANTE
 
-  // estructura HTML de la vista
+  // contenido principal del Team View
   box.innerHTML = `
     <div class="tv-head">
       <h3>Team View</h3>
@@ -302,7 +302,7 @@ function renderTeamViewPage() {
 
   document.body.appendChild(box);
 
-  // datos paginados
+  // generar las filas visibles
   const start = __teamPage * TEAM_PAGE_SIZE;
   const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
   const body = $("#tvBody", box);
@@ -325,7 +325,7 @@ function renderTeamViewPage() {
     renderTeamViewPage();
   };
 
-  // carga de horarios
+  // carga de horas
   slice.forEach(async emp => {
     try {
       const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
@@ -335,7 +335,7 @@ function renderTeamViewPage() {
     } catch {}
   });
 
-  // actualización de columna Live
+  // actualizar columna Live
   updateTeamViewLiveStatus();
 }
 async function updateTeamViewLiveStatus(){
