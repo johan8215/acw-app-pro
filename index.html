@@ -1,143 +1,259 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Allston Car Wash — Blue Glass White Edition</title>
+/* ============================================================
+   🎨 ACW-App v5.6.3 — Blue Glass White Stable UI (Fixed)
+   Johan A. Giraldo (JAG15) | Allston Car Wash © 2025
+   ============================================================ */
 
-  <!-- 📱 PWA META -->
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#ffffff" />
+/* ---------- Base ---------- */
+body {
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  background: #ffffff;
+  color: #222;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
 
-  <!-- 🎨 Styles -->
-  <link rel="stylesheet" href="style.css" />
-</head>
+/* ---------- Container ---------- */
+.container {
+  background: rgba(255,255,255,0.95);
+  border-radius: 14px;
+  padding: 40px 50px;
+  margin: 70px auto;
+  max-width: 420px;
+  box-shadow: 0 0 35px rgba(0,120,255,0.35);
+  transition: all 0.4s ease;
+}
 
-<body>
+/* ---------- Buttons ---------- */
+button {
+  background: #e60000;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 22px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.25s ease;
+}
+button:hover { background: #ff3333; }
 
-  <!-- 🔐 LOGIN SCREEN -->
-  <div id="login" class="container glass">
-    <h1>ALLSTON CAR WASH</h1>
-    <input id="email" type="email" placeholder="Email" autocomplete="email" />
-    <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
-    <button id="signInBtn" onclick="loginUser()">Sign In</button>
-    <p id="diag" class="error"></p>
-  </div>
+/* ---------- Gear Button ---------- */
+.gear-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #e60000;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 46px;
+  height: 46px;
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: 0 0 25px rgba(0, 120, 255, 0.4);
+  transition: 0.3s;
+  z-index: 9999;
+}
+.gear-btn:hover { background: #ff3333; transform: rotate(25deg); }
 
-  <!-- 👋 WELCOME DASHBOARD -->
-  <div id="welcome" class="container glass" style="display:none;">
-    <h2 id="welcomeName"></h2>
-    <p id="welcomeRole"></p>
-    <div id="schedule"></div>
-    <p id="clock" class="clock"></p>
-    <p id="totalHours" class="total"></p>
-  </div>
+/* ---------- Team View Button ---------- */
+.team-btn {
+  position: fixed;
+  top: 25px;
+  right: 40px;
+  background: #ffffff;
+  color: #e60000;
+  border: 2px solid rgba(0, 120, 255, 0.4);
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(0,120,255,0.4);
+  cursor: pointer;
+  z-index: 9999;
+  transition: all 0.3s ease;
+}
+.team-btn:hover {
+  background: #f9f9f9;
+  box-shadow: 0 0 25px rgba(0,136,255,0.6);
+}
 
-  <!-- ⚙️ SETTINGS BUTTON -->
-  <button id="settingsBtn" class="gear-btn" onclick="openSettings()">⚙️</button>
+/* ============================================================
+   👥 TEAM VIEW — Stable Centered Layout
+   ============================================================ */
+.directory-wrapper {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: auto;
+  max-width: 520px;
+  background: rgba(255,255,255,0.96);
+  border-radius: 16px;
+  padding: 22px 28px;
+  box-shadow: 0 0 35px rgba(0,120,255,0.35);
+  backdrop-filter: blur(10px);
+  color: #111;
+  text-align: center;
+  z-index: 9999;
+  animation: fadeIn 0.25s ease;
+}
 
-  <!-- ⚙️ SETTINGS MODAL -->
-  <div id="settingsModal" class="modal" style="display:none;">
-    <div class="modal-content glass">
-      <span class="close" onclick="closeSettings()">×</span>
-      <h3>⚙️ Settings</h3>
+.directory-wrapper h3 {
+  margin-top: 0;
+  font-size: 22px;
+  color: #c00;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(0,136,255,0.4);
+}
 
-      <div class="settings-section">
-        <button onclick="refreshApp()">🔄 Check for Updates</button>
-        <button onclick="logoutUser()">🚪 Log Out</button>
-      </div>
+/* ---------- Table ---------- */
+.directory-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14px;
+  font-size: 17px;
+  text-align: center;
+}
+.directory-table th {
+  color: #0078ff;
+  border-bottom: 2px solid rgba(0,120,255,0.2);
+  padding: 10px 6px;
+  background: rgba(0,120,255,0.05);
+}
+.directory-table td {
+  padding: 10px 6px;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.directory-table tr:hover {
+  background: rgba(0,120,255,0.08);
+  transition: background 0.2s ease;
+}
 
-      <div class="settings-section" style="margin-top:10px;">
-        <button onclick="openChangePassword()">🔑 Change Password</button>
-      </div>
+/* ---------- Live Indicator ---------- */
+.tv-live {
+  color: #33ff66;
+  text-shadow: 0 0 8px rgba(51,255,102,0.5);
+  font-weight: 600;
+}
 
-      <!-- 🔑 CHANGE PASSWORD -->
-      <div id="changePasswordModal" class="modal" style="display:none;">
-        <div class="modal-content glass">
-          <span class="close" onclick="closeChangePassword()">×</span>
-          <h3>🔑 Change Password</h3>
-          <div class="settings-section">
-            <input id="oldPass" type="password" placeholder="Current password" />
-            <input id="newPass" type="password" placeholder="New password" />
-            <input id="confirmPass" type="password" placeholder="Confirm new password" />
-            <button onclick="submitChangePassword()">✅ Save New Password</button>
-            <p id="passDiag" class="error" style="margin-top:8px;"></p>
-          </div>
-        </div>
-      </div>
+/* ---------- Close Button ---------- */
+.directory-close {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  font-size: 22px;
+  font-weight: bold;
+  color: #007bff;
+  cursor: pointer;
+  text-shadow: 0 0 10px rgba(0,120,255,0.3);
+  transition: transform 0.2s ease;
+}
+.directory-close:hover {
+  transform: scale(1.2);
+  color: #e60000;
+}
 
-      <!-- 📲 INSTALL TO PHONE -->
-      <div class="settings-section" style="margin-top:18px;text-align:center;">
-        <button id="installToPhoneBtn" class="download-btn">📲 Download to Phone</button>
-        <p id="installTip" style="font-size:0.9em;color:#99bbff;margin-top:8px;"></p>
-      </div>
-    </div>
-  </div>
+/* ---------- Fade Out ---------- */
+.fade-out {
+  animation: fadeOut 0.25s forwards;
+}
+@keyframes fadeOut {
+  from {opacity:1;}
+  to {opacity:0;}
+}
 
-  <!-- 🧾 FOOTER -->
-  <footer class="hud bottom-center">
-    Powered by <b>JAG15</b> | Allston Car Wash © 2025<br>
-    <small>v5.6.2 — Blue Glass White Edition</small>
-  </footer>
+/* ============================================================
+   👤 EMPLOYEE MODAL — Match to Team View
+   ============================================================ */
+.employee-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(10px);
+  z-index: 9999;
+}
+.employee-modal .emp-box {
+  background: rgba(255,255,255,0.97);
+  border-radius: 16px;
+  box-shadow: 0 0 35px rgba(0,120,255,0.35);
+  width: 85%;
+  max-width: 520px;
+  padding: 40px 50px 54px;
+  color: #111;
+  text-align: center;
+  margin: 0 auto;
+}
 
-  <!-- 🧠 CORE SCRIPTS -->
-  <script src="./config.js"></script>
-  <script src="./app.js"></script>
+/* ---------- Header ---------- */
+.emp-header::before {
+  content: "🚘 Allston Car Wash — ";
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0078ff;
+  text-shadow: 0 0 10px rgba(0,120,255,0.35);
+  margin-bottom: 4px;
+}
+.emp-header h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #000;
+  margin: 0;
+}
 
-  <!-- 🧩 SERVICE WORKER -->
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./service-worker.js")
-        .then(() => console.log("✅ ACW Service Worker registered"))
-        .catch(err => console.warn("SW registration failed:", err));
-    }
-  </script>
+/* ---------- Phone ---------- */
+.emp-phone a {
+  color: #0078ff;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 16px;
+}
+.emp-role {
+  color: #777;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
 
-  <!-- 📲 INSTALL HANDLER -->
-  <script>
-    const installBtn = document.getElementById("installToPhoneBtn");
-    const tip = document.getElementById("installTip");
-    let deferredPrompt;
+/* ---------- Table ---------- */
+.employee-modal .schedule-mini {
+  width: 95%;
+  border-collapse: separate;
+  border-spacing: 20px 10px;
+  text-align: center;
+  font-size: 18px;
+  margin: 0 auto;
+}
+.employee-modal .schedule-mini th {
+  background: rgba(0,120,255,0.05);
+  color: #0078ff;
+  border-bottom: 2px solid rgba(0,120,255,0.2);
+  border-radius: 6px;
+  padding: 6px;
+}
+.employee-modal .schedule-mini td {
+  padding: 6px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
 
-    function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent); }
-    function isInStandaloneMode(){ return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone; }
+/* ---------- Totals ---------- */
+.employee-modal .total {
+  color: #e60000;
+  font-weight: 700;
+  margin-top: 14px;
+  font-size: 18px;
+}
+.employee-modal .live-hours {
+  color: #0078ff;
+  font-weight: 600;
+  margin-top: 6px;
+  font-size: 16px;
+}
 
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault(); deferredPrompt = e;
-      tip.textContent = "Install ACW-App for faster access 🚀";
-    });
-
-    window.addEventListener("load", () => {
-      if (isIOS() && !isInStandaloneMode()) {
-        tip.innerHTML = "📲 On iPhone: Tap <b>Share</b> → <b>Add to Home Screen</b>";
-        tip.style.color = "#33a0ff";
-        installBtn.textContent = "📲 How to Install on iPhone";
-      }
-    });
-
-    installBtn.addEventListener("click", async () => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        tip.textContent = outcome === "accepted"
-          ? "✅ App installed successfully!"
-          : "ℹ️ Installation canceled.";
-        deferredPrompt = null;
-        return;
-      }
-      if (isIOS()) {
-        tip.innerHTML = "📲 On iPhone: Tap <b>Share</b> → <b>Add to Home Screen</b>";
-        tip.style.color = "#33a0ff";
-        return;
-      }
-      tip.textContent = "💻 On desktop: use Chrome or Edge to install.";
-      tip.style.color = "#ccc";
-    });
-
-    window.addEventListener("appinstalled", () => {
-      installBtn.style.display = "none";
-      tip.textContent = "✅ ACW-App already installed.";
-    });
-  </script>
-</body>
-</html>
+/* ---------- Animations ---------- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
