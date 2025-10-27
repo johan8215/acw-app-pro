@@ -332,46 +332,45 @@ async function loadEmployeeDirectory() {
 }
 
 function renderTeamViewPage() {
-  console.log("🧱 renderTeamViewPage() called");
+  console.log("🧱 renderTeamViewPage() executed");
 
   $("#directoryWrapper")?.remove();
   const box = document.createElement("div");
   box.id = "directoryWrapper";
-  Object.assign(box.style, {
-    position: "fixed",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%,-50%)",
-    background: "rgba(0,0,0,0.85)",
-    color: "#fff",
-    fontSize: "20px",
-    padding: "40px 60px",
-    borderRadius: "12px",
-    textAlign: "center",
-    zIndex: "999999"
-  });
+  box.className = "directory-wrapper show";
 
+  // contenido mínimo visible
   if (!__teamList.length) {
-    box.textContent = "⚠️ No data loaded or fetch failed.";
-  } else {
     box.innerHTML = `
-      <h3>✅ TEAM VIEW RESTORED</h3>
-      <p>Loaded: <b>${__teamList.length}</b> employees</p>
-      <button onclick="toggleTeamOverview()" style="margin-top:10px;">Close</button>
-    `;
+      <div class="tv-head">
+        <h3>⚠️ No employees found</h3>
+        <button class="tv-close" onclick="toggleTeamOverview()">✖️</button>
+      </div>`;
+    document.body.appendChild(box);
+    return;
   }
+
+  // render completo
+  box.innerHTML = `
+    <div class="tv-head">
+      <h3>Team View</h3>
+      <button class="tv-close" onclick="toggleTeamOverview()">✖️</button>
+    </div>
+    <div class="tv-pager">
+      <button class="tv-nav" id="tvPrev" ${__teamPage === 0 ? "disabled" : ""}>‹ Prev</button>
+      <span class="tv-index">Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}</span>
+      <button class="tv-nav" id="tvNext" ${(__teamPage + 1) >= Math.ceil(__teamList.length / TEAM_PAGE_SIZE) ? "disabled" : ""}>Next ›</button>
+    </div>
+    <table class="directory-table tv-table">
+      <thead><tr><th>Name</th><th>Hours</th><th>Live</th><th></th></tr></thead>
+      <tbody id="tvBody"></tbody>
+    </table>
+  `;
   document.body.appendChild(box);
-  console.log("✅ Team View box appended to DOM");
-}
 
   const start = __teamPage * TEAM_PAGE_SIZE;
   const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
-  const body = box.querySelector("#tvBody");
-
-  if (!slice.length) {
-    body.innerHTML = `<tr><td colspan="4" style="padding:20px;color:#999;">No employees found</td></tr>`;
-    return;
-  }
+  const body = $("#tvBody", box);
 
   body.innerHTML = slice.map(emp => `
     <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role || ''}" data-phone="${emp.phone || ''}">
@@ -385,20 +384,18 @@ function renderTeamViewPage() {
   $("#tvPrev", box).onclick = () => { __teamPage = Math.max(0, __teamPage - 1); renderTeamViewPage(); };
   $("#tvNext", box).onclick = () => { __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1); renderTeamViewPage(); };
 
-  // Load hours and live status
+  // cargar horas por empleado
   slice.forEach(async emp => {
     try {
       const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
       const d = await r.json();
       const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
-      if (!tr) return;
-      tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
-    } catch (e) {
-      console.warn("Error loading hours for", emp.email, e);
-    }
+      if (tr) tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
+    } catch (e) { console.warn("⚠️ Error hours:", emp.email, e); }
   });
 
   updateTeamViewLiveStatus();
+  console.log("✅ Team View rendered successfully");
 }
 
 async function updateTeamViewLiveStatus() {
