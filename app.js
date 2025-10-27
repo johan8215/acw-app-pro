@@ -1,72 +1,40 @@
 /* ============================================================
-   🧠 ACW-App v5.6.3 — SAFE BUILD (Blue Glass White)
-   Johan A. Giraldo (JAG15) & Sky — Nov 2025
+   🧠 ACW-App v5.6.2 — Blue Glass White Connected
+   Johan A. Giraldo (JAG15) & Sky — Oct 2025
    ============================================================
-   - CONFIG bootstrap + Sign-in reforzado (timeouts, errores claros)
-   - Login → GAS (login, getSmartSchedule, getEmployeesDirectory)
-   - Dashboard: welcome + schedule + live hours
-   - Team View (estable) + Employee Modal
-   - Update Shift (simple, confiable)
-   - Send today / tomorrow (frontend → GAS)
+   - Login conectado a GAS (login, getSmartSchedule, directory)
+   - Dashboard: welcome + schedule + live hours + total estable
+   - Team View (manager/supervisor) + Employee Modal
+   - Envíos sendtoday / sendtomorrow (fallback simple)
    - Change password
-   - Session restore + toasts
+   - Restauración de sesión + toasts
    ============================================================ */
-
-"use strict";
-
-/* ============== CONFIG (bootstrap seguro) ============== */
-const CONFIG = (()=>{
-  const fallback = {
-    BASE_URL: "https://script.google.com/macros/s/AKfycbx-6DqfjydMMGp-K2z8FeBSH9t8Z1Ooa0Ene0u917RK7Eo6vu80aOTLmCf7lJtm-Ckh/exec",
-    VERSION: "v5.6.3-safe"
-  };
-  try {
-    if (window.CONFIG && window.CONFIG.BASE_URL) {
-      return { VERSION: "v5.6.3-safe", ...window.CONFIG };
-    }
-  } catch {}
-  return fallback;
-})();
-
-/* ============== Helpers básicos ============== */
-function $(sel, root=document){ return root.querySelector(sel); }
-function $all(sel, root=document){ return Array.from(root.querySelectorAll(sel)); }
-function isManagerRole(role){ return ["manager","supervisor"].includes(String(role||"").toLowerCase()); }
-function safeText(el, txt){ if(el) el.textContent = txt; }
-function setVisible(el, show){ if(!el) return; el.style.display = show ? "" : "none"; }
-const cssEscape = (window.CSS && CSS.escape) ? (s)=>CSS.escape(s) : (s)=>String(s).replace(/"/g,'\\"');
 
 let currentUser = null;
 
-/* ============== Network helpers ============== */
-async function safeFetchJSON(url, opts={}, timeoutMs=12000){
-  const ctrl = new AbortController();
-  const t = setTimeout(()=>ctrl.abort(), timeoutMs);
-  try{
-    const res = await fetch(url, { cache:"no-store", redirect:"follow", signal:ctrl.signal, ...opts });
-    const txt = await res.text();
-    // Intenta parseo seguro
-    let json = null;
-    try { json = JSON.parse(txt); } catch { json = { ok:false, error:"Invalid JSON from server", _raw:txt }; }
-    return json;
-  } finally { clearTimeout(t); }
-}
+/* ============== helpers UI ============== */
+function $(sel, root=document){ return root.querySelector(sel); }
+function $all(sel, root=document){ return Array.from(root.querySelectorAll(sel)); }
+function isManagerRole(role){ return ["manager","supervisor"].includes(String(role||"").toLowerCase()); }
+
+function safeText(el, txt){ if(el) el.textContent = txt; }
+function setVisible(el, show){ if(!el) return; el.style.display = show ? "" : "none"; }
 
 /* ============== LOGIN ============== */
 async function loginUser() {
-  const email = $("#email")?.value?.trim();
-  const password = $("#password")?.value?.trim();
+  const email = $("#email")?.value.trim();
+  const password = $("#password")?.value.trim();
   const diag = $("#diag");
   const btn = $("#signInBtn") || $("#login button");
 
   if (!email || !password) { safeText(diag, "Please enter your email and password."); return; }
 
   try {
-    if (btn){ btn.disabled = true; btn.dataset.old = btn.innerHTML; btn.innerHTML = "⏳ Loading your shift…"; }
+    if (btn){ btn.disabled = true; btn.innerHTML = "⏳ Loading your shift…"; }
     safeText(diag, "Connecting to Allston Car Wash servers ☀️");
 
-    const url = `${CONFIG.BASE_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
-    const data = await safeFetchJSON(url);
+    const res  = await fetch(`${CONFIG.BASE_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {cache:"no-store"});
+    const data = await res.json();
 
     if (!data?.ok) throw new Error(data?.error || "Invalid email or password.");
 
@@ -76,49 +44,28 @@ async function loginUser() {
     safeText(diag, "✅ Welcome, " + data.name + "!");
     await showWelcome(data.name, data.role);
     await loadSchedule(email);
-    safeText(diag, "");
   } catch (e) {
     safeText(diag, "❌ " + (e.message || "Login error"));
   } finally {
-    if (btn){ btn.disabled = false; btn.innerHTML = btn.dataset.old || "Sign In"; }
+    if (btn){ btn.disabled = false; btn.innerHTML = "Sign In"; }
   }
 }
-
-/* Enlaza enter/submit y botón de forma segura */
-(function bindLoginUI(){
-  window.addEventListener("DOMContentLoaded", ()=>{
-    const form = $("#login") || document;
-    const btn = $("#signInBtn");
-    if (btn && !btn._bound){ btn._bound = true; btn.addEventListener("click", (ev)=>{ ev.preventDefault(); loginUser(); }); }
-    if (form && !form._submitBound){
-      form._submitBound = true;
-      form.addEventListener("submit", (ev)=>{ ev.preventDefault(); loginUser(); });
-    }
-    // ENTER en campos
-    const email = $("#email"), pass = $("#password");
-    [email, pass].forEach(inp=>{
-      if (inp && !inp._enterBound){
-        inp._enterBound = true;
-        inp.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); loginUser(); } });
-      }
-    });
-  });
-})();
 
 /* ============== WELCOME DASHBOARD ============== */
 async function showWelcome(name, role) {
   setVisible($("#login"), false);
   setVisible($("#welcome"), true);
-  if ($("#welcomeName")) $("#welcomeName").innerHTML = `<b>${name}</b>`;
+  $("#welcomeName").innerHTML = `<b>${name}</b>`;
   safeText($("#welcomeRole"), role || "");
 
   if (isManagerRole(role)) addTeamButton();
 
   // Inserta teléfono del usuario (si existe)
   try {
-    const j = await safeFetchJSON(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
+    const r = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`, {cache:"no-store"});
+    const j = await r.json();
     if (j.ok && Array.isArray(j.directory)) {
-      const self = j.directory.find(e => (String(e.email||"").toLowerCase()) === (String(currentUser?.email||"").toLowerCase()));
+      const self = j.directory.find(e => (e.email||"").toLowerCase() === (currentUser?.email||"").toLowerCase());
       if (self?.phone) {
         $(".user-phone")?.remove();
         $("#welcomeName")?.insertAdjacentHTML("afterend",
@@ -132,13 +79,14 @@ async function showWelcome(name, role) {
 /* ============== LOAD SCHEDULE + LIVE ============== */
 async function loadSchedule(email) {
   const schedDiv = $("#schedule");
-  if (schedDiv) schedDiv.innerHTML = `<p style="color:#007bff;font-weight:500;">Loading your shift...</p>`;
+  schedDiv.innerHTML = `<p style="color:#007bff;font-weight:500;">Loading your shift...</p>`;
 
   try {
-    const d = await safeFetchJSON(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
+    const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, {cache:"no-store"});
+    const d = await r.json();
 
     if (!d.ok || !Array.isArray(d.days)) {
-      if (schedDiv) schedDiv.innerHTML = `<p style="color:#c00;">No schedule found for this week.</p>`;
+      schedDiv.innerHTML = `<p style="color:#c00;">No schedule found for this week.</p>`;
       return;
     }
 
@@ -147,16 +95,16 @@ async function loadSchedule(email) {
       const isToday = new Date().toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase() === day.name.slice(0,3).toLowerCase();
       html += `<tr class="${isToday?"today":""}"><td>${day.name}</td><td>${day.shift||"-"}</td><td>${day.hours||"0"}</td></tr>`;
     });
-    html += `</table><p class="total">Total Hours: <b>${(d.total??0).toFixed?.(1) ?? Number(d.total||0)}</b></p>`;
+    html += `</table><p class="total">Total Hours: <b>${(d.total??0).toFixed?.(1) ?? d.total ?? 0}</b></p>`;
 
-    if (schedDiv) schedDiv.innerHTML = html;
+    schedDiv.innerHTML = html;
 
-    // Arranca live 1s después
+    // Arranca live 1s después para asegurar que el DOM esté
     setTimeout(()=> startLiveTimer(d.days, Number(d.total||0)), 1000);
 
   } catch (e) {
     console.warn(e);
-    if (schedDiv) schedDiv.innerHTML = `<p style="color:#c00;">Error loading schedule.</p>`;
+    schedDiv.innerHTML = `<p style="color:#c00;">Error loading schedule.</p>`;
   }
 }
 
@@ -226,6 +174,7 @@ function startLiveTimer(days, total){
         const diff = Math.max(0,(Date.now()-startTime.getTime())/36e5);
         updateTotalDisplay(total+diff, true);
         showLiveHours(diff, true);
+        // también pinta dentro de la tabla (Horas de hoy)
         paintLiveInTable(todayKey, diff);
       };
       tick();
@@ -272,9 +221,9 @@ function logoutUser(){
 
 /* ============== CHANGE PASSWORD ============== */
 async function submitChangePassword() {
-  const oldPass = $("#oldPass")?.value?.trim();
-  const newPass = $("#newPass")?.value?.trim();
-  const confirm  = $("#confirmPass")?.value?.trim();
+  const oldPass = $("#oldPass")?.value.trim();
+  const newPass = $("#newPass")?.value.trim();
+  const confirm = $("#confirmPass")?.value.trim();
   const diag = $("#passDiag");
 
   if (!oldPass || !newPass || !confirm) return safeText(diag, "⚠️ Please fill out all fields.");
@@ -286,22 +235,22 @@ async function submitChangePassword() {
     const email = currentUser?.email;
     if (!email) throw new Error("Session expired. Please log in again.");
 
-    const url = `${CONFIG.BASE_URL}?action=changePassword&email=${encodeURIComponent(email)}&oldPass=${encodeURIComponent(oldPass)}&newPass=${encodeURIComponent(newPass)}`;
-    const data = await safeFetchJSON(url);
+    const res = await fetch(`${CONFIG.BASE_URL}?action=changePassword&email=${encodeURIComponent(email)}&oldPass=${encodeURIComponent(oldPass)}&newPass=${encodeURIComponent(newPass)}`, {cache:"no-store"});
+    const data = await res.json();
 
     if (data.ok) {
       safeText(diag, "✅ Password updated successfully!");
       toast("✅ Password updated", "success");
-      setTimeout(() => { closeChangePassword(); $("#oldPass").value = $("#newPass").value = $("#confirmPass").value = ""; }, 900);
+      setTimeout(() => { closeChangePassword(); $("#oldPass").value = $("#newPass").value = $("#confirmPass").value = ""; }, 1200);
     } else {
       safeText(diag, "❌ " + (data.error || "Invalid current password."));
     }
   } catch (err) {
-    safeText(diag, "⚠️ " + (err.message || "Network error"));
+    safeText(diag, "⚠️ " + err.message);
   }
 }
 
-/* ============== TEAM VIEW (estable) ============== */
+/* ============== TEAM VIEW (gestión) ============== */
 const TEAM_PAGE_SIZE = 8;
 let __teamList=[], __teamPage=0;
 
@@ -316,67 +265,109 @@ function toggleTeamOverview(){
   if (w){ w.classList.add("fade-out"); setTimeout(()=>w.remove(), 220); return; }
   loadEmployeeDirectory();
 }
-async function loadEmployeeDirectory(){
-  try{
-    const j = await safeFetchJSON(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`);
+async function loadEmployeeDirectory() {
+  try {
+    const r = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`, { cache: "no-store" });
+    const j = await r.json();
     if (!j.ok) return;
 
-    __teamList = j.directory||[]; __teamPage=0; renderTeamViewPage();
-  }catch(e){ console.warn(e); }
+    __teamList = j.directory || [];
+    __teamPage = 0;
+    renderTeamViewPage();
+  } catch (e) {
+    console.warn(e);
+  }
 }
-function renderTeamViewPage(){
-  $("#directoryWrapper")?.remove();
-  const box=document.createElement("div");
-  box.id="directoryWrapper"; box.className="directory-wrapper tv-wrapper";
-  box.style.display="flex"; box.style.flexDirection="column"; box.style.alignItems="center";
 
+function renderTeamViewPage() {
+  // 🔄 Limpia anterior si existe
+  $("#directoryWrapper")?.remove();
+
+  // 🧱 Crea el contenedor principal centrado
+  const box = document.createElement("div");
+  box.id = "directoryWrapper";
+  box.className = "directory-wrapper tv-wrapper";
+  Object.assign(box.style, {
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -48%) scale(0.98)",
+    visibility: "hidden",
+    opacity: "0",
+    background: "rgba(255,255,255,0.97)",
+    borderRadius: "16px",
+    boxShadow: "0 0 35px rgba(0,128,255,0.3)",
+    backdropFilter: "blur(10px)",
+    padding: "22px 28px",
+    width: "88%",
+    maxWidth: "620px",
+    zIndex: "9999",
+    textAlign: "center",
+    transition: "all 0.35s ease"
+  });
+
+  // 🧩 Contenido del Team View
   box.innerHTML = `
-    <div class="tv-head" style="display:flex;justify-content:space-between;align-items:center;width:100%;">
-      <h3 style="margin:0;color:#0078ff;">Team View</h3>
+    <div class="tv-head" style="display:flex;justify-content:space-between;align-items:center;">
+      <h3 style="margin:0;color:#0078ff;text-shadow:0 0 8px rgba(0,120,255,0.25);">Team View</h3>
       <button class="tv-close" onclick="toggleTeamOverview()" style="background:none;border:none;font-size:22px;cursor:pointer;">✖️</button>
     </div>
     <div class="tv-pager" style="margin:10px 0;">
-      <button class="tv-nav" id="tvPrev" ${__teamPage===0?"disabled":""}>‹ Prev</button>
-      <span class="tv-index" style="font-weight:600;color:#0078ff;">Page ${__teamPage+1} / ${Math.max(1, Math.ceil(__teamList.length/TEAM_PAGE_SIZE))}</span>
-      <button class="tv-nav" id="tvNext" ${(__teamPage+1)>=Math.ceil(__teamList.length/TEAM_PAGE_SIZE)?"disabled":""}>Next ›</button>
+      <button class="tv-nav" id="tvPrev" ${__teamPage === 0 ? "disabled" : ""}>‹ Prev</button>
+      <span class="tv-index" style="font-weight:600;color:#0078ff;">Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}</span>
+      <button class="tv-nav" id="tvNext" ${(__teamPage + 1) >= Math.ceil(__teamList.length / TEAM_PAGE_SIZE) ? "disabled" : ""}>Next ›</button>
     </div>
-    <table class="directory-table tv-table" style="margin-top:10px;min-width:460px;text-align:center;width:100%;">
+    <table class="directory-table tv-table" style="width:100%;font-size:15px;border-collapse:collapse;margin-top:10px;">
       <tr><th>Name</th><th>Hours</th><th>Live (Working)</th><th></th></tr>
       <tbody id="tvBody"></tbody>
     </table>
   `;
+
   document.body.appendChild(box);
 
-  const start = __teamPage*TEAM_PAGE_SIZE, slice = __teamList.slice(start, start+TEAM_PAGE_SIZE);
+  // 📊 Carga datos de empleados
+  const start = __teamPage * TEAM_PAGE_SIZE;
+  const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
   const body = $("#tvBody", box);
-  body.innerHTML = slice.map(emp=>`
-    <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role||''}" data-phone="${emp.phone||''}">
+  body.innerHTML = slice.map(emp => `
+    <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role || ''}" data-phone="${emp.phone || ''}">
       <td><b>${emp.name}</b></td>
       <td class="tv-hours">—</td>
       <td class="tv-live">—</td>
       <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
     </tr>`).join("");
 
-  $("#tvPrev",box).onclick = ()=>{ __teamPage=Math.max(0,__teamPage-1); renderTeamViewPage(); };
-  $("#tvNext",box).onclick = ()=>{ __teamPage=Math.min(Math.ceil(__teamList.length/TEAM_PAGE_SIZE)-1,__teamPage+1); renderTeamViewPage(); };
+  // 📄 Navegación por páginas
+  $("#tvPrev", box).onclick = () => { __teamPage = Math.max(0, __teamPage - 1); renderTeamViewPage(); };
+  $("#tvNext", box).onclick = () => { __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1); renderTeamViewPage(); };
 
-  slice.forEach(async emp=>{
-    try{
-      const d = await safeFetchJSON(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`);
-      const tr = body.querySelector(`tr[data-email="${cssEscape(emp.email)}"]`);
-      if (tr) tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total||0)).toFixed(1) : "0";
-    }catch{}
+  // 🔢 Llenar horas totales
+  slice.forEach(async emp => {
+    try {
+      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
+      const d = await r.json();
+      const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
+      if (tr) tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
+    } catch { }
   });
 
+  // 🔁 Actualiza Live Status
   updateTeamViewLiveStatus();
+
+  // 🧠 Animación de aparición centrada (sin “baile”)
+  setTimeout(() => {
+    box.style.visibility = "visible";
+    box.style.opacity = "1";
+    box.style.transform = "translate(-50%, -50%) scale(1)";
+  }, 100);
 }
 async function updateTeamViewLiveStatus(){
   try{
     const rows = $all(".tv-table tr[data-email]"); if (!rows.length) return;
     for (const row of rows){
       const email=row.dataset.email, liveCell=row.querySelector(".tv-live"), totalCell=row.querySelector(".tv-hours");
-      const d = await safeFetchJSON(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
-      if (!d.ok || !d.days) continue;
+      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, {cache:"no-store"});
+      const d = await r.json(); if (!d.ok || !d.days) continue;
 
       const todayKey = new Date().toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase();
       const today = d.days.find(x=> x.name.slice(0,3).toLowerCase()===todayKey);
@@ -387,11 +378,11 @@ async function updateTeamViewLiveStatus(){
         if(!startTime) continue;
         const diff = Math.max(0,(Date.now()-startTime.getTime())/36e5);
         liveCell.innerHTML = `🟢 ${diff.toFixed(1)}h`;
-        liveCell.style.color="#33ff66"; liveCell.style.fontWeight="600";
+        liveCell.style.color="#33ff66"; liveCell.style.fontWeight="600"; liveCell.style.textShadow="0 0 10px rgba(51,255,102,.6)";
         const base = parseFloat(totalCell.textContent)||0;
         totalCell.innerHTML = `${(base+diff).toFixed(1)} <span style="color:#33a0ff;font-size:.85em;">(+${diff.toFixed(1)})</span>`;
       }else{
-        liveCell.innerHTML="—"; liveCell.style.color="#aaa"; liveCell.style.fontWeight="400";
+        liveCell.innerHTML="—"; liveCell.style.color="#aaa"; liveCell.style.fontWeight="400"; liveCell.style.textShadow="none";
       }
     }
   }catch(e){ console.warn("Live col error:", e); }
@@ -406,8 +397,8 @@ async function openEmployeePanel(btnEl){
 
   let data=null;
   try{
-    data = await safeFetchJSON(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`);
-    if (!data.ok) throw new Error();
+    const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, {cache:"no-store"});
+    data = await r.json(); if (!data.ok) throw new Error();
   }catch{ alert("No schedule found for this employee."); return; }
 
   const m = document.createElement("div");
@@ -492,7 +483,7 @@ function enableModalLiveShift(modal, days){
   }catch(e){ console.warn("modal live err:", e); }
 }
 
-/* ============== MANAGER ACTIONS (simple y confiable) ============== */
+/* ============== MANAGER ACTIONS (simple fallback) ============== */
 async function updateShiftFromModal(targetEmail, modalEl){
   const msg = $(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || $(".emp-status-msg", modalEl);
   const actor = currentUser?.email;
@@ -512,9 +503,9 @@ async function updateShiftFromModal(targetEmail, modalEl){
   for (const c of changes){
     try{
       const u = `${CONFIG.BASE_URL}?action=updateShift&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}&day=${encodeURIComponent(c.day)}&shift=${encodeURIComponent(c.newShift)}`;
-      const j = await safeFetchJSON(u);
+      const r = await fetch(u, {cache:"no-store"}); const j = await r.json();
       if (j?.ok) ok++;
-    }catch(e){ console.warn("Update error:", e); }
+    }catch{}
   }
   if (ok===changes.length){ msg.textContent="✅ Updated on Sheets!"; toast("✅ Shifts updated","success"); rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim())); }
   else if (ok>0){ msg.textContent=`⚠️ Partial save: ${ok}/${changes.length}`; toast("⚠️ Some shifts failed","error"); }
@@ -528,7 +519,7 @@ async function sendShiftMessage(targetEmail, action){
 
   try{
     const url = `${CONFIG.BASE_URL}?action=${action}&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}`;
-    const j = await safeFetchJSON(url);
+    const r = await fetch(url, {cache:"no-store"}); const j = await r.json();
     if (j?.ok){ msg.textContent = action==="sendtoday" ? "✅ Sent Today" : "✅ Sent Tomorrow"; toast("✅ Shift message sent","success"); }
     else { msg.textContent = `⚠️ ${j?.error||"Failed to send"}`; toast("❌ Send failed","error"); }
   }catch(e){ msg && (msg.textContent="⚠️ Connection error"); toast("❌ Connection error","error"); }
@@ -553,7 +544,24 @@ function toast(msg, type="info"){
   setTimeout(()=>{ t.style.opacity="0"; t.style.transform="translateY(-10px)"; setTimeout(()=>t.remove(),380); }, 2600);
 }
 
-/* ============== Global binds ============== */
+function openChangePassword() {
+  const modal = $("#changePasswordModal");
+  closeSettings(); // 🔹 cierra el Settings primero
+  if (modal) {
+    modal.classList.add("show");
+    modal.style.display = "flex";
+  }
+}
+
+function closeChangePassword() {
+  const modal = $("#changePasswordModal");
+  if (modal) {
+    modal.classList.remove("show");
+    setTimeout(() => (modal.style.display = "none"), 200);
+  }
+}
+
+/* ============== GLOBAL BINDS ============== */
 window.loginUser = loginUser;
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
@@ -566,4 +574,37 @@ window.openEmployeePanel = openEmployeePanel;
 window.sendShiftMessage = sendShiftMessage;
 window.updateShiftFromModal = updateShiftFromModal;
 
-console.log(`✅ ACW-App SAFE loaded → ${CONFIG?.VERSION||"v5.6.3-safe"} | Base: ${CONFIG?.BASE_URL||"<no-config>"}`);
+console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.2"} | Base: ${CONFIG?.BASE_URL||"<no-config>"}`);
+
+/* ============================================================
+   ⚙️ ACW-App Behavior Fix Pack v5.6.2
+   Johan A. Giraldo (JAG15) & Sky — Nov 2025
+   ============================================================ */
+
+// 🧩 Corrige apertura del Team View con animación suave
+const _oldRenderTV = window.renderTeamViewPage;
+window.renderTeamViewPage = function(...args) {
+  _oldRenderTV.apply(this, args);
+  const box = document.querySelector("#directoryWrapper");
+  if (box) setTimeout(() => box.classList.add("show"), 50);
+};
+
+// 🧩 Reasigna visibilidad del modal de settings
+function openSettings() {
+  const modal = document.getElementById("settingsModal");
+  if (!modal) {
+    console.warn("⚠️ Settings modal not found");
+    return;
+  }
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+}
+function closeSettings() {
+  const modal = document.getElementById("settingsModal");
+  if (modal) modal.style.display = "none";
+}
+
+// 🔁 Asegura que las funciones globales sigan disponibles
+window.openSettings = openSettings;
+window.closeSettings = closeSettings;
