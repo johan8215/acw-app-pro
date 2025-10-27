@@ -318,37 +318,29 @@ async function loadEmployeeDirectory() {
 }
 
 function renderTeamViewPage() {
+  // elimina cualquier wrapper previo
   $("#directoryWrapper")?.remove();
 
-  // Main centered box
+  // 🔴 bloque de prueba
   const box = document.createElement("div");
   box.id = "directoryWrapper";
-  box.className = "directory-wrapper show";
-  box.style.opacity = "1"; // 🔥 fuerza visibilidad
-
-  box.innerHTML = `
-    <div class="tv-head">
-      <h3>Team View</h3>
-      <button class="tv-close" onclick="toggleTeamOverview()">✖️</button>
-    </div>
-
-    <div class="tv-pager">
-      <button class="tv-nav" id="tvPrev" ${__teamPage === 0 ? "disabled" : ""}>‹ Prev</button>
-      <span class="tv-index">
-        Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}
-      </span>
-      <button class="tv-nav" id="tvNext" ${(__teamPage + 1) >= Math.ceil(__teamList.length / TEAM_PAGE_SIZE) ? "disabled" : ""}>Next ›</button>
-    </div>
-
-    <table class="directory-table tv-table">
-      <thead>
-        <tr><th>Name</th><th>Hours</th><th>Live (Working)</th><th></th></tr>
-      </thead>
-      <tbody id="tvBody"></tbody>
-    </table>
-  `;
-
+  Object.assign(box.style, {
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%,-50%)",
+    background: "rgba(255,0,0,0.85)",
+    color: "#fff",
+    fontSize: "22px",
+    padding: "50px 60px",
+    borderRadius: "14px",
+    boxShadow: "0 0 40px rgba(255,0,0,0.5)",
+    zIndex: "999999",
+    textAlign: "center"
+  });
+  box.textContent = "✅ TEAM VIEW BOX VISIBLE (TEST)";
   document.body.appendChild(box);
+}
 
   const start = __teamPage * TEAM_PAGE_SIZE;
   const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
