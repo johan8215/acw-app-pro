@@ -9,16 +9,28 @@
    - Change password
    - Restauración de sesión + toasts
    ============================================================ */
-// ===========================================================
-// 🔧 ACW-App Config Loader (Safe Fallback)
-// ===========================================================
+
+/* ============================================================
+   🧠 ACW-App v5.6.3 — Blue Glass White Safe-Fix Edition
+   Johan A. Giraldo (JAG15) & Sky — Nov 2025
+   ============================================================
+   Parches:
+   - Auto CONFIG restore (previene errores en login)
+   - Team View centrado (sin "baile")
+   - Shift Manager: “Tomorrow” corrige el día sin tocar backend
+   ============================================================ */
+
+// 🔧 CONFIG fallback seguro
 if (!window.CONFIG) {
   window.CONFIG = {
     BASE_URL: "https://script.google.com/macros/s/AKfycbx-6DqfjydMMGp-K2z8FeBSH9t8Z1Ooa0Ene0u917RK7Eo6vu80aOTLmCf7lJtm-Ckh/exec",
-    VERSION: "v5.6.2 — Blue Glass White Connected Edition"
+    VERSION: "v5.6.3 — Safe-Fix Edition"
   };
   console.warn("⚠️ CONFIG restored manually — check BASE_URL");
 }
+
+// 🔧 Refuerzo de compatibilidad
+window.currentShiftMode = "today";
 
 let currentUser = null;
 
@@ -500,13 +512,13 @@ function enableModalLiveShift(modal, days){
   }catch(e){ console.warn("modal live err:", e); }
 }
 
-/* ============== MANAGER ACTIONS (solo frontend - no backend touch) ============== */
+/* ============== MANAGER ACTIONS (safe frontend - no backend touch) ============== */
 async function updateShiftFromModal(targetEmail, modalEl){
   const msg = $(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || $(".emp-status-msg", modalEl);
   const actor = currentUser?.email;
   if (!actor) { msg && (msg.textContent="⚠️ Session expired. Login again."); return; }
 
-  // 🧭 Detecta si el modo actual es "mañana"
+  // 🧭 Detecta si se está editando “mañana”
   const isTomorrow = (window.currentShiftMode === "tomorrow");
 
   const rows = $all(".schedule-mini tr[data-day]", modalEl);
@@ -517,10 +529,10 @@ async function updateShiftFromModal(targetEmail, modalEl){
     return (newShift !== original) ? { day, newShift } : null;
   }).filter(Boolean);
 
-  if (!changes.length){ 
-    msg && (msg.textContent="No changes to save."); 
-    toast("ℹ️ No changes", "info"); 
-    return; 
+  if (!changes.length){
+    msg && (msg.textContent="No changes to save.");
+    toast("ℹ️ No changes", "info");
+    return;
   }
 
   msg && (msg.textContent=`✏️ Saving to Sheets (${isTomorrow ? "tomorrow" : "today"})...`);
@@ -528,33 +540,31 @@ async function updateShiftFromModal(targetEmail, modalEl){
 
   for (const c of changes){
     try{
-      // Si es modo mañana, movemos el día a la siguiente columna (sin tocar backend)
+      // 👉 Si es modo mañana, avanza un día (frontend only)
       let adjustedDay = c.day;
       if (isTomorrow) {
         const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
         const idx = days.indexOf(c.day);
-        adjustedDay = days[(idx + 1) % days.length]; // avanza un día con wrap
+        adjustedDay = days[(idx + 1) % days.length];
       }
 
       const u = `${CONFIG.BASE_URL}?action=updateShift&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}&day=${encodeURIComponent(adjustedDay)}&shift=${encodeURIComponent(c.newShift)}`;
-      const r = await fetch(u, {cache:"no-store"}); 
+      const r = await fetch(u, {cache:"no-store"});
       const j = await r.json();
       if (j?.ok) ok++;
     }catch(e){ console.warn("Update error:", e); }
   }
 
-  if (ok===changes.length){ 
-    msg.textContent=`✅ Updated on Sheets (${isTomorrow ? "tomorrow" : "today"})!`; 
-    toast(`✅ Shifts updated for ${isTomorrow ? "tomorrow" : "today"}`,"success"); 
-    rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim())); 
-  }
-  else if (ok>0){ 
-    msg.textContent=`⚠️ Partial save: ${ok}/${changes.length}`; 
-    toast("⚠️ Some shifts failed","error"); 
-  }
-  else { 
-    msg.textContent="❌ Could not update."; 
-    toast("❌ Update failed","error"); 
+  if (ok===changes.length){
+    msg.textContent=`✅ Updated on Sheets (${isTomorrow ? "tomorrow" : "today"})!`;
+    toast(`✅ Shifts updated for ${isTomorrow ? "tomorrow" : "today"}`,"success");
+    rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim()));
+  } else if (ok>0){
+    msg.textContent=`⚠️ Partial save: ${ok}/${changes.length}`;
+    toast("⚠️ Some shifts failed","error");
+  } else {
+    msg.textContent="❌ Could not update.";
+    toast("❌ Update failed","error");
   }
 }
 
