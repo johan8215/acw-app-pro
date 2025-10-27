@@ -45,13 +45,9 @@
     <div class="settings-section">
       <button onclick="refreshApp()">🔄 Check for Updates</button>
       <button onclick="logoutUser()">🚪 Log Out</button>
-    </div>
-
-    <div class="settings-section" style="margin-top:10px;">
       <button onclick="openChangePassword()">🔑 Change Password</button>
     </div>
 
-    <!-- 📲 INSTALL TO PHONE -->
     <div class="settings-section" style="margin-top:18px;text-align:center;">
       <button id="installToPhoneBtn" class="download-btn">📲 Download to Phone</button>
       <p id="installTip" style="font-size:0.9em;color:#99bbff;margin-top:8px;"></p>
@@ -59,7 +55,7 @@
   </div>
 </div>
 
-<!-- 🔑 CHANGE PASSWORD (💡 separado del settings) -->
+<!-- 🔑 CHANGE PASSWORD MODAL -->
 <div id="changePasswordModal" class="modal" style="display:none;">
   <div class="modal-content glass">
     <span class="close" onclick="closeChangePassword()">×</span>
@@ -73,7 +69,6 @@
     </div>
   </div>
 </div>
-
   <!-- 🧾 FOOTER -->
   <footer class="hud bottom-center">
     Powered by <b>JAG15</b> | Allston Car Wash © 2025<br>
