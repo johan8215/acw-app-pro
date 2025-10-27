@@ -315,8 +315,12 @@ function renderTeamViewPage(){
       if (tr) tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total||0)).toFixed(1) : "0";
     }catch{}
   });
-
+   
   updateTeamViewLiveStatus();
+   setTimeout(() => {
+  const box = document.querySelector("#directoryWrapper");
+  if (box) box.classList.add("show");
+}, 60);
 }
 async function updateTeamViewLiveStatus(){
   try{
