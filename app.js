@@ -1,48 +1,44 @@
 /* ============================================================
-   🧠 ACW-App v5.6.2 — Blue Glass White Connected
-   Johan A. Giraldo (JAG15) & Sky — Oct 2025
-   ============================================================
-   - Login conectado a GAS (login, getSmartSchedule, directory)
-   - Dashboard: welcome + schedule + live hours + total estable
-   - Team View (manager/supervisor) + Employee Modal
-   - Envíos sendtoday / sendtomorrow (fallback simple)
-   - Change password
-   - Restauración de sesión + toasts
+   0) CONFIG & VERSION
    ============================================================ */
+const CONFIG = {
+  VERSION: "v5.6.3-safe",
+  BASE_URL: "https://script.google.com/macros/s/AKfycbx-6DqfjydMMGp-K2z8FeBSH9t8Z1Ooa0Ene0u917RK7Eo6vu80aOTLmCf7lJtm-Ckh/exec"
+};
 
 /* ============================================================
-   🧠 ACW-App v5.6.3 — Blue Glass White Safe-Fix Edition
-   Johan A. Giraldo (JAG15) & Sky — Nov 2025
-   ============================================================
-   Parches:
-   - Auto CONFIG restore (previene errores en login)
-   - Team View centrado (sin "baile")
-   - Shift Manager: “Tomorrow” corrige el día sin tocar backend
+   1) GLOBAL STATE & HELPERS
    ============================================================ */
-
-// 🔧 CONFIG fallback seguro
-if (!window.CONFIG) {
-  window.CONFIG = {
-    BASE_URL: "https://script.google.com/macros/s/AKfycbx-6DqfjydMMGp-K2z8FeBSH9t8Z1Ooa0Ene0u917RK7Eo6vu80aOTLmCf7lJtm-Ckh/exec",
-    VERSION: "v5.6.3 — Safe-Fix Edition"
-  };
-  console.warn("⚠️ CONFIG restored manually — check BASE_URL");
-}
-
-// 🔧 Refuerzo de compatibilidad
-window.currentShiftMode = "today";
-
 let currentUser = null;
 
-/* ============== helpers UI ============== */
 function $(sel, root=document){ return root.querySelector(sel); }
 function $all(sel, root=document){ return Array.from(root.querySelectorAll(sel)); }
-function isManagerRole(role){ return ["manager","supervisor"].includes(String(role||"").toLowerCase()); }
-
 function safeText(el, txt){ if(el) el.textContent = txt; }
 function setVisible(el, show){ if(!el) return; el.style.display = show ? "" : "none"; }
+function isManagerRole(role){ return ["manager","supervisor"].includes(String(role||"").toLowerCase()); }
 
-/* ============== LOGIN ============== */
+/* Toast container one-time */
+(function ensureToast(){
+  if ($("#toastContainer")) return;
+  const c=document.createElement("div"); c.id="toastContainer";
+  Object.assign(c.style,{position:"fixed",top:"18px",right:"18px",zIndex:"9999",display:"flex",flexDirection:"column",alignItems:"flex-end"});
+  document.body.appendChild(c);
+})();
+function toast(msg, type="info"){
+  const t=document.createElement("div"); t.className="acw-toast"; t.textContent=msg;
+  t.style.background = type==="success" ? "linear-gradient(135deg,#00c851,#007e33)" :
+                    type==="error" ? "linear-gradient(135deg,#ff4444,#cc0000)" :
+                                     "linear-gradient(135deg,#007bff,#33a0ff)";
+  Object.assign(t.style,{color:"#fff",padding:"10px 18px",marginTop:"8px",borderRadius:"8px",fontWeight:"600",
+    boxShadow:"0 6px 14px rgba(0,0,0,.25)",opacity:"0",transform:"translateY(-10px)",transition:"all .35s ease"});
+  $("#toastContainer").appendChild(t);
+  requestAnimationFrame(()=>{ t.style.opacity="1"; t.style.transform="translateY(0)"; });
+  setTimeout(()=>{ t.style.opacity="0"; t.style.transform="translateY(-10px)"; setTimeout(()=>t.remove(),380); }, 2600);
+}
+
+/* ============================================================
+   2) LOGIN + SESSION
+   ============================================================ */
 async function loginUser() {
   const email = $("#email")?.value.trim();
   const password = $("#password")?.value.trim();
@@ -73,7 +69,21 @@ async function loginUser() {
   }
 }
 
-/* ============== WELCOME DASHBOARD ============== */
+/* Restore session on load */
+window.addEventListener("load", () => {
+  try {
+    const saved = localStorage.getItem("acwUser");
+    if (saved) {
+      currentUser = JSON.parse(saved);
+      showWelcome(currentUser.name, currentUser.role);
+      loadSchedule(currentUser.email);
+    }
+  } catch {}
+});
+
+/* ============================================================
+   3) WELCOME DASHBOARD
+   ============================================================ */
 async function showWelcome(name, role) {
   setVisible($("#login"), false);
   setVisible($("#welcome"), true);
@@ -82,7 +92,7 @@ async function showWelcome(name, role) {
 
   if (isManagerRole(role)) addTeamButton();
 
-  // Inserta teléfono del usuario (si existe)
+  /* Inserta teléfono del propio usuario si existe en directory */
   try {
     const r = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`, {cache:"no-store"});
     const j = await r.json();
@@ -98,13 +108,15 @@ async function showWelcome(name, role) {
   } catch {}
 }
 
-/* ============== LOAD SCHEDULE + LIVE ============== */
+/* ============================================================
+   4) SCHEDULE + LIVE HOURS
+   ============================================================ */
 async function loadSchedule(email) {
   const schedDiv = $("#schedule");
   schedDiv.innerHTML = `<p style="color:#007bff;font-weight:500;">Loading your shift...</p>`;
 
   try {
-    const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, {cache:"no-store"});
+    const r = await fetch(`${CONFIG_BASE_URL("getSmartSchedule")}&email=${encodeURIComponent(email)}`, {cache:"no-store"});
     const d = await r.json();
 
     if (!d.ok || !Array.isArray(d.days)) {
@@ -114,35 +126,20 @@ async function loadSchedule(email) {
 
     let html = `<table><tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
     d.days.forEach(day=>{
-      const isToday = new Date().toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase() === day.name.slice(0,3).toLowerCase();
+      const isToday = weekdayKey(new Date()) === dayKey(day.name);
       html += `<tr class="${isToday?"today":""}"><td>${day.name}</td><td>${day.shift||"-"}</td><td>${day.hours||"0"}</td></tr>`;
     });
-    html += `</table><p class="total">Total Hours: <b>${(d.total??0).toFixed?.(1) ?? d.total ?? 0}</b></p>`;
+    html += `</table><p class="total">Total Hours: <b>${toFixed1(d.total)}</b></p>`;
 
     schedDiv.innerHTML = html;
-
-    // Arranca live 1s después para asegurar que el DOM esté
     setTimeout(()=> startLiveTimer(d.days, Number(d.total||0)), 1000);
-
   } catch (e) {
     console.warn(e);
     schedDiv.innerHTML = `<p style="color:#c00;">Error loading schedule.</p>`;
   }
 }
 
-/* ============== SESSION RESTORE ============== */
-window.addEventListener("load", () => {
-  try {
-    const saved = localStorage.getItem("acwUser");
-    if (saved) {
-      currentUser = JSON.parse(saved);
-      showWelcome(currentUser.name, currentUser.role);
-      loadSchedule(currentUser.email);
-    }
-  } catch {}
-});
-
-/* ============== LIVE TIMER (dashboard) ============== */
+/* Helpers live */
 function parseTime(str){
   const clean = String(str||"").trim();
   const m = clean.match(/^(\d{1,2})(?::(\d{1,2}))?\s*(am|pm)?$/i);
@@ -179,14 +176,14 @@ function removeOnlineBadge(){ $("#onlineBadge")?.remove(); }
 
 function startLiveTimer(days, total){
   try{
-    const todayKey = new Date().toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase();
-    const today = days.find(d=> d.name.slice(0,3).toLowerCase()===todayKey);
+    const todayKey = weekdayKey(new Date());
+    const today = days.find(d=> dayKey(d.name)===todayKey);
     if(!today || !today.shift || /off/i.test(today.shift)) return;
 
     const shift = today.shift.trim();
     removeOnlineBadge();
 
-    // Turno activo estilo "7:30."
+    // Turno abierto "7:30."
     if (shift.endsWith(".")) {
       addOnlineBadge();
       const startStr = shift.replace(/\.$/,"").trim();
@@ -196,7 +193,6 @@ function startLiveTimer(days, total){
         const diff = Math.max(0,(Date.now()-startTime.getTime())/36e5);
         updateTotalDisplay(total+diff, true);
         showLiveHours(diff, true);
-        // también pinta dentro de la tabla (Horas de hoy)
         paintLiveInTable(todayKey, diff);
       };
       tick();
@@ -217,31 +213,29 @@ function startLiveTimer(days, total){
 
 function paintLiveInTable(todayKey, hours, staticMode=false){
   const table = $("#schedule table"); if (!table) return;
-  const row = Array.from(table.rows).find(r=> r.cells?.[0]?.textContent.slice(0,3).toLowerCase()===todayKey);
+  const row = Array.from(table.rows).find(r=> dayKey(r.cells?.[0]?.textContent)===todayKey);
   if (!row) return;
   row.cells[2].innerHTML = (staticMode? `` : `⏱️ `) + `${hours.toFixed(1)}h`;
   row.cells[2].style.color = staticMode ? "#999" : "#33a0ff";
   row.cells[2].style.fontWeight = staticMode ? "500" : "600";
 }
 
-/* ============== SETTINGS ============== */
+/* ============================================================
+   5) SETTINGS + CHANGE PASSWORD
+   ============================================================ */
 function openSettings(){ setVisible($("#settingsModal"), true); }
 function closeSettings(){ setVisible($("#settingsModal"), false); }
-function openChangePassword(){ setVisible($("#changePasswordModal"), true); }
-function closeChangePassword(){ setVisible($("#changePasswordModal"), false); }
 
-function refreshApp() {
-  try { if ("caches" in window) caches.keys().then(keys=>keys.forEach(k=>caches.delete(k))); } catch {}
-  toast("⏳ Updating…", "info");
-  setTimeout(()=>location.reload(), 900);
+function openChangePassword() {
+  const modal = $("#changePasswordModal");
+  closeSettings();
+  if (modal) { modal.classList.add("show"); modal.style.display = "flex"; }
 }
-function logoutUser(){
-  localStorage.removeItem("acwUser");
-  toast("👋 Logged out", "info");
-  setTimeout(()=>location.reload(), 500);
+function closeChangePassword() {
+  const modal = $("#changePasswordModal");
+  if (modal) { modal.classList.remove("show"); setTimeout(()=> (modal.style.display="none"), 200); }
 }
 
-/* ============== CHANGE PASSWORD ============== */
 async function submitChangePassword() {
   const oldPass = $("#oldPass")?.value.trim();
   const newPass = $("#newPass")?.value.trim();
@@ -272,7 +266,20 @@ async function submitChangePassword() {
   }
 }
 
-/* ============== TEAM VIEW (gestión) ============== */
+function refreshApp() {
+  try { if ("caches" in window) caches.keys().then(keys=>keys.forEach(k=>caches.delete(k))); } catch {}
+  toast("⏳ Updating…", "info");
+  setTimeout(()=>location.reload(), 900);
+}
+function logoutUser(){
+  localStorage.removeItem("acwUser");
+  toast("👋 Logged out", "info");
+  setTimeout(()=>location.reload(), 500);
+}
+
+/* ============================================================
+   6) TEAM VIEW (Directory + Live + Modal)
+   ============================================================ */
 const TEAM_PAGE_SIZE = 8;
 let __teamList=[], __teamPage=0;
 
@@ -289,23 +296,19 @@ function toggleTeamOverview(){
 }
 async function loadEmployeeDirectory() {
   try {
-    const r = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`, { cache: "no-store" });
+    const r = await fetch(`${CONFIG_BASE_URL("getEmployeesDirectory")}`, { cache: "no-store" });
     const j = await r.json();
     if (!j.ok) return;
 
     __teamList = j.directory || [];
     __teamPage = 0;
     renderTeamViewPage();
-  } catch (e) {
-    console.warn(e);
-  }
+  } catch (e) { console.warn(e); }
 }
 
 function renderTeamViewPage() {
-  // 🔄 Limpia anterior si existe
   $("#directoryWrapper")?.remove();
 
-  // 🧱 Crea el contenedor principal centrado
   const box = document.createElement("div");
   box.id = "directoryWrapper";
   box.className = "directory-wrapper tv-wrapper";
@@ -328,7 +331,6 @@ function renderTeamViewPage() {
     transition: "all 0.35s ease"
   });
 
-  // 🧩 Contenido del Team View
   box.innerHTML = `
     <div class="tv-head" style="display:flex;justify-content:space-between;align-items:center;">
       <h3 style="margin:0;color:#0078ff;text-shadow:0 0 8px rgba(0,120,255,0.25);">Team View</h3>
@@ -344,10 +346,8 @@ function renderTeamViewPage() {
       <tbody id="tvBody"></tbody>
     </table>
   `;
-
   document.body.appendChild(box);
 
-  // 📊 Carga datos de empleados
   const start = __teamPage * TEAM_PAGE_SIZE;
   const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
   const body = $("#tvBody", box);
@@ -359,40 +359,37 @@ function renderTeamViewPage() {
       <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
     </tr>`).join("");
 
-  // 📄 Navegación por páginas
   $("#tvPrev", box).onclick = () => { __teamPage = Math.max(0, __teamPage - 1); renderTeamViewPage(); };
   $("#tvNext", box).onclick = () => { __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1); renderTeamViewPage(); };
 
-  // 🔢 Llenar horas totales
+  /* Total hours */
   slice.forEach(async emp => {
     try {
-      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
+      const r = await fetch(`${CONFIG_BASE_URL("getSmartSchedule")}&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
       const d = await r.json();
       const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
-      if (tr) tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
+      if (tr) tr.querySelector(".tv-hours").textContent = (d && d.ok) ? toFixed1(d.total) : "0.0";
     } catch { }
   });
 
-  // 🔁 Actualiza Live Status
   updateTeamViewLiveStatus();
 
-  // 🧠 Animación de aparición centrada (sin “baile”)
   setTimeout(() => {
     box.style.visibility = "visible";
     box.style.opacity = "1";
     box.style.transform = "translate(-50%, -50%) scale(1)";
   }, 100);
 }
+
 async function updateTeamViewLiveStatus(){
   try{
     const rows = $all(".tv-table tr[data-email]"); if (!rows.length) return;
     for (const row of rows){
       const email=row.dataset.email, liveCell=row.querySelector(".tv-live"), totalCell=row.querySelector(".tv-hours");
-      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, {cache:"no-store"});
+      const r = await fetch(`${CONFIG_BASE_URL("getSmartSchedule")}&email=${encodeURIComponent(email)}`, {cache:"no-store"});
       const d = await r.json(); if (!d.ok || !d.days) continue;
 
-      const todayKey = new Date().toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase();
-      const today = d.days.find(x=> x.name.slice(0,3).toLowerCase()===todayKey);
+      const today = d.days.find(x=> dayKey(x.name)===weekdayKey(new Date()));
       if (!today?.shift) { liveCell.innerHTML="—"; continue; }
 
       if (today.shift.trim().endsWith(".")){
@@ -411,24 +408,20 @@ async function updateTeamViewLiveStatus(){
 }
 setInterval(updateTeamViewLiveStatus, 120000);
 
-/* ============== EMPLOYEE MODAL (gestión) ============== */
+/* ============================================================
+   7) EMPLOYEE MODAL (Full Week Edit)
+   ============================================================ */
 async function openEmployeePanel(btnEl){
   const tr = btnEl.closest("tr");
   const email = tr.dataset.email, name = tr.dataset.name, role = tr.dataset.role||"", phone = tr.dataset.phone||"";
-
-  // 🧭 Detecta modo (hoy / mañana)
-  const mode = tr.dataset.mode || "today";
-  window.currentShiftMode = mode;
-
   const modalId=`emp-${email.replace(/[@.]/g,"_")}`; 
   if ($("#"+modalId)) return;
 
   let data=null;
   try{
-    const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, {cache:"no-store"});
+    const r = await fetch(`${CONFIG_BASE_URL("getSmartSchedule")}&email=${encodeURIComponent(email)}`, {cache:"no-store"});
     data = await r.json(); if (!data.ok) throw new Error();
   }catch{ alert("No schedule found for this employee."); return; }
-  ...
 
   const m = document.createElement("div");
   m.className="employee-modal emp-panel"; m.id=modalId;
@@ -443,13 +436,13 @@ async function openEmployeePanel(btnEl){
       <table class="schedule-mini">
         <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
         ${data.days.map(d=>`
-          <tr data-day="${d.name.slice(0,3)}" data-original="${(d.shift||"-").replace(/"/g,'&quot;')}">
+          <tr data-day="${dayKey(d.name)}" data-original="${(d.shift||"-").replace(/"/g,'&quot;')}">
             <td>${d.name}</td>
             <td ${isManagerRole(currentUser?.role) ? 'contenteditable="true"' : ''}>${d.shift||"-"}</td>
             <td>${d.hours||0}</td>
           </tr>`).join("")}
       </table>
-      <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g,"_")}">${data.total||0}</b></p>
+      <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g,"_")}">${toFixed1(data.total)}</b></p>
       <p class="live-hours"></p>
       ${isManagerRole(currentUser?.role) ? `
         <div class="emp-actions" style="margin-top:10px;">
@@ -477,12 +470,12 @@ async function openEmployeePanel(btnEl){
 
 function enableModalLiveShift(modal, days){
   try{
-    const key = new Date().toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase();
-    const today = days.find(d=> d.name.slice(0,3).toLowerCase()===key);
+    const key = weekdayKey(new Date());
+    const today = days.find(d=> dayKey(d.name)===key);
     if (!today?.shift || /off/i.test(today.shift)) return;
 
     const table = $(".schedule-mini", modal);
-    const row = $all("tr", table).find(r=> r.cells?.[0]?.textContent.slice(0,3).toLowerCase()===key);
+    const row = $all("tr", table).find(r=> dayKey(r.cells?.[0]?.textContent)===key);
     if (!row) return;
     const hoursCell = row.cells[2];
     const shift = today.shift.trim();
@@ -512,59 +505,54 @@ function enableModalLiveShift(modal, days){
   }catch(e){ console.warn("modal live err:", e); }
 }
 
-/* ============== MANAGER ACTIONS (safe frontend - no backend touch) ============== */
+/* ============================================================
+   8) UPDATE & MESSAGING (Full Week Edit)
+   ============================================================ */
+/* Safe rule: siempre enviamos el día exacto editado (Mon..Sun) al backend.
+   Si modificas múltiples días, se envían uno por uno. */
 async function updateShiftFromModal(targetEmail, modalEl){
   const msg = $(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || $(".emp-status-msg", modalEl);
   const actor = currentUser?.email;
   if (!actor) { msg && (msg.textContent="⚠️ Session expired. Login again."); return; }
 
-  // 🧭 Detecta si se está editando “mañana”
-  const isTomorrow = (window.currentShiftMode === "tomorrow");
-
   const rows = $all(".schedule-mini tr[data-day]", modalEl);
   const changes = rows.map(r=>{
-    const day = r.dataset.day;
-    const newShift = r.cells[1].innerText.trim();
+    const day = (r.dataset.day||"").trim();           // "Mon".."Sun"
+    const newShift = r.cells[1].innerText.trim();     // editable cell
     const original = (r.getAttribute("data-original")||"").trim();
     return (newShift !== original) ? { day, newShift } : null;
   }).filter(Boolean);
 
-  if (!changes.length){
-    msg && (msg.textContent="No changes to save.");
-    toast("ℹ️ No changes", "info");
-    return;
+  if (!changes.length){ 
+    msg && (msg.textContent="No changes to save."); 
+    toast("ℹ️ No changes", "info"); 
+    return; 
   }
 
-  msg && (msg.textContent=`✏️ Saving to Sheets (${isTomorrow ? "tomorrow" : "today"})...`);
+  msg && (msg.textContent=`✏️ Saving to Sheets…`);
   let ok=0;
 
   for (const c of changes){
     try{
-      // 👉 Si es modo mañana, avanza un día (frontend only)
-      let adjustedDay = c.day;
-      if (isTomorrow) {
-        const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-        const idx = days.indexOf(c.day);
-        adjustedDay = days[(idx + 1) % days.length];
-      }
-
-      const u = `${CONFIG.BASE_URL}?action=updateShift&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}&day=${encodeURIComponent(adjustedDay)}&shift=${encodeURIComponent(c.newShift)}`;
-      const r = await fetch(u, {cache:"no-store"});
+      const u = `${CONFIG_BASE_URL("updateShift")}&actor=${enc(actor)}&target=${enc(targetEmail)}&day=${enc(c.day)}&shift=${enc(c.newShift)}`;
+      const r = await fetch(u, {cache:"no-store"}); 
       const j = await r.json();
       if (j?.ok) ok++;
     }catch(e){ console.warn("Update error:", e); }
   }
 
-  if (ok===changes.length){
-    msg.textContent=`✅ Updated on Sheets (${isTomorrow ? "tomorrow" : "today"})!`;
-    toast(`✅ Shifts updated for ${isTomorrow ? "tomorrow" : "today"}`,"success");
-    rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim()));
-  } else if (ok>0){
-    msg.textContent=`⚠️ Partial save: ${ok}/${changes.length}`;
-    toast("⚠️ Some shifts failed","error");
-  } else {
-    msg.textContent="❌ Could not update.";
-    toast("❌ Update failed","error");
+  if (ok===changes.length){ 
+    msg.textContent=`✅ Updated on Sheets!`; 
+    toast(`✅ Shifts updated`,"success"); 
+    rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim())); 
+  }
+  else if (ok>0){ 
+    msg.textContent=`⚠️ Partial save: ${ok}/${changes.length}`; 
+    toast("⚠️ Some shifts failed","error"); 
+  }
+  else { 
+    msg.textContent="❌ Could not update."; 
+    toast("❌ Update failed","error"); 
   }
 }
 
@@ -581,43 +569,18 @@ async function sendShiftMessage(targetEmail, action){
   }catch(e){ msg && (msg.textContent="⚠️ Connection error"); toast("❌ Connection error","error"); }
 }
 
-/* ============== TOASTS ============== */
-(function ensureToast(){
-  if ($("#toastContainer")) return;
-  const c=document.createElement("div"); c.id="toastContainer";
-  Object.assign(c.style,{position:"fixed",top:"18px",right:"18px",zIndex:"9999",display:"flex",flexDirection:"column",alignItems:"flex-end"});
-  document.body.appendChild(c);
-})();
-function toast(msg, type="info"){
-  const t=document.createElement("div"); t.className="acw-toast"; t.textContent=msg;
-  t.style.background = type==="success" ? "linear-gradient(135deg,#00c851,#007e33)" :
-                    type==="error" ? "linear-gradient(135deg,#ff4444,#cc0000)" :
-                                     "linear-gradient(135deg,#007bff,#33a0ff)";
-  Object.assign(t.style,{color:"#fff",padding:"10px 18px",marginTop:"8px",borderRadius:"8px",fontWeight:"600",
-    boxShadow:"0 6px 14px rgba(0,0,0,.25)",opacity:"0",transform:"translateY(-10px)",transition:"all .35s ease"});
-  $("#toastContainer").appendChild(t);
-  requestAnimationFrame(()=>{ t.style.opacity="1"; t.style.transform="translateY(0)"; });
-  setTimeout(()=>{ t.style.opacity="0"; t.style.transform="translateY(-10px)"; setTimeout(()=>t.remove(),380); }, 2600);
-}
+/* ============================================================
+   9) SMALL UTILS
+   ============================================================ */
+function weekdayKey(d){ return d.toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase(); } // mon..sun
+function dayKey(name){ return String(name||"").slice(0,3).toLowerCase(); } // Mon→mon
+function toFixed1(n){ const x = Number(n||0); return isFinite(x) ? x.toFixed(1) : "0.0"; }
+function enc(s){ return encodeURIComponent(String(s||"")); }
+function CONFIG_BASE_URL(action){ return `${CONFIG.BASE_URL}?action=${action}`; }
 
-function openChangePassword() {
-  const modal = $("#changePasswordModal");
-  closeSettings(); // 🔹 cierra el Settings primero
-  if (modal) {
-    modal.classList.add("show");
-    modal.style.display = "flex";
-  }
-}
-
-function closeChangePassword() {
-  const modal = $("#changePasswordModal");
-  if (modal) {
-    modal.classList.remove("show");
-    setTimeout(() => (modal.style.display = "none"), 200);
-  }
-}
-
-/* ============== GLOBAL BINDS ============== */
+/* ============================================================
+   10) GLOBAL BINDS
+   ============================================================ */
 window.loginUser = loginUser;
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
@@ -630,37 +593,4 @@ window.openEmployeePanel = openEmployeePanel;
 window.sendShiftMessage = sendShiftMessage;
 window.updateShiftFromModal = updateShiftFromModal;
 
-console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.2"} | Base: ${CONFIG?.BASE_URL||"<no-config>"}`);
-
-/* ============================================================
-   ⚙️ ACW-App Behavior Fix Pack v5.6.2
-   Johan A. Giraldo (JAG15) & Sky — Nov 2025
-   ============================================================ */
-
-// 🧩 Corrige apertura del Team View con animación suave
-const _oldRenderTV = window.renderTeamViewPage;
-window.renderTeamViewPage = function(...args) {
-  _oldRenderTV.apply(this, args);
-  const box = document.querySelector("#directoryWrapper");
-  if (box) setTimeout(() => box.classList.add("show"), 120);
-};
-
-// 🧩 Reasigna visibilidad del modal de settings
-function openSettings() {
-  const modal = document.getElementById("settingsModal");
-  if (!modal) {
-    console.warn("⚠️ Settings modal not found");
-    return;
-  }
-  modal.style.display = "flex";
-  modal.style.alignItems = "center";
-  modal.style.justifyContent = "center";
-}
-function closeSettings() {
-  const modal = document.getElementById("settingsModal");
-  if (modal) modal.style.display = "none";
-}
-
-// 🔁 Asegura que las funciones globales sigan disponibles
-window.openSettings = openSettings;
-window.closeSettings = closeSettings;
+console.log(`✅ ACW-App loaded → ${CONFIG.VERSION} | Base: ${CONFIG.BASE_URL}`);
