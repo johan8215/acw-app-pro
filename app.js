@@ -515,3 +515,36 @@ window.sendShiftMessage = sendShiftMessage;
 window.updateShiftFromModal = updateShiftFromModal;
 
 console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.2"} | Base: ${CONFIG?.BASE_URL||"<no-config>"}`);
+
+/* ============================================================
+   ⚙️ ACW-App Behavior Fix Pack v5.6.2
+   Johan A. Giraldo (JAG15) & Sky — Nov 2025
+   ============================================================ */
+
+// 🧩 Corrige apertura del Team View con animación suave
+const _oldRenderTV = window.renderTeamViewPage;
+window.renderTeamViewPage = function(...args) {
+  _oldRenderTV.apply(this, args);
+  const box = document.querySelector("#directoryWrapper");
+  if (box) setTimeout(() => box.classList.add("show"), 50);
+};
+
+// 🧩 Reasigna visibilidad del modal de settings
+function openSettings() {
+  const modal = document.getElementById("settingsModal");
+  if (!modal) {
+    console.warn("⚠️ Settings modal not found");
+    return;
+  }
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+}
+function closeSettings() {
+  const modal = document.getElementById("settingsModal");
+  if (modal) modal.style.display = "none";
+}
+
+// 🔁 Asegura que las funciones globales sigan disponibles
+window.openSettings = openSettings;
+window.closeSettings = closeSettings;
