@@ -251,7 +251,7 @@ async function submitChangePassword() {
 }
 
 /* ============================================================
-   👥 TEAM VIEW (gestión) — v5.6.3 Stable Connected Edition
+   👥 TEAM VIEW (gestión) — v5.6.3-D (Debug Visual Edition)
    ============================================================ */
 const TEAM_PAGE_SIZE = 8;
 let __teamList = [];
@@ -278,87 +278,79 @@ function toggleTeamOverview() {
 }
 
 async function loadEmployeeDirectory() {
-  // 🔵 Visual loading overlay
   const overlay = document.createElement("div");
   overlay.id = "loadingTeam";
-  overlay.textContent = "Loading Team View...";
-  Object.assign(overlay.style, {
-    position: "fixed",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    background: "rgba(255,255,255,0.95)",
-    padding: "30px 40px",
-    borderRadius: "12px",
-    boxShadow: "0 0 25px rgba(0,120,255,0.25)",
-    fontWeight: "600",
-    color: "#0078ff",
-    zIndex: "9999",
-    textAlign: "center"
-  });
+  overlay.style.cssText = `
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:rgba(255,255,255,0.97);padding:30px 45px;border-radius:14px;
+    box-shadow:0 0 25px rgba(0,120,255,0.25);
+    color:#0078ff;font-weight:600;z-index:9999;text-align:center;font-size:1.1em;
+  `;
+  overlay.innerHTML = "🔵 Step 1️⃣: Starting fetch…";
   document.body.appendChild(overlay);
 
   try {
     const url = `${CONFIG.BASE_URL}?action=getEmployeesDirectory`;
-    console.log("📡 Fetching:", url);
+    overlay.innerHTML = "🔵 Step 2️⃣: Fetching data…";
     const res = await fetch(url, { cache: "no-store" });
-    const j = await res.json();
+    const text = await res.text();
+    overlay.innerHTML = "🟡 Step 3️⃣: Parsing JSON…";
 
-    if (!j.ok || !Array.isArray(j.directory)) {
-      toast("⚠️ Directory not found", "error");
-      console.warn("Invalid response:", j);
-      __teamList = [];
-    } else {
-      __teamList = j.directory;
-      console.log(`✅ Loaded ${__teamList.length} employees`);
+    let j;
+    try {
+      j = JSON.parse(text);
+    } catch (e) {
+      overlay.innerHTML = "❌ Step 3 Failed: Invalid JSON<br><small>" + e.message + "</small>";
+      console.error("Invalid JSON:", text);
+      return;
     }
 
+    overlay.innerHTML = "🟢 Step 4️⃣: Data OK<br>Loaded: " + (j.directory?.length || 0) + " employees";
+
+    if (!j.ok || !Array.isArray(j.directory)) {
+      overlay.innerHTML = "⚠️ Step 4 Failed: Directory not found";
+      console.warn("Invalid data:", j);
+      __teamList = [];
+      return;
+    }
+
+    __teamList = j.directory;
     __teamPage = 0;
+    overlay.innerHTML = "🟢 Step 5️⃣: Rendering view…";
+
     renderTeamViewPage();
-    toast("✅ Team View Ready", "success");
+
+    overlay.innerHTML = "✅ Step 6️⃣: View rendered!";
+    setTimeout(() => overlay.remove(), 1000);
   } catch (e) {
-    console.error("❌ loadEmployeeDirectory error:", e);
-    toast("❌ Network or script error", "error");
-  } finally {
-    setTimeout(() => overlay.remove(), 400);
+    overlay.innerHTML = "❌ Step 2 Failed: Network or script error<br><small>" + e.message + "</small>";
+    console.error(e);
   }
 }
 
 function renderTeamViewPage() {
   $("#directoryWrapper")?.remove();
 
-  // 🟢 Main container
   const box = document.createElement("div");
   box.id = "directoryWrapper";
   box.className = "directory-wrapper show";
-
   box.innerHTML = `
     <div class="tv-head">
       <h3>Team View</h3>
       <button class="tv-close" onclick="toggleTeamOverview()">✖️</button>
     </div>
-
     <div class="tv-pager">
       <button class="tv-nav" id="tvPrev" ${__teamPage === 0 ? "disabled" : ""}>‹ Prev</button>
-      <span class="tv-index">
-        Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}
-      </span>
+      <span class="tv-index">Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}</span>
       <button class="tv-nav" id="tvNext" ${(__teamPage + 1) >= Math.ceil(__teamList.length / TEAM_PAGE_SIZE) ? "disabled" : ""}>Next ›</button>
     </div>
-
     <table class="directory-table tv-table">
-      <thead>
-        <tr><th>Name</th><th>Hours</th><th>Live (Working)</th><th></th></tr>
-      </thead>
-      <tbody id="tvBody">
-        <tr><td colspan="4" style="color:#888;">⏳ Loading...</td></tr>
-      </tbody>
+      <thead><tr><th>Name</th><th>Hours</th><th>Live</th><th></th></tr></thead>
+      <tbody id="tvBody"></tbody>
     </table>
   `;
-
   document.body.appendChild(box);
 
-  // ⚙️ Populate employees
   const start = __teamPage * TEAM_PAGE_SIZE;
   const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
   const body = box.querySelector("#tvBody");
@@ -368,39 +360,27 @@ function renderTeamViewPage() {
     return;
   }
 
-  body.innerHTML = slice
-    .map(
-      (emp) => `
-      <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role || ""}" data-phone="${emp.phone || ""}">
-        <td><b>${emp.name}</b><br><small style="color:#666;">${emp.role || ""}</small></td>
-        <td class="tv-hours">—</td>
-        <td class="tv-live">—</td>
-        <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
-      </tr>
-    `
-    )
-    .join("");
+  body.innerHTML = slice.map(emp => `
+    <tr data-email="${emp.email}" data-name="${emp.name}">
+      <td><b>${emp.name}</b></td>
+      <td class="tv-hours">—</td>
+      <td class="tv-live">—</td>
+      <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
+    </tr>`).join("");
 
-  // Pagination
-  $("#tvPrev", box).onclick = () => {
-    __teamPage = Math.max(0, __teamPage - 1);
-    renderTeamViewPage();
-  };
-  $("#tvNext", box).onclick = () => {
-    __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1);
-    renderTeamViewPage();
-  };
+  $("#tvPrev", box).onclick = () => { __teamPage = Math.max(0, __teamPage - 1); renderTeamViewPage(); };
+  $("#tvNext", box).onclick = () => { __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1); renderTeamViewPage(); };
 
-  // Load hours + live status
-  slice.forEach(async (emp) => {
+  // Fill hours
+  slice.forEach(async emp => {
     try {
       const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
       const d = await r.json();
       const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
       if (!tr) return;
-      tr.querySelector(".tv-hours").textContent = d.ok ? Number(d.total || 0).toFixed(1) : "0";
+      tr.querySelector(".tv-hours").textContent = (d.ok ? Number(d.total || 0).toFixed(1) : "0");
     } catch (e) {
-      console.warn("Error fetching schedule for:", emp.email);
+      console.warn("Error hours for", emp.email);
     }
   });
 
@@ -411,39 +391,27 @@ async function updateTeamViewLiveStatus() {
   try {
     const rows = $all(".tv-table tr[data-email]");
     if (!rows.length) return;
-
     for (const row of rows) {
       const email = row.dataset.email;
       const liveCell = row.querySelector(".tv-live");
       const totalCell = row.querySelector(".tv-hours");
-
       const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, { cache: "no-store" });
       const d = await r.json();
       if (!d.ok || !d.days) continue;
-
       const todayKey = new Date().toLocaleString("en-US", { weekday: "short" }).slice(0, 3).toLowerCase();
-      const today = d.days.find((x) => x.name.slice(0, 3).toLowerCase() === todayKey);
-      if (!today?.shift) {
-        liveCell.innerHTML = "—";
-        continue;
-      }
-
+      const today = d.days.find(x => x.name.slice(0, 3).toLowerCase() === todayKey);
+      if (!today?.shift) { liveCell.innerHTML = "—"; continue; }
       if (today.shift.trim().endsWith(".")) {
         const startTime = parseTime(today.shift.replace(/\.$/, "").trim());
         if (!startTime) continue;
         const diff = Math.max(0, (Date.now() - startTime.getTime()) / 36e5);
         liveCell.innerHTML = `🟢 ${diff.toFixed(1)}h`;
-        liveCell.style.color = "#33ff66";
-        liveCell.style.fontWeight = "600";
         const base = parseFloat(totalCell.textContent) || 0;
         totalCell.innerHTML = `${(base + diff).toFixed(1)} <span style="color:#33a0ff;font-size:.85em;">(+${diff.toFixed(1)})</span>`;
-      } else {
-        liveCell.innerHTML = "—";
-        liveCell.style.color = "#aaa";
-      }
+      } else liveCell.innerHTML = "—";
     }
   } catch (e) {
-    console.warn("Live update error:", e);
+    console.warn("updateTeamViewLiveStatus error:", e);
   }
 }
 setInterval(updateTeamViewLiveStatus, 120000);
