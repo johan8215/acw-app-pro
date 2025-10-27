@@ -258,12 +258,9 @@ async function submitChangePassword() {
   }
 }
 
-/* ============================================================
-   👥 TEAM VIEW (gestión) — v5.6.4 Stable Glass White
-   ============================================================ */
+/* ============== TEAM VIEW (gestión) — DEBUG RESTORE BUILD ============== */
 const TEAM_PAGE_SIZE = 8;
-let __teamList = [];
-let __teamPage = 0;
+let __teamList = [], __teamPage = 0;
 
 function addTeamButton() {
   if ($("#teamBtn")) return;
@@ -273,63 +270,71 @@ function addTeamButton() {
   btn.textContent = "Team View";
   btn.onclick = toggleTeamOverview;
   document.body.appendChild(btn);
+  console.log("🟢 Team View button added");
 }
 
 function toggleTeamOverview() {
-  const existing = $("#directoryWrapper");
-  if (existing) {
-    existing.classList.add("fade-out");
-    setTimeout(() => existing.remove(), 250);
+  console.log("⚙️ toggleTeamOverview()");
+  const w = $("#directoryWrapper");
+  if (w) {
+    w.classList.add("fade-out");
+    setTimeout(() => w.remove(), 250);
+    console.log("🔻 Team View closed");
     return;
   }
   loadEmployeeDirectory();
 }
 
 async function loadEmployeeDirectory() {
-  // Overlay visual
+  console.log("📡 loadEmployeeDirectory() triggered");
   const overlay = document.createElement("div");
   overlay.id = "loadingTeam";
-  overlay.style.cssText = `
-    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-    background:rgba(255,255,255,0.97);
-    padding:30px 45px;border-radius:14px;
-    box-shadow:0 0 25px rgba(0,120,255,0.25);
-    color:#0078ff;font-weight:600;
-    z-index:9999;text-align:center;
-    font-size:1.1em;
-  `;
   overlay.textContent = "Loading Team View...";
+  Object.assign(overlay.style, {
+    position: "fixed",
+    top: "50%", left: "50%",
+    transform: "translate(-50%, -50%)",
+    background: "rgba(255,255,255,0.95)",
+    padding: "30px 45px",
+    borderRadius: "12px",
+    boxShadow: "0 0 25px rgba(0,120,255,0.3)",
+    color: "#0078ff",
+    fontWeight: "600",
+    zIndex: "9999"
+  });
   document.body.appendChild(overlay);
 
   try {
     const url = `${CONFIG.BASE_URL}?action=getEmployeesDirectory`;
+    console.log("🌐 Fetching:", url);
     const res = await fetch(url, { cache: "no-store" });
-    const j = await res.json();
+    const text = await res.text();
+    console.log("📦 Raw Response (first 100 chars):", text.slice(0,100));
 
-    if (!j.ok || !Array.isArray(j.directory)) {
-      toast("⚠️ Directory not found", "error");
+    let j = {};
+    try { j = JSON.parse(text); } catch(e){ console.warn("❌ JSON parse error", e); }
+
+    if (j.ok && Array.isArray(j.directory)) {
+      __teamList = j.directory;
+      console.log(`✅ Loaded ${__teamList.length} employees`);
+    } else {
       __teamList = [];
-      return;
+      console.warn("⚠️ Directory invalid:", j);
     }
 
-    __teamList = j.directory;
     __teamPage = 0;
     renderTeamViewPage();
-    toast("✅ Team View Ready", "success");
-
-  } catch (e) {
-    console.error("❌ loadEmployeeDirectory() error:", e);
-    toast("❌ Network or script error", "error");
+  } catch(e) {
+    console.error("❌ loadEmployeeDirectory error:", e);
   } finally {
-    setTimeout(() => overlay.remove(), 400);
+    setTimeout(()=>overlay.remove(), 600);
   }
 }
 
 function renderTeamViewPage() {
-  // elimina cualquier wrapper previo
-  $("#directoryWrapper")?.remove();
+  console.log("🧱 renderTeamViewPage() called");
 
-  // 🔴 bloque de prueba
+  $("#directoryWrapper")?.remove();
   const box = document.createElement("div");
   box.id = "directoryWrapper";
   Object.assign(box.style, {
@@ -337,17 +342,26 @@ function renderTeamViewPage() {
     top: "50%",
     left: "50%",
     transform: "translate(-50%,-50%)",
-    background: "rgba(255,0,0,0.85)",
+    background: "rgba(0,0,0,0.85)",
     color: "#fff",
-    fontSize: "22px",
-    padding: "50px 60px",
-    borderRadius: "14px",
-    boxShadow: "0 0 40px rgba(255,0,0,0.5)",
-    zIndex: "999999",
-    textAlign: "center"
+    fontSize: "20px",
+    padding: "40px 60px",
+    borderRadius: "12px",
+    textAlign: "center",
+    zIndex: "999999"
   });
-  box.textContent = "✅ TEAM VIEW BOX VISIBLE (TEST)";
+
+  if (!__teamList.length) {
+    box.textContent = "⚠️ No data loaded or fetch failed.";
+  } else {
+    box.innerHTML = `
+      <h3>✅ TEAM VIEW RESTORED</h3>
+      <p>Loaded: <b>${__teamList.length}</b> employees</p>
+      <button onclick="toggleTeamOverview()" style="margin-top:10px;">Close</button>
+    `;
+  }
   document.body.appendChild(box);
+  console.log("✅ Team View box appended to DOM");
 }
 
   const start = __teamPage * TEAM_PAGE_SIZE;
