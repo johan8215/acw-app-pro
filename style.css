@@ -296,7 +296,7 @@ tr.today td {
   box-shadow: 0 6px 16px rgba(0, 136, 255, 0.45);
 }
 /* ============================================================
-   🎨 ACW-App UI Fix Pack v5.6.2
+   🎨 ACW-App UI Fix Pack v5.6.2 — Unified Floating Panels
    Johan A. Giraldo (JAG15) & Sky — Nov 2025
    ============================================================ */
 
@@ -305,11 +305,11 @@ tr.today td {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -48%) scale(0.98);
+  transform: translate(-50%, -48%) scale(0.96);
   visibility: hidden;
   opacity: 0;
-  width: 88%;
-  max-width: 620px;
+  width: 90%;
+  max-width: 600px;
   background: rgba(255, 255, 255, 0.97);
   border-radius: 16px;
   box-shadow: 0 0 35px rgba(0,128,255,0.3);
@@ -317,20 +317,22 @@ tr.today td {
   transition: all 0.35s ease;
   z-index: 9999;
   text-align: center;
-  padding: 20px 26px;
+  padding: 22px 26px;
 }
 #directoryWrapper.show {
   visibility: visible;
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
 }
+
 .directory-table {
   width: 100%;
   font-size: 15px;
   border-collapse: collapse;
   margin-top: 10px;
 }
-.directory-table th, .directory-table td {
+.directory-table th,
+.directory-table td {
   padding: 8px 5px;
   border-bottom: 1px solid rgba(0,0,0,0.08);
 }
@@ -343,74 +345,45 @@ tr.today td {
   background: rgba(0,120,255,0.08);
   transition: background 0.25s ease;
 }
+
 /* 🔧 Tamaño unificado para tablas flotantes */
 .directory-wrapper,
 .employee-modal .emp-box {
-  width: 88%;
-  max-width: 640px;
+  width: 90%;
+  max-width: 600px;
   padding: 24px 28px;
   border-radius: 14px;
   box-shadow: 0 0 35px rgba(0,128,255,0.3);
 }
+
+/* Ajustes de tabla interna del Employee Modal */
 .employee-modal .schedule-mini {
   font-size: 15px;
   border-spacing: 14px 8px;
 }
-.employee-modal .schedule-mini th, 
+.employee-modal .schedule-mini th,
 .employee-modal .schedule-mini td {
   padding: 6px 4px;
 }
+
+/* 🔑 Change Password Modal */
 #changePasswordModal {
   z-index: 9999;
   display: none;
-}
-#changePasswordModal.show {
-  display: flex !important;
   align-items: center;
   justify-content: center;
   animation: fadeIn 0.25s ease;
+}
+#changePasswordModal.show {
+  display: flex !important;
 }
 #changePasswordModal .modal-content.glass {
   background: rgba(255,255,255,0.97);
   border-radius: 14px;
   box-shadow: 0 0 40px rgba(0,120,255,0.3);
   backdrop-filter: blur(10px);
-}
-function openChangePassword() {
-  const modal = $("#changePasswordModal");
-  if (modal) {
-    modal.classList.add("show");
-    modal.style.display = "flex";
-  }
-}
-
-function closeChangePassword() {
-  const modal = $("#changePasswordModal");
-  if (modal) {
-    modal.classList.remove("show");
-    setTimeout(() => (modal.style.display = "none"), 200);
-  }
-}
-     /* 🔑 Change Password Modal */
-#changePasswordModal {
-  z-index: 9999;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  animation: fadeIn 0.25s ease;
-}
-
-#changePasswordModal .modal-content.glass {
-  background: rgba(255,255,255,0.97);
-  border-radius: 16px;
-  box-shadow: 0 0 40px rgba(0,128,255,0.3);
   padding: 28px 30px;
   width: 340px;
   text-align: center;
-  backdrop-filter: blur(10px);
   animation: popIn 0.25s ease;
-}
-
-#changePasswordModal.show {
-  display: flex !important;
 }
