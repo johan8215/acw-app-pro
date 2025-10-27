@@ -257,3 +257,76 @@ button:hover { background: #ff3333; }
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ============================================================
+   🧩 Responsive Fix — Center Layout & Footer Alignment
+   ============================================================ */
+
+/* Centra todos los contenedores principales */
+.container, #welcome, #schedule, footer.hud {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: center !important;
+}
+
+/* Asegura que los títulos, roles y teléfonos estén centrados */
+#welcomeName, #welcomeRole, .user-phone {
+  display: block;
+  text-align: center;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Ajusta la tabla de horario para pantallas medianas y móviles */
+#schedule table {
+  margin: 0 auto;
+  width: 90%;
+  max-width: 420px;
+  border-collapse: separate;
+  border-spacing: 18px 8px;
+  text-align: center;
+}
+
+/* Centra el texto “Total Hours” */
+#schedule .total {
+  text-align: center;
+  width: 100%;
+}
+
+/* Footer fijo y centrado en todas las resoluciones */
+footer.hud {
+  text-align: center !important;
+  width: 100%;
+  position: relative;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  font-weight: 600;
+  font-size: 13px;
+  color: #666;
+}
+
+/* ============================================================
+   📱 Responsive Breakpoints — Ajuste en pantallas grandes
+   ============================================================ */
+@media (min-width: 1024px) {
+  .container {
+    max-width: 480px;
+    margin-top: 90px;
+    padding: 50px 60px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    max-width: 90%;
+    padding: 30px 20px;
+  }
+  #schedule table {
+    font-size: 15px;
+  }
+  footer.hud {
+    font-size: 12px;
+  }
+}
