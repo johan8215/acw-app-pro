@@ -11,7 +11,7 @@ const CONFIG = {
 // 🔁 Asegura visibilidad global
 window.CONFIG = CONFIG;
 
-// 🧩 Confirma conexión visible en consola (sin bloquear carga)
+// 🧩 Log no bloqueante
 setTimeout(() => {
   console.log(`✅ ACW-App connected → ${CONFIG.VERSION}`);
   console.log(`🌐 Backend: ${CONFIG.BASE_URL}`);

@@ -1,49 +1,49 @@
-/* ============================================================
-   ⚙️ ACW-App SW v5.6.2 — Safe Cache (No API Interference)
-   ============================================================ */
+// ===========================================================
+// 🧩 ACW-App Service Worker v5.6.2 — Fixed Offline & Cache
+// ===========================================================
 
-const CACHE_NAME = "acw-blue-glass-v562";
-const ASSETS = [
+const CACHE_NAME = "acw-cache-v5.6.2";
+const FILES_TO_CACHE = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
   "./config.js",
-  "./manifest.json",
-  "./acw-icon-512.png"
+  "./manifest.json"
 ];
 
-self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
+// 🧱 Instalar y cachear recursos básicos
+self.addEventListener("install", (event) => {
+  console.log("🪣 Installing ACW Service Worker...");
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(FILES_TO_CACHE))
+  );
 });
 
-self.addEventListener("activate", (e) => {
-  e.waitUntil(
+// 🧼 Activar y limpiar cachés antiguas
+self.addEventListener("activate", (event) => {
+  console.log("♻️ Activating new cache version");
+  event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
     )
   );
 });
 
-self.addEventListener("fetch", (e) => {
-  const url = new URL(e.request.url);
+// 🌐 Fetch con fallback y protección
+self.addEventListener("fetch", (event) => {
+  const req = event.request;
 
-  // 🔒 No interceptar el backend
-  if (url.host.includes("script.google.com")) return;
+  // ⚠️ No interceptar las llamadas al backend
+  if (req.url.includes("script.google.com/macros")) return;
 
-  if (e.request.method === "GET" && url.origin === self.location.origin) {
-    e.respondWith(
-      caches.match(e.request).then((cached) => {
-        const fetchPromise = fetch(e.request)
-          .then((networkResp) => {
-            caches.open(CACHE_NAME)
-              .then((cache) => cache.put(e.request, networkResp.clone()))
-              .catch(()=>{});
-            return networkResp;
-          })
-          .catch(() => cached);
-        return cached || fetchPromise;
-      })
-    );
-  }
+  event.respondWith(
+    caches.match(req).then((cached) => {
+      return cached || fetch(req).catch(() =>
+        new Response("Offline or not found", { status: 404 })
+      );
+    })
+  );
 });
+
+console.log("✅ ACW Service Worker v5.6.2 active");

@@ -22,14 +22,6 @@ function setVisible(el, show){ if(!el) return; el.style.display = show ? "" : "n
 
 /* ============== LOGIN ============== */
 async function loginUser() {
-   // ⚡ TEMP LOGIN BYPASS (solo para pruebas Team View)
-if (true) {  // ← cambia a false cuando termines de probar
-  console.warn("⚡ Bypass login active — direct access to dashboard");
-  currentUser = { name: "Johan (Manager)", email: "test@acw.com", role: "manager" };
-  showWelcome(currentUser.name, currentUser.role);
-  loadSchedule(currentUser.email);
-  return;
-}
   const email = $("#email")?.value.trim();
   const password = $("#password")?.value.trim();
   const diag = $("#diag");
@@ -258,176 +250,99 @@ async function submitChangePassword() {
   }
 }
 
-/* ============== TEAM VIEW (gestión) — DEBUG RESTORE BUILD ============== */
+/* ============== TEAM VIEW (gestión) ============== */
 const TEAM_PAGE_SIZE = 8;
-let __teamList = [], __teamPage = 0;
+let __teamList=[], __teamPage=0;
 
-function addTeamButton() {
+function addTeamButton(){
   if ($("#teamBtn")) return;
   const btn = document.createElement("button");
-  btn.id = "teamBtn";
-  btn.className = "team-btn";
-  btn.textContent = "Team View";
-  btn.onclick = toggleTeamOverview;
-  document.body.appendChild(btn);
-  console.log("🟢 Team View button added");
+  btn.id="teamBtn"; btn.className="team-btn"; btn.textContent="Team View";
+  btn.onclick = toggleTeamOverview; document.body.appendChild(btn);
 }
-
-function toggleTeamOverview() {
-  console.log("⚙️ toggleTeamOverview()");
+function toggleTeamOverview(){
   const w = $("#directoryWrapper");
-  if (w) {
-    w.classList.add("fade-out");
-    setTimeout(() => w.remove(), 250);
-    console.log("🔻 Team View closed");
-    return;
-  }
+  if (w){ w.classList.add("fade-out"); setTimeout(()=>w.remove(), 220); return; }
   loadEmployeeDirectory();
 }
-
-async function loadEmployeeDirectory() {
-  console.log("📡 loadEmployeeDirectory() triggered");
-  const overlay = document.createElement("div");
-  overlay.id = "loadingTeam";
-  overlay.textContent = "Loading Team View...";
-  Object.assign(overlay.style, {
-    position: "fixed",
-    top: "50%", left: "50%",
-    transform: "translate(-50%, -50%)",
-    background: "rgba(255,255,255,0.95)",
-    padding: "30px 45px",
-    borderRadius: "12px",
-    boxShadow: "0 0 25px rgba(0,120,255,0.3)",
-    color: "#0078ff",
-    fontWeight: "600",
-    zIndex: "9999"
-  });
-  document.body.appendChild(overlay);
-
-  try {
-    const url = `${CONFIG.BASE_URL}?action=getEmployeesDirectory`;
-    console.log("🌐 Fetching:", url);
-    const res = await fetch(url, { cache: "no-store" });
-    const text = await res.text();
-    console.log("📦 Raw Response (first 100 chars):", text.slice(0,100));
-
-    let j = {};
-    try { j = JSON.parse(text); } catch(e){ console.warn("❌ JSON parse error", e); }
-
-    if (j.ok && Array.isArray(j.directory)) {
-      __teamList = j.directory;
-      console.log(`✅ Loaded ${__teamList.length} employees`);
-    } else {
-      __teamList = [];
-      console.warn("⚠️ Directory invalid:", j);
-    }
-
-    __teamPage = 0;
-    renderTeamViewPage();
-  } catch(e) {
-    console.error("❌ loadEmployeeDirectory error:", e);
-  } finally {
-    setTimeout(()=>overlay.remove(), 600);
-  }
+async function loadEmployeeDirectory(){
+  try{
+    const r = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`, {cache:"no-store"});
+    const j = await r.json(); if (!j.ok) return;
+    __teamList = j.directory||[]; __teamPage=0; renderTeamViewPage();
+  }catch(e){ console.warn(e); }
 }
-
-function renderTeamViewPage() {
-  console.log("🧱 renderTeamViewPage() executed");
-
+function renderTeamViewPage(){
   $("#directoryWrapper")?.remove();
-  const box = document.createElement("div");
-  box.id = "directoryWrapper";
-  box.className = "directory-wrapper show";
-
-  // contenido mínimo visible
-  if (!__teamList.length) {
-    box.innerHTML = `
-      <div class="tv-head">
-        <h3>⚠️ No employees found</h3>
-        <button class="tv-close" onclick="toggleTeamOverview()">✖️</button>
-      </div>`;
-    document.body.appendChild(box);
-    return;
-  }
-
-  // render completo
+  const box=document.createElement("div");
+  box.id="directoryWrapper"; box.className="directory-wrapper tv-wrapper";
+  box.style.display="flex"; box.style.flexDirection="column"; box.style.alignItems="center"; box.style.animation="fadeIn .25s ease";
   box.innerHTML = `
     <div class="tv-head">
-      <h3>Team View</h3>
+      <h3 style="margin-bottom:6px;">Team View</h3>
       <button class="tv-close" onclick="toggleTeamOverview()">✖️</button>
     </div>
     <div class="tv-pager">
-      <button class="tv-nav" id="tvPrev" ${__teamPage === 0 ? "disabled" : ""}>‹ Prev</button>
-      <span class="tv-index">Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}</span>
-      <button class="tv-nav" id="tvNext" ${(__teamPage + 1) >= Math.ceil(__teamList.length / TEAM_PAGE_SIZE) ? "disabled" : ""}>Next ›</button>
+      <button class="tv-nav" id="tvPrev" ${__teamPage===0?"disabled":""}>‹ Prev</button>
+      <span class="tv-index">Page ${__teamPage+1} / ${Math.max(1, Math.ceil(__teamList.length/TEAM_PAGE_SIZE))}</span>
+      <button class="tv-nav" id="tvNext" ${(__teamPage+1)>=Math.ceil(__teamList.length/TEAM_PAGE_SIZE)?"disabled":""}>Next ›</button>
     </div>
-    <table class="directory-table tv-table">
-      <thead><tr><th>Name</th><th>Hours</th><th>Live</th><th></th></tr></thead>
+    <table class="directory-table tv-table" style="margin-top:10px;min-width:460px;text-align:center;">
+      <tr><th>Name</th><th>Hours</th><th>Live (Working)</th><th></th></tr>
       <tbody id="tvBody"></tbody>
     </table>
   `;
   document.body.appendChild(box);
 
-  const start = __teamPage * TEAM_PAGE_SIZE;
-  const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
+  const start = __teamPage*TEAM_PAGE_SIZE, slice = __teamList.slice(start, start+TEAM_PAGE_SIZE);
   const body = $("#tvBody", box);
-
-  body.innerHTML = slice.map(emp => `
-    <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role || ''}" data-phone="${emp.phone || ''}">
-      <td><b>${emp.name}</b><br><small style="color:#666;">${emp.role || ''}</small></td>
+  body.innerHTML = slice.map(emp=>`
+    <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role||''}" data-phone="${emp.phone||''}">
+      <td><b>${emp.name}</b></td>
       <td class="tv-hours">—</td>
       <td class="tv-live">—</td>
       <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
-    </tr>
-  `).join("");
+    </tr>`).join("");
 
-  $("#tvPrev", box).onclick = () => { __teamPage = Math.max(0, __teamPage - 1); renderTeamViewPage(); };
-  $("#tvNext", box).onclick = () => { __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1); renderTeamViewPage(); };
+  $("#tvPrev",box).onclick = ()=>{ __teamPage=Math.max(0,__teamPage-1); renderTeamViewPage(); };
+  $("#tvNext",box).onclick = ()=>{ __teamPage=Math.min(Math.ceil(__teamList.length/TEAM_PAGE_SIZE)-1,__teamPage+1); renderTeamViewPage(); };
 
-  // cargar horas por empleado
-  slice.forEach(async emp => {
-    try {
-      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
+  slice.forEach(async emp=>{
+    try{
+      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, {cache:"no-store"});
       const d = await r.json();
       const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
-      if (tr) tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
-    } catch (e) { console.warn("⚠️ Error hours:", emp.email, e); }
+      if (tr) tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total||0)).toFixed(1) : "0";
+    }catch{}
   });
 
   updateTeamViewLiveStatus();
-  console.log("✅ Team View rendered successfully");
 }
+async function updateTeamViewLiveStatus(){
+  try{
+    const rows = $all(".tv-table tr[data-email]"); if (!rows.length) return;
+    for (const row of rows){
+      const email=row.dataset.email, liveCell=row.querySelector(".tv-live"), totalCell=row.querySelector(".tv-hours");
+      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, {cache:"no-store"});
+      const d = await r.json(); if (!d.ok || !d.days) continue;
 
-async function updateTeamViewLiveStatus() {
-  try {
-    const rows = $all(".tv-table tr[data-email]");
-    if (!rows.length) return;
+      const todayKey = new Date().toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase();
+      const today = d.days.find(x=> x.name.slice(0,3).toLowerCase()===todayKey);
+      if (!today?.shift) { liveCell.innerHTML="—"; continue; }
 
-    for (const row of rows) {
-      const email = row.dataset.email;
-      const liveCell = row.querySelector(".tv-live");
-      const totalCell = row.querySelector(".tv-hours");
-      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, { cache: "no-store" });
-      const d = await r.json();
-      if (!d.ok || !d.days) continue;
-      const todayKey = new Date().toLocaleString("en-US", { weekday: "short" }).slice(0, 3).toLowerCase();
-      const today = d.days.find(x => x.name.slice(0, 3).toLowerCase() === todayKey);
-      if (!today?.shift) { liveCell.innerHTML = "—"; continue; }
-      if (today.shift.trim().endsWith(".")) {
-        const startTime = parseTime(today.shift.replace(/\.$/, "").trim());
-        if (!startTime) continue;
-        const diff = Math.max(0, (Date.now() - startTime.getTime()) / 36e5);
+      if (today.shift.trim().endsWith(".")){
+        const startTime = parseTime(today.shift.replace(/\.$/,"").trim());
+        if(!startTime) continue;
+        const diff = Math.max(0,(Date.now()-startTime.getTime())/36e5);
         liveCell.innerHTML = `🟢 ${diff.toFixed(1)}h`;
-        const base = parseFloat(totalCell.textContent) || 0;
-        totalCell.innerHTML = `${(base + diff).toFixed(1)} <span style="color:#33a0ff;font-size:.85em;">(+${diff.toFixed(1)})</span>`;
-      } else {
-        liveCell.innerHTML = "—";
-        liveCell.style.color = "#aaa";
+        liveCell.style.color="#33ff66"; liveCell.style.fontWeight="600"; liveCell.style.textShadow="0 0 10px rgba(51,255,102,.6)";
+        const base = parseFloat(totalCell.textContent)||0;
+        totalCell.innerHTML = `${(base+diff).toFixed(1)} <span style="color:#33a0ff;font-size:.85em;">(+${diff.toFixed(1)})</span>`;
+      }else{
+        liveCell.innerHTML="—"; liveCell.style.color="#aaa"; liveCell.style.fontWeight="400"; liveCell.style.textShadow="none";
       }
     }
-  } catch (e) {
-    console.warn("Live update error:", e);
-  }
+  }catch(e){ console.warn("Live col error:", e); }
 }
 setInterval(updateTeamViewLiveStatus, 120000);
 
@@ -586,9 +501,7 @@ function toast(msg, type="info"){
   setTimeout(()=>{ t.style.opacity="0"; t.style.transform="translateY(-10px)"; setTimeout(()=>t.remove(),380); }, 2600);
 }
 
-// ============================================================
-// 🌐 MAKE FUNCTIONS GLOBAL — For Vercel / PWA Compatibility
-// ============================================================
+/* ============== GLOBAL BINDS ============== */
 window.loginUser = loginUser;
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
@@ -600,63 +513,5 @@ window.submitChangePassword = submitChangePassword;
 window.openEmployeePanel = openEmployeePanel;
 window.sendShiftMessage = sendShiftMessage;
 window.updateShiftFromModal = updateShiftFromModal;
-window.toggleTeamOverview = toggleTeamOverview;
-window.loadEmployeeDirectory = loadEmployeeDirectory;
-window.renderTeamViewPage = renderTeamViewPage;
-window.updateTeamViewLiveStatus = updateTeamViewLiveStatus;
 
-/* ============================================================
-   ⚙️ Settings Modal Controls (updated for v5.6.2)
-   ============================================================ */
-function openSettings(){
-  const modal = document.getElementById("settingsModal");
-  if(!modal){ console.warn("⚠️ settingsModal not found"); return; }
-  modal.classList.add("show");
-  modal.style.display = "flex";
-  document.body.classList.add("modal-open");
-}
-
-function closeSettings(){
-  const modal = document.getElementById("settingsModal");
-  if(!modal) return;
-  modal.classList.remove("show");
-  setTimeout(()=>{ modal.style.display = "none"; }, 200);
-  document.body.classList.remove("modal-open");
-}
-
-function refreshApp(){
-  try{
-    if("caches" in window){
-      caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-      showToast("🔄 Cache cleared! Reloading...", "info");
-    }
-  }catch(e){ console.warn(e); }
-  setTimeout(()=>location.reload(), 600);
-}
-
-// ============================================================
-// 🧪 DEBUG BUTTON CHECK — Shows alert when buttons respond
-// ============================================================
-window.addEventListener("load", ()=>{
-  const teamBtn = document.getElementById("teamBtn");
-  const settingsBtn = document.getElementById("settingsBtn");
-
-  if (teamBtn) teamBtn.onclick = () => { 
-    alert("✅ Team View clicked");
-    toggleTeamOverview(); 
-  };
-  if (settingsBtn) settingsBtn.onclick = () => { 
-    alert("✅ Settings clicked");
-    openSettings(); 
-  };
-});
-
-console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION || "v5.6.2"} | Base: ${CONFIG?.BASE_URL || "<no-config>"}`);
-
-function renderTeamViewPage(){
-  $("#directoryWrapper")?.remove();
-  const box=document.createElement("div");
-  box.id="directoryWrapper";
-  box.className="directory-wrapper show"; // ← añade show aquí
-  // ... (el resto de tu código igual)
-}
+console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.2"} | Base: ${CONFIG?.BASE_URL||"<no-config>"}`);
