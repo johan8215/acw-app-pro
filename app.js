@@ -502,14 +502,7 @@ async function updateShiftFromModal(targetEmail, modalEl){
   let ok=0;
   for (const c of changes){
     try{
-      // 🔧 Corrige desfase de 1 día (TeamView → Sheets)
-const dayMap = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-let realDay = c.day;
-const i = dayMap.indexOf(c.day);
-if (i > 0) realDay = dayMap[i - 1];
-else realDay = "Sat"; // si es Sunday, va al Saturday
-
-const u = `${CONFIG.BASE_URL}?action=updateShift&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}&day=${encodeURIComponent(realDay)}&shift=${encodeURIComponent(c.newShift)}`;
+      const u = `${CONFIG.BASE_URL}?action=updateShift&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}&day=${encodeURIComponent(c.day)}&shift=${encodeURIComponent(c.newShift)}`;
       const r = await fetch(u, {cache:"no-store"}); const j = await r.json();
       if (j?.ok) ok++;
     }catch{}
