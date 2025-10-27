@@ -594,3 +594,61 @@ window.sendShiftMessage = sendShiftMessage;
 window.updateShiftFromModal = updateShiftFromModal;
 
 console.log(`✅ ACW-App loaded → ${CONFIG.VERSION} | Base: ${CONFIG.BASE_URL}`);
+
+/* ============== MANAGER ACTIONS (safe full-week edition) ============== */
+async function updateShiftFromModal(targetEmail, modalEl){
+  const msg = $(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || $(".emp-status-msg", modalEl);
+  const actor = currentUser?.email;
+  if (!actor) { msg && (msg.textContent="⚠️ Session expired. Login again."); return; }
+
+  const rows = $all(".schedule-mini tr[data-day]", modalEl);
+  const changes = rows.map(r=>{
+    const day = r.dataset.day; 
+    const newShift = r.cells[1].innerText.trim();
+    const original = (r.getAttribute("data-original")||"").trim();
+    return (newShift !== original) ? { day, newShift } : null;
+  }).filter(Boolean);
+
+  if (!changes.length){ 
+    msg && (msg.textContent="ℹ️ No changes to save."); 
+    toast("ℹ️ No changes", "info"); 
+    return; 
+  }
+
+  msg && (msg.textContent="✏️ Updating schedule…");
+  let ok=0;
+
+  for (const c of changes){
+    try {
+      // 🧭 Detecta si el día modificado es hoy o mañana
+      const today = new Date();
+      const todayKey = today.toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase();
+      const tomorrowKey = new Date(today.getTime()+86400000)
+        .toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase();
+      const cKey = c.day.toLowerCase();
+
+      // Define acción según el día
+      const action = (cKey === todayKey) ? "updateShiftToday" :
+                     (cKey === tomorrowKey) ? "updateShiftTomorrow" : "updateShift";
+
+      const u = `${CONFIG.BASE_URL}?action=${action}&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}&day=${encodeURIComponent(c.day)}&shift=${encodeURIComponent(c.newShift)}`;
+      const r = await fetch(u, {cache:"no-store"}); 
+      const j = await r.json();
+      if (j?.ok) ok++;
+    } catch(e){ console.warn("update err", e); }
+  }
+
+  if (ok === changes.length){ 
+    msg.textContent="✅ All shifts updated!"; 
+    toast("✅ Shifts updated","success"); 
+    rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim())); 
+  }
+  else if (ok > 0){ 
+    msg.textContent=`⚠️ Partial update: ${ok}/${changes.length}`; 
+    toast("⚠️ Partial update","error"); 
+  }
+  else { 
+    msg.textContent="❌ Update failed."; 
+    toast("❌ Could not update","error"); 
+  }
+}
