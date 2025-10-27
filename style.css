@@ -1,344 +1,129 @@
 /* ============================================================
-   🎨 ACW-App v5.6.3 — Blue Glass White Stable UI (Fixed)
-   Johan A. Giraldo (JAG15) | Allston Car Wash © 2025
+   🧩 ACW-App v5.6.4 — Blue Glass White Responsive & Centered
+   Johan A. Giraldo | Allston Car Wash © 2025
    ============================================================ */
 
-/* ---------- Base ---------- */
-body {
-  font-family: 'Segoe UI', Roboto, sans-serif;
-  background: #ffffff;
-  color: #222;
+/* ---------- General text size adjustments ---------- */
+body, table, input, button {
+  font-size: 17px !important;
+  line-height: 1.5;
+}
+
+/* ---------- Login layout (email + password vertical) ---------- */
+input[type="email"],
+input[type="password"] {
+  display: block;
+  margin: 14px auto;
+  width: 85%;
+  max-width: 340px;
+  padding: 12px 15px;
+  font-size: 16px;
+  border: 1px solid rgba(0,120,255,0.25);
+  border-radius: 8px;
+  outline: none;
+  transition: 0.25s ease;
   text-align: center;
-  margin: 0;
-  padding: 0;
+  background: rgba(255,255,255,0.9);
+}
+input[type="email"]:focus,
+input[type="password"]:focus {
+  border-color: #0078ff;
+  box-shadow: 0 0 8px rgba(0,120,255,0.25);
 }
 
-/* ---------- Container ---------- */
-.container {
-  background: rgba(255,255,255,0.95);
-  border-radius: 14px;
-  padding: 40px 50px;
-  margin: 70px auto;
-  max-width: 420px;
-  box-shadow: 0 0 35px rgba(0,120,255,0.35);
-  transition: all 0.4s ease;
-}
-
-/* ---------- Buttons ---------- */
-button {
-  background: #e60000;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 22px;
-  cursor: pointer;
-  font-size: 15px;
-  transition: all 0.25s ease;
-}
-button:hover { background: #ff3333; }
-
-/* ---------- Gear Button ---------- */
-.gear-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #e60000;
+/* ---------- Sign In button ---------- */
+button[type="submit"],
+button.signin-btn {
+  display: block;
+  margin: 20px auto 10px auto;
+  width: 180px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #e60000, #ff3333);
   color: #fff;
   border: none;
-  border-radius: 50%;
-  width: 46px;
-  height: 46px;
-  font-size: 22px;
-  cursor: pointer;
-  box-shadow: 0 0 25px rgba(0, 120, 255, 0.4);
-  transition: 0.3s;
-  z-index: 9999;
-}
-.gear-btn:hover { background: #ff3333; transform: rotate(25deg); }
-
-/* ---------- Team View Button ---------- */
-.team-btn {
-  position: fixed;
-  top: 25px;
-  right: 40px;
-  background: #ffffff;
-  color: #e60000;
-  border: 2px solid rgba(0, 120, 255, 0.4);
-  border-radius: 10px;
-  padding: 8px 16px;
+  border-radius: 8px;
   font-weight: 600;
-  box-shadow: 0 4px 20px rgba(0,120,255,0.4);
+  font-size: 16px;
   cursor: pointer;
-  z-index: 9999;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255,0,0,0.25);
 }
-.team-btn:hover {
-  background: #f9f9f9;
-  box-shadow: 0 0 25px rgba(0,136,255,0.6);
+button[type="submit"]:hover,
+button.signin-btn:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, #ff3333, #ff5555);
 }
 
-/* ============================================================
-   👥 TEAM VIEW — Stable Centered Layout
-   ============================================================ */
-.directory-wrapper {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: auto;
+/* ---------- Schedule container & table ---------- */
+.container {
   max-width: 520px;
-  background: rgba(255,255,255,0.96);
-  border-radius: 16px;
-  padding: 22px 28px;
-  box-shadow: 0 0 35px rgba(0,120,255,0.35);
-  backdrop-filter: blur(10px);
-  color: #111;
-  text-align: center;
-  z-index: 9999;
-  animation: fadeIn 0.25s ease;
-}
-
-.directory-wrapper h3 {
-  margin-top: 0;
-  font-size: 22px;
-  color: #c00;
-  font-weight: 700;
-  text-shadow: 0 0 10px rgba(0,136,255,0.4);
-}
-
-/* ---------- Table ---------- */
-.directory-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 14px;
-  font-size: 17px;
-  text-align: center;
-}
-.directory-table th {
-  color: #0078ff;
-  border-bottom: 2px solid rgba(0,120,255,0.2);
-  padding: 10px 6px;
-  background: rgba(0,120,255,0.05);
-}
-.directory-table td {
-  padding: 10px 6px;
-  border-bottom: 1px solid rgba(0,0,0,0.08);
-}
-.directory-table tr:hover {
-  background: rgba(0,120,255,0.08);
-  transition: background 0.2s ease;
-}
-
-/* ---------- Live Indicator ---------- */
-.tv-live {
-  color: #33ff66;
-  text-shadow: 0 0 8px rgba(51,255,102,0.5);
-  font-weight: 600;
-}
-
-/* ---------- Close Button ---------- */
-.directory-close {
-  position: absolute;
-  top: 10px;
-  right: 16px;
-  font-size: 22px;
-  font-weight: bold;
-  color: #007bff;
-  cursor: pointer;
-  text-shadow: 0 0 10px rgba(0,120,255,0.3);
-  transition: transform 0.2s ease;
-}
-.directory-close:hover {
-  transform: scale(1.2);
-  color: #e60000;
-}
-
-/* ---------- Fade Out ---------- */
-.fade-out {
-  animation: fadeOut 0.25s forwards;
-}
-@keyframes fadeOut {
-  from {opacity:1;}
-  to {opacity:0;}
-}
-
-/* ============================================================
-   👤 EMPLOYEE MODAL — Match to Team View
-   ============================================================ */
-.employee-modal {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(10px);
-  z-index: 9999;
-}
-.employee-modal .emp-box {
-  background: rgba(255,255,255,0.97);
-  border-radius: 16px;
-  box-shadow: 0 0 35px rgba(0,120,255,0.35);
-  width: 85%;
-  max-width: 520px;
-  padding: 40px 50px 54px;
-  color: #111;
-  text-align: center;
-  margin: 0 auto;
-}
-
-/* ---------- Header ---------- */
-.emp-header::before {
-  content: "🚘 Allston Car Wash — ";
-  display: block;
-  font-size: 18px;
-  font-weight: 700;
-  color: #0078ff;
-  text-shadow: 0 0 10px rgba(0,120,255,0.35);
-  margin-bottom: 4px;
-}
-.emp-header h3 {
-  font-size: 22px;
-  font-weight: 700;
-  color: #000;
-  margin: 0;
-}
-
-/* ---------- Phone ---------- */
-.emp-phone a {
-  color: #0078ff;
-  font-weight: 600;
-  text-decoration: none;
-  font-size: 16px;
-}
-.emp-role {
-  color: #777;
-  margin-bottom: 12px;
-  font-size: 15px;
-}
-
-/* ---------- Table ---------- */
-.employee-modal .schedule-mini {
-  width: 95%;
-  border-collapse: separate;
-  border-spacing: 20px 10px;
-  text-align: center;
-  font-size: 18px;
-  margin: 0 auto;
-}
-.employee-modal .schedule-mini th {
-  background: rgba(0,120,255,0.05);
-  color: #0078ff;
-  border-bottom: 2px solid rgba(0,120,255,0.2);
-  border-radius: 6px;
-  padding: 6px;
-}
-.employee-modal .schedule-mini td {
-  padding: 6px;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-}
-
-/* ---------- Totals ---------- */
-.employee-modal .total {
-  color: #e60000;
-  font-weight: 700;
-  margin-top: 14px;
+  padding: 45px 60px;
   font-size: 18px;
 }
-.employee-modal .live-hours {
-  color: #0078ff;
-  font-weight: 600;
-  margin-top: 6px;
-  font-size: 16px;
-}
-
-/* ---------- Animations ---------- */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ============================================================
-   🧩 Responsive Fix — Center Layout & Footer Alignment
-   ============================================================ */
-
-/* Centra todos los contenedores principales */
-.container, #welcome, #schedule, footer.hud {
-  margin-left: auto !important;
-  margin-right: auto !important;
-  text-align: center !important;
-}
-
-/* Centra el contenido superior */
-#welcomeName, #welcomeRole, .user-phone {
-  display: block;
-  text-align: center;
-  width: 100%;
-  margin: 0 auto;
-}
-
-/* Ajusta la tabla del horario */
 #schedule table {
+  width: 95%;
   margin: 0 auto;
-  width: 90%;
-  max-width: 420px;
   border-collapse: separate;
-  border-spacing: 18px 8px;
+  border-spacing: 18px 10px;
   text-align: center;
 }
-
-/* Centra el texto Total Hours */
 #schedule .total {
+  font-size: 19px;
   text-align: center;
-  width: 100%;
+  margin-top: 14px;
 }
 
 /* ============================================================
-   ✨ Glass Footer — Centered & Glowing Blue Accent
+   ✨ Footer — Fixed Glass Blue (Always Bottom)
    ============================================================ */
 footer.hud {
-  position: relative;
-  bottom: 8px;
+  position: fixed;
+  bottom: 0;
   left: 0;
   right: 0;
+  margin: 0;
   width: 100%;
-  margin: 0 auto;
-  padding: 12px 0;
   text-align: center !important;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   color: #0044aa;
   letter-spacing: 0.3px;
-  background: rgba(240, 247, 255, 0.8);
+  background: rgba(240, 247, 255, 0.9);
   border-top: 1px solid rgba(0, 120, 255, 0.15);
-  box-shadow: 0 -4px 12px rgba(0, 120, 255, 0.25);
+  box-shadow: 0 -4px 14px rgba(0, 120, 255, 0.25);
   backdrop-filter: blur(8px);
   text-shadow: 0 0 8px rgba(0, 120, 255, 0.3);
   border-radius: 10px 10px 0 0;
+  padding: 10px 0 12px 0;
+  z-index: 999;
+}
+
+/* ---------- Animación de entrada ---------- */
+@keyframes fadeInFooter {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+footer.hud {
   animation: fadeInFooter 0.8s ease;
 }
 
-@keyframes fadeInFooter {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
 /* ============================================================
-   📱 Responsive Breakpoints
+   📱 Responsive Scaling
    ============================================================ */
-@media (min-width: 1024px) {
-  .container {
-    max-width: 480px;
-    margin-top: 90px;
-    padding: 50px 60px;
-  }
-}
-
 @media (max-width: 768px) {
-  .container {
-    max-width: 92%;
-    padding: 28px 20px;
+  body, table, input, button {
+    font-size: 15px !important;
   }
-  #schedule table { font-size: 15px; }
-  footer.hud { font-size: 12px; padding: 10px 0; }
+  .container {
+    max-width: 90%;
+    padding: 30px 22px;
+  }
+  #schedule table {
+    width: 100%;
+    border-spacing: 14px 6px;
+  }
+  footer.hud {
+    font-size: 12px;
+    padding: 8px 0 10px 0;
+  }
 }
