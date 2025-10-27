@@ -490,15 +490,14 @@ function enableModalLiveShift(modal, days){
   }catch(e){ console.warn("modal live err:", e); }
 }
 
-/* ============== MANAGER ACTIONS (corrigido por día) ============== */
+/* ============== MANAGER ACTIONS (solo frontend - no backend touch) ============== */
 async function updateShiftFromModal(targetEmail, modalEl){
   const msg = $(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || $(".emp-status-msg", modalEl);
   const actor = currentUser?.email;
   if (!actor) { msg && (msg.textContent="⚠️ Session expired. Login again."); return; }
 
-  // 🧭 Detecta si se abrió el modal desde "hoy" o "mañana"
-  const mode = window.currentShiftMode || "today";
-  const actionName = (mode === "tomorrow") ? "updateShiftTomorrow" : "updateShift";
+  // 🧭 Detecta si el modo actual es "mañana"
+  const isTomorrow = (window.currentShiftMode === "tomorrow");
 
   const rows = $all(".schedule-mini tr[data-day]", modalEl);
   const changes = rows.map(r=>{
@@ -514,12 +513,20 @@ async function updateShiftFromModal(targetEmail, modalEl){
     return; 
   }
 
-  msg && (msg.textContent=`✏️ Saving to Sheets (${mode})...`);
+  msg && (msg.textContent=`✏️ Saving to Sheets (${isTomorrow ? "tomorrow" : "today"})...`);
   let ok=0;
 
   for (const c of changes){
     try{
-      const u = `${CONFIG.BASE_URL}?action=${actionName}&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}&day=${encodeURIComponent(c.day)}&shift=${encodeURIComponent(c.newShift)}`;
+      // Si es modo mañana, movemos el día a la siguiente columna (sin tocar backend)
+      let adjustedDay = c.day;
+      if (isTomorrow) {
+        const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+        const idx = days.indexOf(c.day);
+        adjustedDay = days[(idx + 1) % days.length]; // avanza un día con wrap
+      }
+
+      const u = `${CONFIG.BASE_URL}?action=updateShift&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}&day=${encodeURIComponent(adjustedDay)}&shift=${encodeURIComponent(c.newShift)}`;
       const r = await fetch(u, {cache:"no-store"}); 
       const j = await r.json();
       if (j?.ok) ok++;
@@ -527,8 +534,8 @@ async function updateShiftFromModal(targetEmail, modalEl){
   }
 
   if (ok===changes.length){ 
-    msg.textContent=`✅ Updated on Sheets (${mode})!`; 
-    toast(`✅ Shifts updated for ${mode}`,"success"); 
+    msg.textContent=`✅ Updated on Sheets (${isTomorrow ? "tomorrow" : "today"})!`; 
+    toast(`✅ Shifts updated for ${isTomorrow ? "tomorrow" : "today"}`,"success"); 
     rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim())); 
   }
   else if (ok>0){ 
