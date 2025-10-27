@@ -300,28 +300,32 @@ tr.today td {
    Johan A. Giraldo (JAG15) & Sky — Nov 2025
    ============================================================ */
 
-/* 🧠 Team View centrado + animación sin salto */
+/* 🧠 Team View — Smooth Centered Fade (v5.6.3 refined) */
 #directoryWrapper {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -48%) scale(0.96);
-  visibility: hidden;
+  transform: translate(-50%, -50%) scale(0.96);
   opacity: 0;
+  visibility: hidden;
   width: 90%;
   max-width: 600px;
   background: rgba(255, 255, 255, 0.97);
   border-radius: 16px;
   box-shadow: 0 0 35px rgba(0,128,255,0.3);
   backdrop-filter: blur(10px);
-  transition: all 0.35s ease;
   z-index: 9999;
   text-align: center;
   padding: 22px 26px;
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
 }
+
+/* Cuando aparece */
 #directoryWrapper.show {
-  visibility: visible;
   opacity: 1;
+  visibility: visible;
   transform: translate(-50%, -50%) scale(1);
 }
 
