@@ -393,13 +393,20 @@ setInterval(updateTeamViewLiveStatus, 120000);
 async function openEmployeePanel(btnEl){
   const tr = btnEl.closest("tr");
   const email = tr.dataset.email, name = tr.dataset.name, role = tr.dataset.role||"", phone = tr.dataset.phone||"";
-  const modalId=`emp-${email.replace(/[@.]/g,"_")}`; if ($("#"+modalId)) return;
+
+  // 🧭 Detecta modo (hoy / mañana)
+  const mode = tr.dataset.mode || "today";
+  window.currentShiftMode = mode;
+
+  const modalId=`emp-${email.replace(/[@.]/g,"_")}`; 
+  if ($("#"+modalId)) return;
 
   let data=null;
   try{
     const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, {cache:"no-store"});
     data = await r.json(); if (!data.ok) throw new Error();
   }catch{ alert("No schedule found for this employee."); return; }
+  ...
 
   const m = document.createElement("div");
   m.className="employee-modal emp-panel"; m.id=modalId;
