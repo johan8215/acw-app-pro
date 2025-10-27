@@ -9,6 +9,16 @@
    - Change password
    - Restauración de sesión + toasts
    ============================================================ */
+// ===========================================================
+// 🔧 ACW-App Config Loader (Safe Fallback)
+// ===========================================================
+if (!window.CONFIG) {
+  window.CONFIG = {
+    BASE_URL: "https://script.google.com/macros/s/AKfycbx-6DqfjydMMGp-K2z8FeBSH9t8Z1Ooa0Ene0u917RK7Eo6vu80aOTLmCf7lJtm-Ckh/exec",
+    VERSION: "v5.6.2 — Blue Glass White Connected Edition"
+  };
+  console.warn("⚠️ CONFIG restored manually — check BASE_URL");
+}
 
 let currentUser = null;
 
