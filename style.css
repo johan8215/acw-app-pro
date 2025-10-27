@@ -343,3 +343,20 @@ tr.today td {
   background: rgba(0,120,255,0.08);
   transition: background 0.25s ease;
 }
+/* 🔧 Tamaño unificado para tablas flotantes */
+.directory-wrapper,
+.employee-modal .emp-box {
+  width: 88%;
+  max-width: 640px;
+  padding: 24px 28px;
+  border-radius: 14px;
+  box-shadow: 0 0 35px rgba(0,128,255,0.3);
+}
+.employee-modal .schedule-mini {
+  font-size: 15px;
+  border-spacing: 14px 8px;
+}
+.employee-modal .schedule-mini th, 
+.employee-modal .schedule-mini td {
+  padding: 6px 4px;
+}
