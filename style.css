@@ -127,3 +127,172 @@ footer.hud {
     padding: 8px 0 10px 0;
   }
 }
+
+/* ============================================================
+   👥 Team View — Centered Glass Layout (Instant Render Fix)
+   ============================================================ */
+#directoryWrapper {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 85%;
+  max-width: 800px;
+  max-height: 75vh;
+  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 16px;
+  box-shadow: 0 0 45px rgba(0, 120, 255, 0.35);
+  backdrop-filter: blur(12px);
+  color: #111;
+  text-align: center;
+  padding: 24px 30px;
+  z-index: 9999;
+  opacity: 0;
+  animation: fadeInTV 0.25s ease forwards;
+}
+
+/* Evita que aparezca descentrado al cargar */
+#directoryWrapper:not(.show) {
+  visibility: hidden;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.98);
+}
+
+/* Suaviza la entrada */
+@keyframes fadeInTV {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Tabla del Team View */
+.directory-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14px;
+  font-size: 17px;
+  text-align: center;
+}
+.directory-table th {
+  color: #0078ff;
+  border-bottom: 2px solid rgba(0,120,255,0.2);
+  padding: 10px 6px;
+  background: rgba(0,120,255,0.05);
+}
+.directory-table td {
+  padding: 10px 6px;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.directory-table tr:hover {
+  background: rgba(0,120,255,0.08);
+  transition: background 0.2s ease;
+}
+
+/* Indicador de Live */
+.tv-live {
+  color: #33ff66;
+  text-shadow: 0 0 8px rgba(51,255,102,0.5);
+}
+
+/* Cierre visual */
+.fade-out {
+  animation: fadeOut 0.25s forwards;
+}
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; transform: translate(-50%, -52%) scale(0.95); }
+}
+
+/* ============================================================
+   👥 TEAM VIEW — Blue Glass Overlay Centered Fix (v5.6.5)
+   ============================================================ */
+
+/* Fondo translúcido para bloquear contenido detrás */
+#teamOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(6px);
+  display: none;
+  z-index: 9998;
+  animation: fadeInBG 0.25s ease forwards;
+}
+
+/* Contenedor principal centrado */
+#directoryWrapper {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(1);
+  width: 90%;
+  max-width: 760px;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: rgba(255,255,255,0.97);
+  border-radius: 18px;
+  padding: 36px 42px;
+  box-shadow: 0 0 45px rgba(0,120,255,0.35);
+  color: #111;
+  text-align: center;
+  z-index: 9999;
+  opacity: 0;
+  animation: fadeInTV 0.3s ease forwards;
+}
+
+/* Entrada y salida suaves */
+@keyframes fadeInBG {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fadeInTV {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes fadeOutTV {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -52%) scale(0.96); }
+}
+
+/* Cierre */
+#directoryWrapper.fade-out {
+  animation: fadeOutTV 0.25s ease forwards;
+}
+
+/* Tabla de Team View */
+.directory-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  font-size: 17px;
+  text-align: center;
+}
+.directory-table th {
+  color: #0078ff;
+  border-bottom: 2px solid rgba(0,120,255,0.2);
+  padding: 10px 6px;
+  background: rgba(0,120,255,0.05);
+}
+.directory-table td {
+  padding: 10px 6px;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.directory-table tr:hover {
+  background: rgba(0,120,255,0.08);
+  transition: background 0.2s ease;
+}
+
+/* Indicador de Live */
+.tv-live {
+  color: #33ff66;
+  text-shadow: 0 0 8px rgba(51,255,102,0.5);
+}
+
+/* Fondo oscuro se muestra al abrir */
+body.showing-teamview::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(6px);
+  z-index: 9998;
+}
