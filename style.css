@@ -295,3 +295,123 @@ tr.today td {
   background: linear-gradient(135deg, #1a8cff, #4db8ff);
   box-shadow: 0 6px 16px rgba(0, 136, 255, 0.45);
 }
+/* ============================================================
+   🎨 ACW-App UI Fix Pack v5.6.2
+   Johan A. Giraldo (JAG15) & Sky — Nov 2025
+   ============================================================ */
+
+/* 🧠 Team View centrado + animación sin salto */
+#directoryWrapper {
+  visibility: hidden;
+  opacity: 0;
+  transform: translate(-50%, -48%) scale(0.98);
+  transition: all 0.25s ease;
+}
+#directoryWrapper.show {
+  visibility: visible;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* 🧩 Tamaño uniforme entre tablas flotantes */
+.directory-wrapper,
+.employee-modal .emp-box {
+  width: 90%;
+  max-width: 680px;
+  border-radius: 16px;
+  padding: 24px 28px;
+  font-size: 15.5px;
+  box-shadow: 0 0 40px rgba(0,128,255,0.3);
+  backdrop-filter: blur(10px);
+}
+
+/* 🧾 Tabla dentro de Team View */
+.directory-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 15px;
+  text-align: center;
+}
+.directory-table th {
+  color: #0078ff;
+  padding: 8px 4px;
+  border-bottom: 2px solid rgba(0,120,255,0.15);
+}
+.directory-table td {
+  padding: 8px 4px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.directory-table tr:hover {
+  background: rgba(0,120,255,0.08);
+  transition: background 0.2s ease;
+}
+
+/* 🧱 Botón flotante Team View ajustado */
+.team-btn {
+  position: fixed;
+  top: 20px;
+  right: 22px;
+  background: #fff;
+  color: var(--red);
+  border: 2px solid rgba(0,120,255,0.35);
+  border-radius: 10px;
+  padding: 7px 14px;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 4px 18px rgba(0,120,255,0.4);
+  cursor: pointer;
+  z-index: 9999;
+  transition: all 0.3s ease;
+}
+.team-btn:hover {
+  background: #f9f9f9;
+  box-shadow: 0 0 25px rgba(0,136,255,0.55);
+}
+
+/* ⚙️ Settings modal — centrado, con glass azul */
+.modal .modal-content {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 18px;
+  padding: 30px;
+  width: 340px;
+  margin: 10% auto;
+  box-shadow: 0 0 40px rgba(0,120,255,0.35);
+  backdrop-filter: blur(12px);
+  animation: popIn 0.25s ease;
+}
+.modal .settings-section button {
+  background: linear-gradient(135deg, #007bff, #33a0ff);
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  transition: 0.25s ease;
+}
+.modal .settings-section button:hover {
+  transform: scale(1.05);
+  background: linear-gradient(135deg, #1a8cff, #4db8ff);
+}
+
+/* 📱 Responsive para iPhone/iPad */
+@media (max-width: 768px) {
+  .container,
+  .directory-wrapper,
+  .employee-modal .emp-box,
+  .modal .modal-content {
+    width: 95%;
+    padding: 20px;
+    font-size: 14px;
+  }
+  table, .directory-table {
+    font-size: 14px;
+  }
+  .team-btn {
+    top: 14px; right: 14px;
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
