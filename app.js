@@ -586,7 +586,7 @@ const _oldRenderTV = window.renderTeamViewPage;
 window.renderTeamViewPage = function(...args) {
   _oldRenderTV.apply(this, args);
   const box = document.querySelector("#directoryWrapper");
-  if (box) setTimeout(() => box.classList.add("show"), 50);
+  if (box) setTimeout(() => box.classList.add("show"), 120);
 };
 
 // 🧩 Reasigna visibilidad del modal de settings
