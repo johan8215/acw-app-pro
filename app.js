@@ -490,33 +490,55 @@ function enableModalLiveShift(modal, days){
   }catch(e){ console.warn("modal live err:", e); }
 }
 
-/* ============== MANAGER ACTIONS (simple fallback) ============== */
+/* ============== MANAGER ACTIONS (corrigido por día) ============== */
 async function updateShiftFromModal(targetEmail, modalEl){
   const msg = $(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || $(".emp-status-msg", modalEl);
   const actor = currentUser?.email;
   if (!actor) { msg && (msg.textContent="⚠️ Session expired. Login again."); return; }
 
+  // 🧭 Detecta si se abrió el modal desde "hoy" o "mañana"
+  const mode = window.currentShiftMode || "today";
+  const actionName = (mode === "tomorrow") ? "updateShiftTomorrow" : "updateShift";
+
   const rows = $all(".schedule-mini tr[data-day]", modalEl);
   const changes = rows.map(r=>{
-    const day = r.dataset.day; const newShift = r.cells[1].innerText.trim();
+    const day = r.dataset.day;
+    const newShift = r.cells[1].innerText.trim();
     const original = (r.getAttribute("data-original")||"").trim();
     return (newShift !== original) ? { day, newShift } : null;
   }).filter(Boolean);
 
-  if (!changes.length){ msg && (msg.textContent="No changes to save."); toast("ℹ️ No changes", "info"); return; }
+  if (!changes.length){ 
+    msg && (msg.textContent="No changes to save."); 
+    toast("ℹ️ No changes", "info"); 
+    return; 
+  }
 
-  msg && (msg.textContent="✏️ Saving to Sheets...");
+  msg && (msg.textContent=`✏️ Saving to Sheets (${mode})...`);
   let ok=0;
+
   for (const c of changes){
     try{
-      const u = `${CONFIG.BASE_URL}?action=updateShift&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}&day=${encodeURIComponent(c.day)}&shift=${encodeURIComponent(c.newShift)}`;
-      const r = await fetch(u, {cache:"no-store"}); const j = await r.json();
+      const u = `${CONFIG.BASE_URL}?action=${actionName}&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}&day=${encodeURIComponent(c.day)}&shift=${encodeURIComponent(c.newShift)}`;
+      const r = await fetch(u, {cache:"no-store"}); 
+      const j = await r.json();
       if (j?.ok) ok++;
-    }catch{}
+    }catch(e){ console.warn("Update error:", e); }
   }
-  if (ok===changes.length){ msg.textContent="✅ Updated on Sheets!"; toast("✅ Shifts updated","success"); rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim())); }
-  else if (ok>0){ msg.textContent=`⚠️ Partial save: ${ok}/${changes.length}`; toast("⚠️ Some shifts failed","error"); }
-  else { msg.textContent="❌ Could not update."; toast("❌ Update failed","error"); }
+
+  if (ok===changes.length){ 
+    msg.textContent=`✅ Updated on Sheets (${mode})!`; 
+    toast(`✅ Shifts updated for ${mode}`,"success"); 
+    rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim())); 
+  }
+  else if (ok>0){ 
+    msg.textContent=`⚠️ Partial save: ${ok}/${changes.length}`; 
+    toast("⚠️ Some shifts failed","error"); 
+  }
+  else { 
+    msg.textContent="❌ Could not update."; 
+    toast("❌ Update failed","error"); 
+  }
 }
 
 async function sendShiftMessage(targetEmail, action){
