@@ -544,6 +544,23 @@ function toast(msg, type="info"){
   setTimeout(()=>{ t.style.opacity="0"; t.style.transform="translateY(-10px)"; setTimeout(()=>t.remove(),380); }, 2600);
 }
 
+function openChangePassword() {
+  const modal = $("#changePasswordModal");
+  closeSettings(); // 🔹 cierra el Settings primero
+  if (modal) {
+    modal.classList.add("show");
+    modal.style.display = "flex";
+  }
+}
+
+function closeChangePassword() {
+  const modal = $("#changePasswordModal");
+  if (modal) {
+    modal.classList.remove("show");
+    setTimeout(() => (modal.style.display = "none"), 200);
+  }
+}
+
 /* ============== GLOBAL BINDS ============== */
 window.loginUser = loginUser;
 window.openSettings = openSettings;
