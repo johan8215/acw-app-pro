@@ -250,13 +250,15 @@ async function submitChangePassword() {
   }
 }
 
-/* ============== TEAM VIEW (gestión) — v5.6.2 Fixed ============== */
+/* ============================================================
+   👥 TEAM VIEW (gestión) — v5.6.3 Stable Connected Edition
+   ============================================================ */
 const TEAM_PAGE_SIZE = 8;
 let __teamList = [];
 let __teamPage = 0;
 
 function addTeamButton() {
-  if (document.getElementById("teamBtn")) return;
+  if ($("#teamBtn")) return;
   const btn = document.createElement("button");
   btn.id = "teamBtn";
   btn.className = "team-btn";
@@ -266,60 +268,69 @@ function addTeamButton() {
 }
 
 function toggleTeamOverview() {
-  const w = document.getElementById("directoryWrapper");
-  if (w) {
-    w.classList.add("fade-out");
-    setTimeout(() => w.remove(), 220);
+  const existing = $("#directoryWrapper");
+  if (existing) {
+    existing.classList.add("fade-out");
+    setTimeout(() => existing.remove(), 250);
     return;
   }
   loadEmployeeDirectory();
 }
 
 async function loadEmployeeDirectory() {
-  // Overlay de carga
+  // 🔵 Visual loading overlay
   const overlay = document.createElement("div");
   overlay.id = "loadingTeam";
-  overlay.style.cssText = `
-    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-    background:rgba(255,255,255,.97);padding:30px 45px;border-radius:14px;
-    box-shadow:0 0 25px rgba(0,120,255,.25);color:#0078ff;font-weight:600;
-    z-index:9999;text-align:center;font-size:1.05em;
-  `;
   overlay.textContent = "Loading Team View...";
+  Object.assign(overlay.style, {
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    background: "rgba(255,255,255,0.95)",
+    padding: "30px 40px",
+    borderRadius: "12px",
+    boxShadow: "0 0 25px rgba(0,120,255,0.25)",
+    fontWeight: "600",
+    color: "#0078ff",
+    zIndex: "9999",
+    textAlign: "center"
+  });
   document.body.appendChild(overlay);
 
   try {
-    const res = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`, { cache: "no-store" });
+    const url = `${CONFIG.BASE_URL}?action=getEmployeesDirectory`;
+    console.log("📡 Fetching:", url);
+    const res = await fetch(url, { cache: "no-store" });
     const j = await res.json();
-    if (!j?.ok || !Array.isArray(j.directory)) {
+
+    if (!j.ok || !Array.isArray(j.directory)) {
       toast("⚠️ Directory not found", "error");
+      console.warn("Invalid response:", j);
       __teamList = [];
     } else {
       __teamList = j.directory;
+      console.log(`✅ Loaded ${__teamList.length} employees`);
     }
+
     __teamPage = 0;
     renderTeamViewPage();
     toast("✅ Team View Ready", "success");
   } catch (e) {
-    console.error("loadEmployeeDirectory error:", e);
-    toast("❌ Network error", "error");
-    __teamList = [];
-    __teamPage = 0;
-    renderTeamViewPage();
+    console.error("❌ loadEmployeeDirectory error:", e);
+    toast("❌ Network or script error", "error");
   } finally {
-    setTimeout(() => overlay.remove(), 350);
+    setTimeout(() => overlay.remove(), 400);
   }
 }
 
 function renderTeamViewPage() {
-  // elimina vista previa si existe
-  document.getElementById("directoryWrapper")?.remove();
+  $("#directoryWrapper")?.remove();
 
-  // contenedor centrado (sin “slides” laterales)
+  // 🟢 Main container
   const box = document.createElement("div");
   box.id = "directoryWrapper";
   box.className = "directory-wrapper show";
-  box.style.opacity = "0"; // fade-in suave
 
   box.innerHTML = `
     <div class="tv-head">
@@ -329,7 +340,9 @@ function renderTeamViewPage() {
 
     <div class="tv-pager">
       <button class="tv-nav" id="tvPrev" ${__teamPage === 0 ? "disabled" : ""}>‹ Prev</button>
-      <span class="tv-index">Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}</span>
+      <span class="tv-index">
+        Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}
+      </span>
       <button class="tv-nav" id="tvNext" ${(__teamPage + 1) >= Math.ceil(__teamList.length / TEAM_PAGE_SIZE) ? "disabled" : ""}>Next ›</button>
     </div>
 
@@ -337,49 +350,58 @@ function renderTeamViewPage() {
       <thead>
         <tr><th>Name</th><th>Hours</th><th>Live (Working)</th><th></th></tr>
       </thead>
-      <tbody id="tvBody"></tbody>
+      <tbody id="tvBody">
+        <tr><td colspan="4" style="color:#888;">⏳ Loading...</td></tr>
+      </tbody>
     </table>
   `;
-  document.body.appendChild(box);
-  requestAnimationFrame(() => (box.style.opacity = "1"));
 
-  // filas visibles
+  document.body.appendChild(box);
+
+  // ⚙️ Populate employees
   const start = __teamPage * TEAM_PAGE_SIZE;
   const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
   const body = box.querySelector("#tvBody");
 
   if (!slice.length) {
     body.innerHTML = `<tr><td colspan="4" style="padding:20px;color:#999;">No employees found</td></tr>`;
-  } else {
-    body.innerHTML = slice.map(emp => `
-      <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role || ''}" data-phone="${emp.phone || ''}">
+    return;
+  }
+
+  body.innerHTML = slice
+    .map(
+      (emp) => `
+      <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role || ""}" data-phone="${emp.phone || ""}">
         <td><b>${emp.name}</b><br><small style="color:#666;">${emp.role || ""}</small></td>
         <td class="tv-hours">—</td>
         <td class="tv-live">—</td>
         <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
       </tr>
-    `).join("");
-  }
+    `
+    )
+    .join("");
 
-  // navegación
-  box.querySelector("#tvPrev").onclick = () => {
+  // Pagination
+  $("#tvPrev", box).onclick = () => {
     __teamPage = Math.max(0, __teamPage - 1);
     renderTeamViewPage();
   };
-  box.querySelector("#tvNext").onclick = () => {
+  $("#tvNext", box).onclick = () => {
     __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1);
     renderTeamViewPage();
   };
 
-  // cargar horas de cada empleado
-  slice.forEach(async emp => {
+  // Load hours + live status
+  slice.forEach(async (emp) => {
     try {
       const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
       const d = await r.json();
       const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
       if (!tr) return;
-      tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
-    } catch {}
+      tr.querySelector(".tv-hours").textContent = d.ok ? Number(d.total || 0).toFixed(1) : "0";
+    } catch (e) {
+      console.warn("Error fetching schedule for:", emp.email);
+    }
   });
 
   updateTeamViewLiveStatus();
@@ -387,7 +409,7 @@ function renderTeamViewPage() {
 
 async function updateTeamViewLiveStatus() {
   try {
-    const rows = document.querySelectorAll(".tv-table tr[data-email]");
+    const rows = $all(".tv-table tr[data-email]");
     if (!rows.length) return;
 
     for (const row of rows) {
@@ -397,11 +419,14 @@ async function updateTeamViewLiveStatus() {
 
       const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, { cache: "no-store" });
       const d = await r.json();
-      if (!d?.ok || !Array.isArray(d.days)) continue;
+      if (!d.ok || !d.days) continue;
 
       const todayKey = new Date().toLocaleString("en-US", { weekday: "short" }).slice(0, 3).toLowerCase();
-      const today = d.days.find(x => x.name.slice(0, 3).toLowerCase() === todayKey);
-      if (!today?.shift) { liveCell.innerHTML = "—"; continue; }
+      const today = d.days.find((x) => x.name.slice(0, 3).toLowerCase() === todayKey);
+      if (!today?.shift) {
+        liveCell.innerHTML = "—";
+        continue;
+      }
 
       if (today.shift.trim().endsWith(".")) {
         const startTime = parseTime(today.shift.replace(/\.$/, "").trim());
@@ -410,21 +435,17 @@ async function updateTeamViewLiveStatus() {
         liveCell.innerHTML = `🟢 ${diff.toFixed(1)}h`;
         liveCell.style.color = "#33ff66";
         liveCell.style.fontWeight = "600";
-        liveCell.style.textShadow = "0 0 10px rgba(51,255,102,.6)";
-
         const base = parseFloat(totalCell.textContent) || 0;
         totalCell.innerHTML = `${(base + diff).toFixed(1)} <span style="color:#33a0ff;font-size:.85em;">(+${diff.toFixed(1)})</span>`;
       } else {
         liveCell.innerHTML = "—";
         liveCell.style.color = "#aaa";
-        liveCell.style.fontWeight = "400";
-        liveCell.style.textShadow = "none";
       }
     }
-  } catch (e) { console.warn("Live column error:", e); }
+  } catch (e) {
+    console.warn("Live update error:", e);
+  }
 }
-
-// refresco live cada 2 min
 setInterval(updateTeamViewLiveStatus, 120000);
 
 // —— binds globales (asegura que estas 3 funciones sean las últimas definiciones) ——
@@ -432,6 +453,7 @@ window.toggleTeamOverview = toggleTeamOverview;
 window.loadEmployeeDirectory = loadEmployeeDirectory;
 window.renderTeamViewPage = renderTeamViewPage;
 window.updateTeamViewLiveStatus = updateTeamViewLiveStatus;
+
 /* ============== EMPLOYEE MODAL (gestión) ============== */
 async function openEmployeePanel(btnEl){
   const tr = btnEl.closest("tr");
