@@ -431,12 +431,6 @@ async function updateTeamViewLiveStatus() {
 }
 setInterval(updateTeamViewLiveStatus, 120000);
 
-// —— binds globales (asegura que estas 3 funciones sean las últimas definiciones) ——
-window.toggleTeamOverview = toggleTeamOverview;
-window.loadEmployeeDirectory = loadEmployeeDirectory;
-window.renderTeamViewPage = renderTeamViewPage;
-window.updateTeamViewLiveStatus = updateTeamViewLiveStatus;
-
 /* ============== EMPLOYEE MODAL (gestión) ============== */
 async function openEmployeePanel(btnEl){
   const tr = btnEl.closest("tr");
