@@ -22,6 +22,14 @@ function setVisible(el, show){ if(!el) return; el.style.display = show ? "" : "n
 
 /* ============== LOGIN ============== */
 async function loginUser() {
+   // ⚡ TEMP LOGIN BYPASS (solo para pruebas Team View)
+if (true) {  // ← cambia a false cuando termines de probar
+  console.warn("⚡ Bypass login active — direct access to dashboard");
+  currentUser = { name: "Johan (Manager)", email: "test@acw.com", role: "manager" };
+  showWelcome(currentUser.name, currentUser.role);
+  loadSchedule(currentUser.email);
+  return;
+}
   const email = $("#email")?.value.trim();
   const password = $("#password")?.value.trim();
   const diag = $("#diag");
