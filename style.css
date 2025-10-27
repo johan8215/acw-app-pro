@@ -269,7 +269,7 @@ button:hover { background: #ff3333; }
   text-align: center !important;
 }
 
-/* Asegura que los títulos, roles y teléfonos estén centrados */
+/* Centra el contenido superior */
 #welcomeName, #welcomeRole, .user-phone {
   display: block;
   text-align: center;
@@ -277,7 +277,7 @@ button:hover { background: #ff3333; }
   margin: 0 auto;
 }
 
-/* Ajusta la tabla de horario para pantallas medianas y móviles */
+/* Ajusta la tabla del horario */
 #schedule table {
   margin: 0 auto;
   width: 90%;
@@ -287,28 +287,44 @@ button:hover { background: #ff3333; }
   text-align: center;
 }
 
-/* Centra el texto “Total Hours” */
+/* Centra el texto Total Hours */
 #schedule .total {
   text-align: center;
   width: 100%;
 }
 
-/* Footer fijo y centrado en todas las resoluciones */
+/* ============================================================
+   ✨ Glass Footer — Centered & Glowing Blue Accent
+   ============================================================ */
 footer.hud {
-  text-align: center !important;
-  width: 100%;
   position: relative;
-  bottom: 10px;
+  bottom: 8px;
   left: 0;
   right: 0;
+  width: 100%;
   margin: 0 auto;
+  padding: 12px 0;
+  text-align: center !important;
   font-weight: 600;
   font-size: 13px;
-  color: #666;
+  color: #0044aa;
+  letter-spacing: 0.3px;
+  background: rgba(240, 247, 255, 0.8);
+  border-top: 1px solid rgba(0, 120, 255, 0.15);
+  box-shadow: 0 -4px 12px rgba(0, 120, 255, 0.25);
+  backdrop-filter: blur(8px);
+  text-shadow: 0 0 8px rgba(0, 120, 255, 0.3);
+  border-radius: 10px 10px 0 0;
+  animation: fadeInFooter 0.8s ease;
+}
+
+@keyframes fadeInFooter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ============================================================
-   📱 Responsive Breakpoints — Ajuste en pantallas grandes
+   📱 Responsive Breakpoints
    ============================================================ */
 @media (min-width: 1024px) {
   .container {
@@ -320,13 +336,9 @@ footer.hud {
 
 @media (max-width: 768px) {
   .container {
-    max-width: 90%;
-    padding: 30px 20px;
+    max-width: 92%;
+    padding: 28px 20px;
   }
-  #schedule table {
-    font-size: 15px;
-  }
-  footer.hud {
-    font-size: 12px;
-  }
+  #schedule table { font-size: 15px; }
+  footer.hud { font-size: 12px; padding: 10px 0; }
 }
