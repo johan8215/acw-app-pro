@@ -391,3 +391,26 @@ function closeChangePassword() {
     setTimeout(() => (modal.style.display = "none"), 200);
   }
 }
+     /* 🔑 Change Password Modal */
+#changePasswordModal {
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.25s ease;
+}
+
+#changePasswordModal .modal-content.glass {
+  background: rgba(255,255,255,0.97);
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(0,128,255,0.3);
+  padding: 28px 30px;
+  width: 340px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  animation: popIn 0.25s ease;
+}
+
+#changePasswordModal.show {
+  display: flex !important;
+}
