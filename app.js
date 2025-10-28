@@ -512,17 +512,38 @@ async function updateShiftFromModal(targetEmail, modalEl){
   else { msg.textContent="❌ Could not update."; toast("❌ Update failed","error"); }
 }
 
-async function sendShiftMessage(targetEmail, action){
-  const msg = $(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`);
-  msg && (msg.textContent="💬 Sending...");
-  const actor = currentUser?.email; if (!actor){ msg && (msg.textContent="⚠️ Session expired"); return; }
+/* ============== SEND SHIFT MESSAGE ============== */
+async function sendShiftMessage(targetEmail, action) {
+  try {
+    const actor = currentUser?.email || "";
+    if (!actor || !targetEmail) {
+      alert("Missing actor or target");
+      return;
+    }
 
-  try{
+    const msgBox = document.getElementById(`empStatusMsg-${targetEmail.replace(/[@.]/g, "_")}`);
+    if (msgBox) {
+      msgBox.textContent = "⏳ Sending...";
+      msgBox.style.color = "#999";
+    }
+
     const url = `${CONFIG.BASE_URL}?action=${action}&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}`;
-    const r = await fetch(url, {cache:"no-store"}); const j = await r.json();
-    if (j?.ok){ msg.textContent = action==="sendtoday" ? "✅ Sent Today" : "✅ Sent Tomorrow"; toast("✅ Shift message sent","success"); }
-    else { msg.textContent = `⚠️ ${j?.error||"Failed to send"}`; toast("❌ Send failed","error"); }
-  }catch(e){ msg && (msg.textContent="⚠️ Connection error"); toast("❌ Connection error","error"); }
+    const r = await fetch(url, { cache: "no-store" });
+    const data = await r.json();
+
+    if (!msgBox) return;
+
+    if (data.ok) {
+      msgBox.textContent = data.message || "✅ WhatsApp sent!";
+      msgBox.style.color = "#00b341";
+    } else {
+      msgBox.textContent = `⚠️ ${data.error || "Error sending message"}`;
+      msgBox.style.color = "#d00";
+    }
+  } catch (err) {
+    console.error("sendShiftMessage error:", err);
+    alert("⚠️ Error sending shift message. Please try again.");
+  }
 }
 
 /* ============== TOASTS ============== */
