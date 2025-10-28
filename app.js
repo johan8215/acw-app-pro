@@ -393,55 +393,81 @@ setInterval(updateTeamViewLiveStatus, 120000);
 async function openEmployeePanel(btnEl){
   const tr = btnEl.closest("tr");
   const email = tr.dataset.email, name = tr.dataset.name, role = tr.dataset.role||"", phone = tr.dataset.phone||"";
-  const modalId=`emp-${email.replace(/[@.]/g,"_")}`; if ($("#"+modalId)) return;
+  const modalId = `emp-${email.replace(/[@.]/g,"_")}`;
+  if (document.getElementById(modalId)) return;
 
-  let data=null;
+  let data = null;
   try{
     const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, {cache:"no-store"});
-    data = await r.json(); if (!data.ok) throw new Error();
-  }catch{ alert("No schedule found for this employee."); return; }
+    data = await r.json();
+    if (!data.ok) throw new Error();
+  }catch{
+    alert("No schedule found for this employee.");
+    return;
+  }
 
   const m = document.createElement("div");
-  m.className="employee-modal emp-panel"; m.id=modalId;
+  m.className = "employee-modal emp-panel";
+  m.id = modalId;
+
   m.innerHTML = `
     <div class="emp-box">
       <button class="emp-close">×</button>
       <div class="emp-header">
         <h3>${name}</h3>
-        ${phone?`<p class="emp-phone"><a href="tel:${phone}">${phone}</a></p>`:""}
+        ${phone ? `<p class="emp-phone"><a href="tel:${phone}">${phone}</a></p>` : ""}
         <p class="emp-role">${role}</p>
       </div>
+
       <table class="schedule-mini">
         <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-        ${data.days.map(d=>`
+        ${(data.days||[]).map(d => `
           <tr data-day="${d.name.slice(0,3)}" data-original="${(d.shift||"-").replace(/"/g,'&quot;')}">
             <td>${d.name}</td>
             <td ${isManagerRole(currentUser?.role) ? 'contenteditable="true"' : ''}>${d.shift||"-"}</td>
             <td>${d.hours||0}</td>
           </tr>`).join("")}
       </table>
+
       <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g,"_")}">${data.total||0}</b></p>
       <p class="live-hours"></p>
+
       ${isManagerRole(currentUser?.role) ? `
-  <div class="emp-actions" style="margin-top:10px;">
-    <button class="btn-update">✏️ Update Shift</button>
-    <button class="btn-today">📤 Send Today</button>
-    <button class="btn-tomorrow">📤 Send Tomorrow</button>
-    <button class="btn-history">📚 History (5w)</button>
-    <p id="empStatusMsg-${email.replace(/[@.]/g,"_")}" class="emp-status-msg" style="margin-top:6px;font-size:.9em;"></p>
-  </div>` : ``}
+        <div class="emp-actions" style="margin-top:10px;">
+          <button class="btn-update">✏️ Update Shift</button>
+          <button class="btn-today">📤 Send Today</button>
+          <button class="btn-tomorrow">📤 Send Tomorrow</button>
+          <button class="btn-history">📚 History (5w)</button>
+          <p id="empStatusMsg-${email.replace(/[@.]/g,"_")}" class="emp-status-msg" style="margin-top:6px;font-size:.9em;"></p>
+        </div>
+      ` : ``}
+
+      <button class="emp-refresh" style="margin-top:8px;">⚙️ Check for Updates</button>
+    </div>
+  `; // ← ← ← Cierra el template string aquí (importante)
+
   document.body.appendChild(m);
 
-  $(".emp-close",m).onclick = ()=> m.remove();
-  $(".emp-refresh",m).onclick = ()=> { try{ if("caches" in window) caches.keys().then(k=>k.forEach(n=>caches.delete(n))); }catch{}; m.classList.add("flash"); setTimeout(()=>location.reload(), 900); };
-
-  if (isManagerRole(currentUser?.role)) {
-    $(".btn-update",m).onclick   = ()=> updateShiftFromModal(email, m);
-    $(".btn-today",m).onclick    = ()=> sendShiftMessage(email, "sendtoday");
-    $(".btn-tomorrow",m).onclick = ()=> sendShiftMessage(email, "sendtomorrow");
+  // binds
+  m.querySelector(".emp-close").onclick = () => m.remove();
+  const refBtn = m.querySelector(".emp-refresh");
+  if (refBtn) {
+    refBtn.onclick = () => {
+      try { if ("caches" in window) caches.keys().then(k => k.forEach(n => caches.delete(n))); } catch {}
+      m.classList.add("flash");
+      setTimeout(() => location.reload(), 900);
+    };
   }
 
-  enableModalLiveShift(m, data.days);
+  if (isManagerRole(currentUser?.role)) {
+    m.querySelector(".btn-update").onclick   = () => updateShiftFromModal(email, m);
+    m.querySelector(".btn-today").onclick    = () => sendShiftMessage(email, "sendtoday");
+    m.querySelector(".btn-tomorrow").onclick = () => sendShiftMessage(email, "sendtomorrow");
+    const hb = m.querySelector(".btn-history");
+    if (hb) hb.onclick = () => openHistoryFor(email, name);  // botón History
+  }
+
+  enableModalLiveShift(m, data.days||[]);
 }
 
 function enableModalLiveShift(modal, days){
