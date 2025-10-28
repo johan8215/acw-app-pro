@@ -1,369 +1,408 @@
-/* =========================================================
-   ACW-App — Blue Glass White Theme (v5.6.x)
-   Johan (JAG15) & Sky — Nov 2025
-   ========================================================= */
+/* ============================================================
+   🎨 ACW-App — Blue Glass White Edition (v5.6.2)
+   ============================================================ */
 
-/* ---------- Tokens ---------- */
 :root{
-  --bg-deep-1: radial-gradient(1000px 800px at 30% 20%, #0c2b55 0%, #081a33 40%, #071425 70%, #050e1b 100%) fixed,
-               linear-gradient(135deg, #0e2a59 0%, #092041 100%) fixed;
-  --glass: rgba(255,255,255,0.08);
-  --glass-strong: rgba(255,255,255,0.12);
-  --glass-bg: rgba(255,255,255,0.06);
-  --txt: #eaf3ff;
-  --txt-dim: #bcd0f4;
-  --txt-muted: #9bb3db;
-  --accent: #0078ff;
-  --accent-2:#33a0ff;
-  --ok:#00c851;
-  --warn:#ffbb33;
-  --err:#ff4444;
-  --ink:#1a2744;
-  --shadow: 0 20px 45px rgba(0,0,0,.45);
-  --shadow-soft: 0 12px 28px rgba(0,0,0,.35);
-  --radius: 14px;
-  --radius-lg: 18px;
-  --bd: 1px solid rgba(255,255,255,.14);
+  --red:#e60000;
+  --red-2:#ff3333;
+  --blue:#0078ff;
+  --blue-2:#33a0ff;
+  --shadow:0 0 35px rgba(0,120,255,0.35);
 }
 
-/* ---------- Base ---------- */
 *{ box-sizing:border-box; }
-html,body{ height:100%; }
-body{
-  margin:0;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
-  color: var(--txt);
-  background: var(--bg-deep-1);
-  background-blend-mode: overlay, normal;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+html,body{ margin:0; padding:0; }
+body {
+  font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+  background: #ffffff;
+  color: #222;
+  text-align: center;
 }
 
-a{ color: var(--accent); text-decoration: none; }
-a:hover{ text-decoration: underline; }
-
-/* ---------- Containers / Cards ---------- */
-.container, #welcome .card, #login .card{
-  max-width: 760px;
-  margin: 48px auto;
-  padding: 24px 28px;
-  background: var(--glass-bg);
-  border: var(--bd);
-  border-radius: var(--radius);
+/* ---------- Glass Container ---------- */
+.container {
+  background: rgba(255,255,255,0.95);
+  border-radius: 14px;
+  padding: 40px 50px;
+  margin: 70px auto;
+  max-width: 420px;
   box-shadow: var(--shadow);
-  backdrop-filter: blur(10px);
+  transition: all 0.4s ease;
 }
+h1{ margin:0 0 18px; letter-spacing:1px; }
 
-/* ---------- Login ---------- */
-#login{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  min-height: 100vh;
-}
-#login .card{
-  width:min(92%, 520px);
-  text-align:center;
-}
-#login h1{
-  margin:0 0 12px 0;
-  font-weight:800;
-  letter-spacing:.4px;
-  text-shadow:0 0 18px rgba(0,120,255,.35);
-}
-#login p#diag{
-  margin:10px 0 18px 0;
-  color: var(--txt-muted);
-  min-height: 20px;
-}
-.input{
-  width:100%;
-  padding:12px 14px;
-  margin:8px 0;
-  border-radius: 12px;
-  border:1px solid rgba(255,255,255,.18);
-  background: rgba(255,255,255,.08);
-  color:var(--txt);
-  outline:none;
-}
-.input::placeholder{ color:#9db3da; }
-
-.btn{
-  display:inline-flex; align-items:center; justify-content:center;
-  gap:8px;
-  padding:10px 16px;
-  border-radius: 12px;
-  border:1px solid rgba(255,255,255,.2);
-  background: linear-gradient(135deg, #007bff, #33a0ff);
-  color:#fff; font-weight:700; cursor:pointer;
-  box-shadow: 0 10px 20px rgba(0,120,255,.35);
-  transition: transform .12s ease, box-shadow .25s ease, opacity .2s ease;
-}
-.btn:disabled{ opacity:.6; cursor:not-allowed; }
-.btn:hover{ transform: translateY(-1px); box-shadow: 0 14px 28px rgba(0,120,255,.45); }
-.btn.secondary{
-  background: rgba(255,255,255,.1);
-  border-color: rgba(255,255,255,.22);
-  color:#dfeafe;
-}
-
-/* ---------- Welcome header ---------- */
-#welcome{
-  display:none;
-  width:min(980px, 92%);
-  margin: 40px auto;
-}
-#welcome .hero{
-  position:relative;
-  padding: 22px 24px;
-  background: rgba(255,255,255,.07);
-  border: var(--bd);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-soft);
-}
-#welcomeName{
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing:.3px;
-  margin:0;
-  text-shadow:0 0 14px rgba(0,120,255,.35);
-}
-#welcomeRole{
-  color: var(--txt-muted);
-  margin: 6px 0 0 0;
-}
-.user-phone a{ font-weight:700; }
-
-/* ---------- Schedule table ---------- */
-#schedule{
-  margin-top: 20px;
-  background: rgba(255,255,255,.05);
-  border: var(--bd);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-soft);
-  overflow:hidden;
-}
-#schedule table{
-  width:100%;
-  border-collapse: collapse;
+/* ---------- Inputs ---------- */
+input[type="email"],
+input[type="password"] {
+  display: block;
+  margin: 10px auto;
+  width: 80%;
+  max-width: 280px;
+  padding: 10px 14px;
   font-size: 15px;
+  border: 1px solid rgba(0,120,255,0.25);
+  border-radius: 6px;
+  outline: none;
+  transition: 0.25s ease;
 }
-#schedule th, #schedule td{
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(255,255,255,.08);
+input[type="email"]:focus,
+input[type="password"]:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 8px rgba(0,120,255,0.25);
 }
-#schedule th{
-  background: rgba(255,255,255,.06);
-  color:#d9e7ff;
-  text-align:left;
-  font-weight:800;
-}
-#schedule tr:hover td{
-  background: rgba(255,255,255,.04);
-}
-#schedule tr.today td{
-  background: rgba(0,120,255,.12);
-  border-bottom-color: rgba(0,120,255,.25);
-}
-#schedule .total{
-  margin: 12px;
-  font-weight:600;
-  color:#d9e7ff;
-}
-.live-hours{ margin: 0 12px 12px 12px; }
 
-/* ---------- Floating buttons ---------- */
-.team-btn{
+/* ---------- Buttons ---------- */
+button {
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 22px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.25s ease;
+}
+button:hover { background: var(--red-2); }
+button:disabled { opacity:.6; cursor:default; }
+
+/* ---------- Gear Button ---------- */
+.gear-btn {
+  position: fixed; bottom: 20px; right: 20px;
+  background: var(--red);
+  color: #fff;
+  border: none; border-radius: 50%;
+  width: 46px; height: 46px;
+  font-size: 22px; cursor: pointer;
+  box-shadow: 0 0 25px rgba(0, 120, 255, 0.4);
+  transition: 0.3s;
+  z-index:999;
+}
+.gear-btn:hover { background: var(--red-2); transform: rotate(25deg); }
+
+/* ---------- Clock & Totals ---------- */
+.clock { color: #0070ff; font-size: 0.9em; margin-top: 6px; }
+.total { color: var(--red); font-weight: bold; margin-top: 10px; }
+
+/* ---------- Error Text ---------- */
+.error { color: #c00; font-size: 13px; margin-top: 10px; min-height:18px; }
+
+/* ---------- Footer ---------- */
+footer.hud { color:#666; font-size:13px; margin: 14px 0 30px; }
+
+/* ---------- Tables ---------- */
+table {
+  margin: 0 auto;
+  width: 95%;
+  border-collapse: separate;
+  border-spacing: 20px 10px;
+  text-align: center;
+  font-size: 18px;
+}
+th {
+  padding-bottom: 6px;
+  color: #000;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid rgba(0,120,255,0.15);
+}
+td { padding: 8px 12px; }
+
+/* today row */
+tr.today td {
+  background: rgba(0,120,255,0.06);
+  border-radius: 8px;
+}
+
+/* ---------- Settings Modal ---------- */
+.modal {
+  display: none;
   position: fixed;
-  right: 24px;
-  top: 24px;
-  z-index: 9999;
-  padding:10px 16px;
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,.22);
-  background: linear-gradient(135deg,#00c6ff,#0072ff);
-  color:#fff; font-weight:800; box-shadow:0 10px 24px rgba(0,120,255,.45);
-  cursor:pointer;
+  top: 0; left: 0; right:0; bottom:0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 2000;
+  animation: fadeIn .25s ease;
 }
-.team-btn:hover{ transform: translateY(-1px); }
+.modal .modal-content {
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 16px;
+  padding: 28px 30px;
+  width: 340px;
+  margin: 12% auto;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(0,128,255,0.3);
+  animation: popIn .25s ease;
+}
+.modal .close {
+  color: #555; float: right; font-size: 24px; font-weight: bold; cursor: pointer; margin-top: -10px;
+}
+.modal .close:hover { color: #000; }
 
-/* ---------- Directory / Team View ---------- */
-.directory-wrapper.tv-wrapper{
-  /* el JS inyecta posición, solo afinamos look */
-  border: var(--bd);
-  color: var(--ink);
+.settings-section {
+  display: flex; flex-direction: column; gap: 12px; margin-top: 20px; text-align: center;
 }
-.tv-head h3{
-  color: var(--accent);
-  font-weight:800;
+.settings-section button {
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  width: 100%;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  transition: all 0.3s ease;
 }
-.tv-nav{
-  background: rgba(0,120,255,.08);
-  border:1px solid rgba(0,120,255,.35);
-  color: var(--accent);
-  padding: 6px 10px;
+.settings-section button:hover {
+  background: var(--red-2);
+  transform: scale(1.05);
+}
+
+/* ---------- User phone ---------- */
+.user-phone {
+  color: #0078ff;
+  font-weight: 600;
+  font-size: 17px;
+  margin: 10px 0 16px 0;
+  text-shadow: 0 0 8px rgba(0,120,255,0.25);
+  opacity: 0; animation: fadeIn .4s ease forwards;
+}
+
+/* ---------- Live hours label ---------- */
+.live-hours {
+  margin-top: 10px;
+  color: #007bff;
+  font-size: 18px;
+  font-weight: 600;
+  text-shadow: 0 0 12px rgba(0,120,255,0.35);
+  animation: glowBlue 3s ease-in-out infinite alternate;
+}
+@keyframes glowBlue {
+  from { text-shadow: 0 0 5px rgba(0,120,255,0.25); }
+  to   { text-shadow: 0 0 18px rgba(0,120,255,0.5); }
+}
+
+/* ---------- Team View ---------- */
+.team-btn {
+  position: fixed;
+  top: 25px;
+  right: 40px;
+  background: #ffffff;
+  color: var(--red);
+  border: 2px solid rgba(0, 120, 255, 0.4);
   border-radius: 10px;
-  cursor:pointer;
+  padding: 8px 16px;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(0,120,255,0.4);
+  cursor: pointer; z-index: 9999;
+  transition: all 0.3s ease;
 }
-.tv-nav:disabled{ opacity:.5; cursor:not-allowed; }
-.directory-table, .tv-table{
-  width:100%;
-  border-collapse: collapse;
-  margin-top: 6px;
+.team-btn:hover {
+  background: #f9f9f9;
+  box-shadow: 0 0 25px rgba(0,136,255,0.6);
 }
-.tv-table th, .tv-table td{
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(0,0,0,.06);
+
+.directory-wrapper {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 16px;
+  padding: 22px 28px;
+  width: 85%; max-width: 800px; max-height: 75vh; overflow-y: auto;
+  box-shadow: 0 0 45px rgba(0, 128, 255, 0.35);
+  backdrop-filter: blur(10px);
+  color: #111; text-align: center; z-index: 9999;
+  animation: fadeIn 0.25s ease;
 }
-.open-btn{
-  padding:6px 10px;
-  border-radius:10px;
-  border:1px solid rgba(0,120,255,.35);
-  background:#fff;
-  color:#0a53b5;
-  font-weight:700; cursor:pointer;
+.directory-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 17px; text-align: center; }
+.directory-table th {
+  color: #0078ff; border-bottom: 2px solid rgba(0,120,255,0.2);
+  padding: 10px 6px; background: rgba(0,120,255,0.05);
 }
-#directoryWrapper.show{ box-shadow: 0 30px 60px rgba(0,120,255,.35); }
+.directory-table td { padding: 10px 6px; border-bottom: 1px solid rgba(0,0,0,0.08); }
+.directory-table tr:hover { background: rgba(0,120,255,0.08); transition: background 0.2s ease; }
+
+.tv-live { color: #33ff66; text-shadow: 0 0 8px rgba(51,255,102,0.5); }
+.fade-out { animation: fadeOut 0.25s forwards; }
+@keyframes fadeOut { from {opacity:1;} to {opacity:0;} }
 
 /* ---------- Employee Modal ---------- */
-.employee-modal{
+.employee-modal {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,.45);
-  display:flex; align-items:center; justify-content:center;
-  z-index: 10000;
-  animation: fadeIn .18s ease;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(10px);
+  z-index: 9999;
 }
-.emp-panel .emp-box{
-  width:min(92%, 760px);
-  background: #fff;
-  color: #0f223f;
-  border-radius: var(--radius-lg);
-  box-shadow: 0 30px 70px rgba(0,0,0,.35);
-  padding: 18px 18px 20px;
-  position: relative;
+.employee-modal .emp-box {
+  background: rgba(255,255,255,0.97);
+  border-radius: 16px;
+  box-shadow: 0 0 45px rgba(0,120,255,0.35);
+  width: 85%; max-width: 800px;
+  padding: 40px 50px 54px;
+  color: #111; text-align: center;
 }
-.emp-close{
-  position:absolute; right: 12px; top: 10px;
-  border:0; background:transparent; font-size: 22px; cursor:pointer;
+.emp-header::before {
+  content: "🚘 Allston Car Wash — ";
+  display: block; font-size: 18px; font-weight: 700; color: #0078ff;
+  text-shadow: 0 0 10px rgba(0,120,255,0.35); margin-bottom: 4px;
 }
-.emp-header h3{ margin:4px 0 4px 0; font-size:22px; font-weight:800; color:#0d3a85; }
-.emp-phone a{ color:#0d6efd; font-weight:700; }
-.emp-role{ margin:2px 0 10px 0; color:#6a7da7; }
+.emp-phone a { color:#0078ff; font-weight:600; text-decoration:none; font-size:16px; }
+.emp-role { color:#777; margin-bottom:12px; font-size:15px; }
 
-.schedule-mini{
-  width:100%;
+.employee-modal .schedule-mini {
+  width: 95%; border-collapse: separate; border-spacing: 20px 10px; text-align: center; font-size: 18px; margin: 0 auto;
+}
+.employee-modal .schedule-mini th {
+  background: rgba(0,120,255,0.05);
+  color: #0078ff; border-bottom: 2px solid rgba(0,120,255,0.2);
+  border-radius: 6px; padding: 6px;
+}
+.employee-modal .schedule-mini td { padding: 6px; border-bottom: 1px solid rgba(0,0,0,0.05); }
+
+.employee-modal .total { color: var(--red); font-weight: 700; margin-top: 14px; font-size: 18px; }
+.employee-modal .live-hours { color: #0078ff; font-weight: 600; margin-top: 6px; font-size: 16px; }
+
+.emp-actions {
+  display:flex; justify-content:center; gap:10px; margin-top:12px; flex-wrap:wrap;
+}
+.emp-actions button { color:#fff; border:none; border-radius:8px; font-weight:600; padding:8px 14px; cursor:pointer; transition:.25s; box-shadow:0 4px 12px rgba(0,0,0,0.15); }
+.emp-actions .btn-update { background: linear-gradient(135deg, #007bff, #0096ff); }
+.emp-actions .btn-update:hover { background: linear-gradient(135deg, #0096ff, #33a0ff); transform: translateY(-2px); }
+.emp-actions .btn-today { background: linear-gradient(135deg, #e60000, #ff3333); }
+.emp-actions .btn-today:hover { background: linear-gradient(135deg, #ff3333, #ff6666); transform: translateY(-2px); }
+.emp-actions .btn-tomorrow { background: linear-gradient(135deg, #ff8800, #ffaa33); }
+.emp-actions .btn-tomorrow:hover { background: linear-gradient(135deg, #ffaa33, #ffbb55); transform: translateY(-2px); }
+
+.emp-status-msg { width:100%; text-align:center; font-weight:600; font-size:.9em; margin-top:6px; }
+
+/* ---------- Animations ---------- */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: translateY(0);} }
+@keyframes popIn { from { opacity: 0; transform: scale(0.96);} to { opacity: 1; transform: scale(1);} }
+
+/* ---------- Download button ---------- */
+.download-btn {
+  display: inline-block; width: 90%; margin-top: 8px; padding: 10px 18px;
+  border: none; border-radius: 8px;
+  background: linear-gradient(135deg, var(--blue), var(--blue-2));
+  color: #fff; font-weight: 600; font-size: 1em;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.35);
+  cursor: pointer; transition: all 0.25s ease;
+}
+.download-btn:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #1a8cff, #4db8ff);
+  box-shadow: 0 6px 16px rgba(0, 136, 255, 0.45);
+}
+/* ============================================================
+   🎨 ACW-App UI Fix Pack v5.6.2 — Unified Floating Panels
+   Johan A. Giraldo (JAG15) & Sky — Nov 2025
+   ============================================================ */
+
+/* 🧠 Team View centrado + animación sin salto */
+#directoryWrapper {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -48%) scale(0.96);
+  visibility: hidden;
+  opacity: 0;
+  width: 90%;
+  max-width: 600px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 16px;
+  box-shadow: 0 0 35px rgba(0,128,255,0.3);
+  backdrop-filter: blur(10px);
+  transition: all 0.35s ease;
+  z-index: 9999;
+  text-align: center;
+  padding: 22px 26px;
+}
+#directoryWrapper.show {
+  visibility: visible;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.directory-table {
+  width: 100%;
+  font-size: 15px;
   border-collapse: collapse;
-  background: #f9fbff;
-  border:1px solid #e9f0ff;
-  border-radius: 10px;
-  overflow:hidden;
+  margin-top: 10px;
 }
-.schedule-mini th, .schedule-mini td{
-  padding: 9px 10px;
-  border-bottom: 1px solid #e9f0ff;
-  font-size: 14px;
+.directory-table th,
+.directory-table td {
+  padding: 8px 5px;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
 }
-.schedule-mini th{
-  background:#f2f7ff; color:#0b2f6f; text-align:left; font-weight:800;
+.directory-table th {
+  color: #0078ff;
+  background: rgba(0,120,255,0.05);
+  border-bottom: 2px solid rgba(0,120,255,0.15);
 }
-.schedule-mini tr:last-child td{ border-bottom: 0; }
-.schedule-mini td[contenteditable="true"]{
-  background:#fff; outline: none; border-radius:6px;
-  box-shadow: inset 0 0 0 1px #e9f0ff;
+.directory-table tr:hover {
+  background: rgba(0,120,255,0.08);
+  transition: background 0.25s ease;
 }
-.emp-actions{ display:flex; flex-wrap:wrap; gap:8px; }
-.emp-actions .btn-update,
-.emp-actions .btn-today,
-.emp-actions .btn-tomorrow,
-.emp-actions .btn-history{
-  padding:8px 12px; border-radius:10px; border:1px solid #dbe7ff;
-  background:#fff; color:#0a53b5; font-weight:700; cursor:pointer;
-}
-.emp-actions .btn-history{ background:#f5fbff; border-color:#b6e7ff; color:#0078ff; }
-.emp-refresh{
-  border:1px solid #dbe7ff; background:#fff; color:#0a53b5;
-  padding:6px 10px; border-radius:10px; cursor:pointer;
-}
-.emp-status-msg{ color:#0b2f6f; }
 
-/* ---------- History (5 weeks) Modal ---------- */
+/* 🔧 Tamaño unificado para tablas flotantes */
+.directory-wrapper,
+.employee-modal .emp-box {
+  width: 90%;
+  max-width: 600px;
+  padding: 24px 28px;
+  border-radius: 14px;
+  box-shadow: 0 0 35px rgba(0,128,255,0.3);
+}
+
+/* Ajustes de tabla interna del Employee Modal */
+.employee-modal .schedule-mini {
+  font-size: 15px;
+  border-spacing: 14px 8px;
+}
+.employee-modal .schedule-mini th,
+.employee-modal .schedule-mini td {
+  padding: 6px 4px;
+}
+
+/* 🔑 Change Password Modal */
+#changePasswordModal {
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.25s ease;
+}
+#changePasswordModal.show {
+  display: flex !important;
+}
+#changePasswordModal .modal-content.glass {
+  background: rgba(255,255,255,0.97);
+  border-radius: 14px;
+  box-shadow: 0 0 40px rgba(0,120,255,0.3);
+  backdrop-filter: blur(10px);
+  padding: 28px 30px;
+  width: 340px;
+  text-align: center;
+  animation: popIn 0.25s ease;
+}
+/* ---------- History Modal ---------- */
 .history-modal{
-  position: fixed; inset: 0; z-index: 10001;
-  display:flex; align-items:center; justify-content:center;
-  background: rgba(0,0,0,.45);
-  animation: fadeIn .18s ease;
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.45); backdrop-filter:blur(10px); z-index:9999;
+  animation: fadeIn .25s ease;
 }
 .hm-content{
-  width:min(92%, 820px);
-  background:#ffffff;
-  color:#0f223f;
-  border-radius: 16px;
-  box-shadow: 0 28px 70px rgba(0,0,0,.35);
-  padding: 18px 20px 20px;
-  position:relative;
+  width:92%; max-width:800px; background:rgba(255,255,255,.97); border-radius:16px;
+  box-shadow:0 0 40px rgba(0,120,255,.3); padding:22px 26px; text-align:left;
 }
-.hm-close{
-  position:absolute; right:12px; top:10px;
-  background:none; border:0; font-size:22px; cursor:pointer;
-}
-.hm-body{ max-height: 68vh; overflow:auto; padding-right:6px; }
-.hm-row{
-  background:#f9fbff;
-  border:1px solid #e6eefc;
-  border-radius: 12px;
-  padding: 10px 12px;
-  margin: 10px 0;
-}
-.hm-table{ width:100%; border-collapse: collapse; }
-.hm-table th, .hm-table td{
-  padding:6px 8px; border-bottom:1px solid #e6eefc; font-size:14px;
-}
-.hm-table th{ background:#f2f7ff; text-align:left; color:#0d3a85; font-weight:800; }
-.hm-table tr:last-child td{ border-bottom:0; }
-
-/* ---------- Settings & Change Password Modals ---------- */
-#settingsModal, #changePasswordModal{
-  position: fixed; inset:0; z-index: 10002; display:none;
-  align-items:center; justify-content:center;
-  background: rgba(0,0,0,.45);
-}
-#settingsModal .modal-card,
-#changePasswordModal .modal-card{
-  width:min(92%, 520px);
-  background:#fff; color:#0f223f;
-  border-radius: 14px; padding:18px 20px;
-  box-shadow: 0 28px 70px rgba(0,0,0,.35);
-}
-#changePasswordModal.show{ display:flex; }
-
-/* ---------- Toasts ---------- */
-#toastContainer{ pointer-events:none; }
-.acw-toast{
-  pointer-events:auto;
-  border-radius: 10px;
-  min-width: 220px;
-}
-
-/* ---------- Small helpers ---------- */
-.hidden{ display:none !important; }
-.fade-out{ opacity:0; transform: scale(.98); transition: all .22s ease; }
-.flash{ animation: flash .6s ease; }
-
-/* ---------- Responsive ---------- */
-@media (max-width: 640px){
-  #welcomeName{ font-size: 24px; }
-  .team-btn{ right: 16px; top: 16px; }
-  .emp-panel .emp-box{ padding:14px; }
-  .hm-content{ padding:14px; }
-  #schedule th, #schedule td{ padding: 8px 10px; }
-}
-
-/* ---------- Keyframes ---------- */
-@keyframes fadeIn{
-  from{ opacity:0 } to{ opacity:1 }
-}
-@keyframes flash{
-  0%{ box-shadow: 0 0 0 rgba(0,120,255,0); }
-  50%{ box-shadow: 0 0 30px rgba(0,120,255,.45); }
-  100%{ box-shadow: 0 0 0 rgba(0,120,255,0); }
-}
+.hm-close{ position:absolute; margin-left:-6px; margin-top:-6px; right:calc(4% + 4px); top:calc(4% + 4px);
+  background:none; border:none; font-size:24px; cursor:pointer; color:#333; }
+.hm-week{ display:flex; justify-content:space-between; align-items:center; margin:6px 0 8px 0; }
+.hm-label{ color:#0078ff; font-weight:700; }
+.hm-total{ color:#e60000; font-weight:700; }
+.hm-table{ width:100%; border-collapse:collapse; margin-bottom:14px; font-size:15px; }
+.hm-table th{ text-align:left; color:#0078ff; border-bottom:2px solid rgba(0,120,255,.15); padding:6px 4px; }
+.hm-table td{ border-bottom:1px solid rgba(0,0,0,.08); padding:6px 4px; }
+.hm-row{ background:rgba(0,120,255,.03); border:1px solid rgba(0,120,255,.12); border-radius:10px; padding:10px 12px; margin-bottom:12px; }
