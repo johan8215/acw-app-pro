@@ -730,20 +730,26 @@ async function renderHistoryModal(email, name){
 
   const hist = await fetchWeekHistory(email, 5);
   const list = box.querySelector("#hmList");
-  list.innerHTML = hist.map((w,i)=>`
-    <div class="hm-row">
-      <div class="hm-week">
-        <div class="hm-label"><b>Week ${i===0?"(current)":`-${i}`}</b> • ${w.label}</div>
-        <div class="hm-total"><span>Total: <b>${w.total.toFixed(1)}h</b></span></div>
-      </div>
-      <table class="hm-table">
-        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-        ${w.days.map(d=>`<tr><td>${d.name}</td><td>${d.shift||"-"}</td><td>${(Number(d.hours)||0).toFixed(1)}</td></tr>`).join("")}
-      </table>
+// Reemplaza el cuerpo dentro de renderHistoryModal(...) donde asigna list.innerHTML
+list.innerHTML = hist.map((w,i)=>`
+  <div class="hm-row" style="border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:10px 12px;margin:10px 0;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div><b>Week ${i===0?"(current)":`-${i}`}</b> • ${w.label}</div>
+      <div style="font-weight:700;color:#0078ff;">${w.total.toFixed(1)}h</div>
     </div>
-  `).join("");
-}
-
+    <table class="hm-table" style="width:100%;font-size:14px;border-collapse:collapse">
+      <tr><th style="text-align:left">Day</th><th>Shift</th><th>Hours</th></tr>
+      ${w.days.map(d=>{
+        const off = /off/i.test(d.shift||"");
+        return `<tr>
+          <td style="padding:4px 0">${d.name}</td>
+          <td style="padding:4px 0;${off?'color:#999':''}">${d.shift||'-'}</td>
+          <td style="padding:4px 0;text-align:right;${off?'color:#999':''}">${(Number(d.hours)||0).toFixed(1)}</td>
+        </tr>`;
+      }).join("")}
+    </table>
+  </div>
+`).join("");
 /* ——— Hook en el dashboard (todos lo ven) ——— */
 function addHistoryButtonForMe(){
   if (document.getElementById("historyBtnMe")) return;
