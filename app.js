@@ -423,15 +423,13 @@ async function openEmployeePanel(btnEl){
       <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g,"_")}">${data.total||0}</b></p>
       <p class="live-hours"></p>
       ${isManagerRole(currentUser?.role) ? `
-        <div class="emp-actions" style="margin-top:10px;">
-          <button class="btn-update">✏️ Update Shift</button>
-          <button class="btn-today">📤 Send Today</button>
-          <button class="btn-tomorrow">📤 Send Tomorrow</button>
-          <p id="empStatusMsg-${email.replace(/[@.]/g,"_")}" class="emp-status-msg" style="margin-top:6px;font-size:.9em;"></p>
-        </div>` : ``}
-      <button class="emp-refresh" style="margin-top:8px;">⚙️ Check for Updates</button>
-    </div>
-  `;
+  <div class="emp-actions" style="margin-top:10px;">
+    <button class="btn-update">✏️ Update Shift</button>
+    <button class="btn-today">📤 Send Today</button>
+    <button class="btn-tomorrow">📤 Send Tomorrow</button>
+    <button class="btn-history">📚 History (5w)</button>
+    <p id="empStatusMsg-${email.replace(/[@.]/g,"_")}" class="emp-status-msg" style="margin-top:6px;font-size:.9em;"></p>
+  </div>` : ``}
   document.body.appendChild(m);
 
   $(".emp-close",m).onclick = ()=> m.remove();
