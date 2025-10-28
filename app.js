@@ -756,7 +756,7 @@ function addHistoryButtonForMe(){
 }
 
 /* ——— Llamarlo cuando el usuario entra ——— */
-const _oldShowWelcome_hist = window.showWelcome;
+const _oldShowWelcome_hist = window.showWelcome || (async ()=>{});
 window.showWelcome = async function(name, role){
   await _oldShowWelcome_hist.call(this, name, role);
   addHistoryButtonForMe();                  // todos
