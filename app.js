@@ -513,36 +513,46 @@ async function updateShiftFromModal(targetEmail, modalEl){
 }
 
 /* ============== SEND SHIFT MESSAGE ============== */
+/* ============== SEND SHIFT MESSAGE (v5.6.3) ============== */
 async function sendShiftMessage(targetEmail, action) {
+  const msgBox = document.querySelector(
+    `#empStatusMsg-${targetEmail.replace(/[@.]/g, "_")}`
+  );
+  if (msgBox) msgBox.textContent = "📤 Sending...";
+  const actor = currentUser?.email;
+  if (!actor) {
+    if (msgBox) msgBox.textContent = "⚠️ Session expired";
+    return;
+  }
+
   try {
-    const actor = currentUser?.email || "";
-    if (!actor || !targetEmail) {
-      alert("Missing actor or target");
-      return;
-    }
-
-    const msgBox = document.getElementById(`empStatusMsg-${targetEmail.replace(/[@.]/g, "_")}`);
-    if (msgBox) {
-      msgBox.textContent = "⏳ Sending...";
-      msgBox.style.color = "#999";
-    }
-
-    const url = `${CONFIG.BASE_URL}?action=${action}&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}`;
+    const url = `${CONFIG.BASE_URL}?action=${action}&actor=${encodeURIComponent(
+      actor
+    )}&target=${encodeURIComponent(targetEmail)}`;
     const r = await fetch(url, { cache: "no-store" });
     const data = await r.json();
 
-    if (!msgBox) return;
-
     if (data.ok) {
-      msgBox.textContent = data.message || "✅ WhatsApp sent!";
+      const name = data.sent?.name || "Employee";
+      const shift = data.sent?.shift || "-";
+      const mode = data.sent?.mode?.toUpperCase?.() || action.toUpperCase();
+
+      msgBox.textContent = `✅ ${name} (${mode}) → ${shift}`;
       msgBox.style.color = "#00b341";
+      toast(`✅ WhatsApp sent to ${name}`, "success");
+
+      // 🔔 Vibración ligera en móviles
+      if (window.navigator.vibrate) window.navigator.vibrate(100);
     } else {
-      msgBox.textContent = `⚠️ ${data.error || "Error sending message"}`;
-      msgBox.style.color = "#d00";
+      const err = data.error || "unknown_error";
+      msgBox.textContent = `⚠️ ${err}`;
+      msgBox.style.color = "#ff4444";
+      toast(`⚠️ Send failed (${err})`, "error");
     }
   } catch (err) {
     console.error("sendShiftMessage error:", err);
-    alert("⚠️ Error sending shift message. Please try again.");
+    msgBox.textContent = "❌ Network error";
+    msgBox.style.color = "#ff4444";
   }
 }
 
