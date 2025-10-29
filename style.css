@@ -1,7 +1,9 @@
 /* ============================================================
-   🎨 ACW-App — Blue Glass White Edition (v5.6.2)
+   🎨 ACW-App — Blue Glass White Edition (v5.6.2) — CLEAN
+   Johan A. Giraldo (JAG15) & Sky — Nov 2025
    ============================================================ */
 
+/* ---------- Vars & Reset ---------- */
 :root{
   --red:#e60000;
   --red-2:#ff3333;
@@ -12,598 +14,233 @@
 
 *{ box-sizing:border-box; }
 html,body{ margin:0; padding:0; }
-body {
-  font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-  background: #ffffff;
-  color: #222;
-  text-align: center;
+body{
+  font-family:'Segoe UI', Roboto, Arial, sans-serif;
+  background:#fff;
+  color:#222;
+  text-align:center;
 }
 
-/* ---------- Glass Container ---------- */
-.container {
-  background: rgba(255,255,255,0.95);
-  border-radius: 14px;
-  padding: 40px 50px;
-  margin: 70px auto;
-  max-width: 420px;
-  box-shadow: var(--shadow);
-  transition: all 0.4s ease;
+/* ---------- Container ---------- */
+.container{
+  background:rgba(255,255,255,0.95);
+  border-radius:14px;
+  padding:40px 50px;
+  margin:70px auto;
+  max-width:420px;
+  box-shadow:var(--shadow);
+  transition:all .4s ease;
 }
 h1{ margin:0 0 18px; letter-spacing:1px; }
 
 /* ---------- Inputs ---------- */
-input[type="email"],
-input[type="password"] {
-  display: block;
-  margin: 10px auto;
-  width: 80%;
-  max-width: 280px;
-  padding: 10px 14px;
-  font-size: 15px;
-  border: 1px solid rgba(0,120,255,0.25);
-  border-radius: 6px;
-  outline: none;
-  transition: 0.25s ease;
+input[type="email"], input[type="password"]{
+  display:block; margin:10px auto; width:80%; max-width:280px;
+  padding:10px 14px; font-size:15px;
+  border:1px solid rgba(0,120,255,0.25);
+  border-radius:6px; outline:none; transition:.25s ease;
 }
-input[type="email"]:focus,
-input[type="password"]:focus {
-  border-color: var(--blue);
-  box-shadow: 0 0 8px rgba(0,120,255,0.25);
+input[type="email"]:focus, input[type="password"]:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 8px rgba(0,120,255,0.25);
 }
 
 /* ---------- Buttons ---------- */
-button {
-  background: var(--red);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 22px;
-  cursor: pointer;
-  font-size: 15px;
-  transition: all 0.25s ease;
+button{
+  background:var(--red); color:#fff; border:none; border-radius:6px;
+  padding:10px 22px; cursor:pointer; font-size:15px; transition:.25s ease;
 }
-button:hover { background: var(--red-2); }
-button:disabled { opacity:.6; cursor:default; }
+button:hover{ background:var(--red-2); }
+button:disabled{ opacity:.6; cursor:default; }
 
 /* ---------- Gear Button ---------- */
-.gear-btn {
-  position: fixed; bottom: 20px; right: 20px;
-  background: var(--red);
-  color: #fff;
-  border: none; border-radius: 50%;
-  width: 46px; height: 46px;
-  font-size: 22px; cursor: pointer;
-  box-shadow: 0 0 25px rgba(0, 120, 255, 0.4);
-  transition: 0.3s;
-  z-index:999;
+.gear-btn{
+  position:fixed; bottom:20px; right:20px;
+  background:var(--red); color:#fff; border:none; border-radius:50%;
+  width:46px; height:46px; font-size:22px; cursor:pointer;
+  box-shadow:0 0 25px rgba(0,120,255,.4);
+  transition:.3s; z-index:999;
 }
-.gear-btn:hover { background: var(--red-2); transform: rotate(25deg); }
+.gear-btn:hover{ background:var(--red-2); transform:rotate(25deg); }
 
 /* ---------- Clock & Totals ---------- */
-.clock { color: #0070ff; font-size: 0.9em; margin-top: 6px; }
-.total { color: var(--red); font-weight: bold; margin-top: 10px; }
+.clock{ color:#0070ff; font-size:.9em; margin-top:6px; }
+.total{ color:var(--red); font-weight:bold; margin-top:10px; }
 
-/* ---------- Error Text ---------- */
-.error { color: #c00; font-size: 13px; margin-top: 10px; min-height:18px; }
+/* ---------- Error / Footer ---------- */
+.error{ color:#c00; font-size:13px; margin-top:10px; min-height:18px; }
+footer.hud{ color:#666; font-size:13px; margin:14px 0 30px; }
 
-/* ---------- Footer ---------- */
-footer.hud { color:#666; font-size:13px; margin: 14px 0 30px; }
-
-/* ---------- Tables ---------- */
-table {
-  margin: 0 auto;
-  width: 95%;
-  border-collapse: separate;
-  border-spacing: 20px 10px;
-  text-align: center;
-  font-size: 18px;
+/* ---------- Tables (Schedule) ---------- */
+table{
+  margin:0 auto; width:95%;
+  border-collapse:separate; border-spacing:20px 10px;
+  text-align:center; font-size:18px;
 }
-th {
-  padding-bottom: 6px;
-  color: #000;
-  letter-spacing: 0.5px;
-  border-bottom: 2px solid rgba(0,120,255,0.15);
+th{
+  padding-bottom:6px; color:#000; letter-spacing:.5px;
+  border-bottom:2px solid rgba(0,120,255,0.15);
 }
-td { padding: 8px 12px; }
-
-/* today row */
-tr.today td {
-  background: rgba(0,120,255,0.06);
-  border-radius: 8px;
+td{ padding:8px 12px; }
+tr.today td{
+  background:rgba(0,120,255,0.06); border-radius:8px;
 }
 
-/* ---------- Settings Modal ---------- */
-.modal {
-  display: none;
-  position: fixed;
-  top: 0; left: 0; right:0; bottom:0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 2000;
-  animation: fadeIn .25s ease;
+/* ---------- Generic Modal (Settings) ---------- */
+.modal{
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.45); z-index:2000; animation:fadeIn .25s ease;
 }
-.modal .modal-content {
-  background: rgba(255, 255, 255, 0.97);
-  border-radius: 16px;
-  padding: 28px 30px;
-  width: 340px;
-  margin: 12% auto;
-  text-align: center;
-  box-shadow: 0 0 40px rgba(0,128,255,0.3);
-  animation: popIn .25s ease;
+.modal .modal-content{
+  background:rgba(255,255,255,.97); border-radius:16px;
+  padding:28px 30px; width:340px; margin:12% auto; text-align:center;
+  box-shadow:0 0 40px rgba(0,128,255,.3); animation:popIn .25s ease;
 }
-.modal .close {
-  color: #555; float: right; font-size: 24px; font-weight: bold; cursor: pointer; margin-top: -10px;
+.modal .close{
+  color:#555; float:right; font-size:24px; font-weight:bold; cursor:pointer; margin-top:-10px;
 }
-.modal .close:hover { color: #000; }
+.modal .close:hover{ color:#000; }
 
-.settings-section {
-  display: flex; flex-direction: column; gap: 12px; margin-top: 20px; text-align: center;
+.settings-section{
+  display:flex; flex-direction:column; gap:12px; margin-top:20px; text-align:center;
 }
-.settings-section button {
-  background: var(--red);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 12px;
-  width: 100%;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 10px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-  transition: all 0.3s ease;
+.settings-section button{
+  background:var(--red); color:#fff; border:none; border-radius:8px;
+  padding:12px; width:100%; font-size:16px; font-weight:600; cursor:pointer;
+  margin-top:10px; box-shadow:0 4px 15px rgba(0,0,0,.15); transition:.3s;
 }
-.settings-section button:hover {
-  background: var(--red-2);
-  transform: scale(1.05);
-}
+.settings-section button:hover{ background:var(--red-2); transform:scale(1.05); }
 
 /* ---------- User phone ---------- */
-.user-phone {
-  color: #0078ff;
-  font-weight: 600;
-  font-size: 17px;
-  margin: 10px 0 16px 0;
-  text-shadow: 0 0 8px rgba(0,120,255,0.25);
-  opacity: 0; animation: fadeIn .4s ease forwards;
+.user-phone{
+  color:var(--blue); font-weight:600; font-size:17px;
+  margin:10px 0 16px; text-shadow:0 0 8px rgba(0,120,255,.25);
+  opacity:0; animation:fadeIn .4s ease forwards;
 }
 
 /* ---------- Live hours label ---------- */
-.live-hours {
-  margin-top: 10px;
-  color: #007bff;
-  font-size: 18px;
-  font-weight: 600;
-  text-shadow: 0 0 12px rgba(0,120,255,0.35);
-  animation: glowBlue 3s ease-in-out infinite alternate;
+.live-hours{
+  margin-top:10px; color:#007bff; font-size:18px; font-weight:600;
+  text-shadow:0 0 12px rgba(0,120,255,.35); animation:glowBlue 3s ease-in-out infinite alternate;
 }
-@keyframes glowBlue {
-  from { text-shadow: 0 0 5px rgba(0,120,255,0.25); }
-  to   { text-shadow: 0 0 18px rgba(0,120,255,0.5); }
+@keyframes glowBlue{
+  from{ text-shadow:0 0 5px rgba(0,120,255,.25); }
+  to{   text-shadow:0 0 18px rgba(0,120,255,.5); }
 }
 
-/* ---------- Team View ---------- */
-.team-btn {
-  position: fixed;
-  top: 25px;
-  right: 40px;
-  background: #ffffff;
-  color: var(--red);
-  border: 2px solid rgba(0, 120, 255, 0.4);
-  border-radius: 10px;
-  padding: 8px 16px;
-  font-weight: 600;
-  box-shadow: 0 4px 20px rgba(0,120,255,0.4);
-  cursor: pointer; z-index: 9999;
-  transition: all 0.3s ease;
-}
-.team-btn:hover {
-  background: #f9f9f9;
-  box-shadow: 0 0 25px rgba(0,136,255,0.6);
-}
-
-.directory-wrapper {
-  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 16px;
-  padding: 22px 28px;
-  width: 85%; max-width: 800px; max-height: 75vh; overflow-y: auto;
-  box-shadow: 0 0 45px rgba(0, 128, 255, 0.35);
-  backdrop-filter: blur(10px);
-  color: #111; text-align: center; z-index: 9999;
-  animation: fadeIn 0.25s ease;
-}
-.directory-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 17px; text-align: center; }
-.directory-table th {
-  color: #0078ff; border-bottom: 2px solid rgba(0,120,255,0.2);
-  padding: 10px 6px; background: rgba(0,120,255,0.05);
-}
-.directory-table td { padding: 10px 6px; border-bottom: 1px solid rgba(0,0,0,0.08); }
-.directory-table tr:hover { background: rgba(0,120,255,0.08); transition: background 0.2s ease; }
-
-.tv-live { color: #33ff66; text-shadow: 0 0 8px rgba(51,255,102,0.5); }
-.fade-out { animation: fadeOut 0.25s forwards; }
-@keyframes fadeOut { from {opacity:1;} to {opacity:0;} }
-
-/* ---------- Employee Modal ---------- */
-.employee-modal {
-  position: fixed; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(10px);
-  z-index: 9999;
-}
-.employee-modal .emp-box {
-  background: rgba(255,255,255,0.97);
-  border-radius: 16px;
-  box-shadow: 0 0 45px rgba(0,120,255,0.35);
-  width: 85%; max-width: 800px;
-  padding: 40px 50px 54px;
-  color: #111; text-align: center;
-}
-.emp-header::before {
-  content: "🚘 Allston Car Wash — ";
-  display: block; font-size: 18px; font-weight: 700; color: #0078ff;
-  text-shadow: 0 0 10px rgba(0,120,255,0.35); margin-bottom: 4px;
-}
-.emp-phone a { color:#0078ff; font-weight:600; text-decoration:none; font-size:16px; }
-.emp-role { color:#777; margin-bottom:12px; font-size:15px; }
-
-.employee-modal .schedule-mini {
-  width: 95%; border-collapse: separate; border-spacing: 20px 10px; text-align: center; font-size: 18px; margin: 0 auto;
-}
-.employee-modal .schedule-mini th {
-  background: rgba(0,120,255,0.05);
-  color: #0078ff; border-bottom: 2px solid rgba(0,120,255,0.2);
-  border-radius: 6px; padding: 6px;
-}
-.employee-modal .schedule-mini td { padding: 6px; border-bottom: 1px solid rgba(0,0,0,0.05); }
-
-.employee-modal .total { color: var(--red); font-weight: 700; margin-top: 14px; font-size: 18px; }
-.employee-modal .live-hours { color: #0078ff; font-weight: 600; margin-top: 6px; font-size: 16px; }
-
-.emp-actions {
-  display:flex; justify-content:center; gap:10px; margin-top:12px; flex-wrap:wrap;
-}
-.emp-actions button { color:#fff; border:none; border-radius:8px; font-weight:600; padding:8px 14px; cursor:pointer; transition:.25s; box-shadow:0 4px 12px rgba(0,0,0,0.15); }
-.emp-actions .btn-update { background: linear-gradient(135deg, #007bff, #0096ff); }
-.emp-actions .btn-update:hover { background: linear-gradient(135deg, #0096ff, #33a0ff); transform: translateY(-2px); }
-.emp-actions .btn-today { background: linear-gradient(135deg, #e60000, #ff3333); }
-.emp-actions .btn-today:hover { background: linear-gradient(135deg, #ff3333, #ff6666); transform: translateY(-2px); }
-.emp-actions .btn-tomorrow { background: linear-gradient(135deg, #ff8800, #ffaa33); }
-.emp-actions .btn-tomorrow:hover { background: linear-gradient(135deg, #ffaa33, #ffbb55); transform: translateY(-2px); }
-
-.emp-status-msg { width:100%; text-align:center; font-weight:600; font-size:.9em; margin-top:6px; }
-
-/* ---------- Animations ---------- */
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: translateY(0);} }
-@keyframes popIn { from { opacity: 0; transform: scale(0.96);} to { opacity: 1; transform: scale(1);} }
-
-/* ---------- Download button ---------- */
-.download-btn {
-  display: inline-block; width: 90%; margin-top: 8px; padding: 10px 18px;
-  border: none; border-radius: 8px;
-  background: linear-gradient(135deg, var(--blue), var(--blue-2));
-  color: #fff; font-weight: 600; font-size: 1em;
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.35);
-  cursor: pointer; transition: all 0.25s ease;
-}
-.download-btn:hover {
-  transform: translateY(-1px);
-  background: linear-gradient(135deg, #1a8cff, #4db8ff);
-  box-shadow: 0 6px 16px rgba(0, 136, 255, 0.45);
-}
 /* ============================================================
-   🎨 ACW-App UI Fix Pack v5.6.2 — Unified Floating Panels
-   Johan A. Giraldo (JAG15) & Sky — Nov 2025
+   🧑‍🤝‍🧑 Team View (uses inline styles + .show)
    ============================================================ */
-
-/* 🧠 Team View centrado + animación sin salto */
-#directoryWrapper {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -48%) scale(0.96);
-  visibility: hidden;
-  opacity: 0;
-  width: 90%;
-  max-width: 600px;
-  background: rgba(255, 255, 255, 0.97);
-  border-radius: 16px;
-  box-shadow: 0 0 35px rgba(0,128,255,0.3);
-  backdrop-filter: blur(10px);
-  transition: all 0.35s ease;
-  z-index: 9999;
-  text-align: center;
-  padding: 22px 26px;
+.team-btn{
+  position:fixed; top:25px; right:40px;
+  background:#fff; color:var(--red);
+  border:2px solid rgba(0,120,255,.4); border-radius:10px;
+  padding:8px 16px; font-weight:600;
+  box-shadow:0 4px 20px rgba(0,120,255,.4);
+  cursor:pointer; z-index:9999; transition:.3s;
 }
-#directoryWrapper.show {
-  visibility: visible;
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+.team-btn:hover{ background:#f9f9f9; box-shadow:0 0 25px rgba(0,136,255,.6); }
+
+/* Solo animación/visibilidad; el resto viene inline desde JS */
+#directoryWrapper.show{
+  visibility:visible !important;
+  opacity:1 !important;
+  transform:translate(-50%, -50%) scale(1) !important;
 }
 
-.directory-table {
-  width: 100%;
-  font-size: 15px;
-  border-collapse: collapse;
-  margin-top: 10px;
+.directory-table{
+  width:100%; font-size:15px; border-collapse:collapse; margin-top:10px;
 }
-.directory-table th,
-.directory-table td {
-  padding: 8px 5px;
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+.directory-table th, .directory-table td{
+  padding:8px 5px; border-bottom:1px solid rgba(0,0,0,0.08);
 }
-.directory-table th {
-  color: #0078ff;
-  background: rgba(0,120,255,0.05);
-  border-bottom: 2px solid rgba(0,120,255,0.15);
+.directory-table th{
+  color:var(--blue); background:rgba(0,120,255,0.05);
+  border-bottom:2px solid rgba(0,120,255,0.15);
 }
-.directory-table tr:hover {
-  background: rgba(0,120,255,0.08);
-  transition: background 0.25s ease;
-}
+.directory-table tr:hover{ background:rgba(0,120,255,0.08); transition:background .25s ease; }
+.tv-live{ color:#33ff66; text-shadow:0 0 8px rgba(51,255,102,.5); }
+.fade-out{ animation:fadeOut .25s forwards; }
+@keyframes fadeOut{ from{opacity:1;} to{opacity:0;} }
 
-/* 🔧 Tamaño unificado para tablas flotantes */
-.directory-wrapper,
-.employee-modal .emp-box {
-  width: 90%;
-  max-width: 600px;
-  padding: 24px 28px;
-  border-radius: 14px;
-  box-shadow: 0 0 35px rgba(0,128,255,0.3);
-}
-
-/* Ajustes de tabla interna del Employee Modal */
-.employee-modal .schedule-mini {
-  font-size: 15px;
-  border-spacing: 14px 8px;
-}
-.employee-modal .schedule-mini th,
-.employee-modal .schedule-mini td {
-  padding: 6px 4px;
-}
-
-/* 🔑 Change Password Modal */
-#changePasswordModal {
-  z-index: 9999;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  animation: fadeIn 0.25s ease;
-}
-#changePasswordModal.show {
-  display: flex !important;
-}
-#changePasswordModal .modal-content.glass {
-  background: rgba(255,255,255,0.97);
-  border-radius: 14px;
-  box-shadow: 0 0 40px rgba(0,120,255,0.3);
-  backdrop-filter: blur(10px);
-  padding: 28px 30px;
-  width: 340px;
-  text-align: center;
-  animation: popIn 0.25s ease;
-}
-/* ---------- History Modal ---------- */
-.history-modal{
+/* ============================================================
+   👤 Employee Modal
+   ============================================================ */
+.employee-modal{
   position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
   background:rgba(0,0,0,.45); backdrop-filter:blur(10px); z-index:9999;
-  animation: fadeIn .25s ease;
 }
-.hm-content{
-  width:92%; max-width:800px; background:rgba(255,255,255,.97); border-radius:16px;
-  box-shadow:0 0 40px rgba(0,120,255,.3); padding:22px 26px; text-align:left;
+.employee-modal .emp-box{
+  background:rgba(255,255,255,.97); border-radius:16px;
+  box-shadow:0 0 45px rgba(0,120,255,.35);
+  width:85%; max-width:800px; padding:40px 50px 54px;
+  color:#111; text-align:center;
 }
-.hm-close{ position:absolute; margin-left:-6px; margin-top:-6px; right:calc(4% + 4px); top:calc(4% + 4px);
-  background:none; border:none; font-size:24px; cursor:pointer; color:#333; }
-.hm-week{ display:flex; justify-content:space-between; align-items:center; margin:6px 0 8px 0; }
-.hm-label{ color:#0078ff; font-weight:700; }
-.hm-total{ color:#e60000; font-weight:700; }
-.hm-table{ width:100%; border-collapse:collapse; margin-bottom:14px; font-size:15px; }
-.hm-table th{ text-align:left; color:#0078ff; border-bottom:2px solid rgba(0,120,255,.15); padding:6px 4px; }
-.hm-table td{ border-bottom:1px solid rgba(0,0,0,.08); padding:6px 4px; }
-.hm-row{ background:rgba(0,120,255,.03); border:1px solid rgba(0,120,255,.12); border-radius:10px; padding:10px 12px; margin-bottom:12px; }
+.emp-header::before{
+  content:"🚘 Allston Car Wash — ";
+  display:block; font-size:18px; font-weight:700; color:var(--blue);
+  text-shadow:0 0 10px rgba(0,120,255,.35); margin-bottom:4px;
+}
+.emp-phone a{ color:var(--blue); font-weight:600; text-decoration:none; font-size:16px; }
+.emp-role{ color:#777; margin-bottom:12px; font-size:15px; }
 
-/* ===== ACW Bottom Sheet (scoped, no overrides) ===== */
-.acwbs-overlay{
-  position:fixed; inset:0; background:rgba(0,0,0,.45); backdrop-filter:blur(8px);
-  z-index:10050; display:flex; align-items:flex-end; animation:fadeIn .2s ease;
+.employee-modal .schedule-mini{
+  width:95%; border-collapse:separate; border-spacing:20px 10px;
+  text-align:center; font-size:18px; margin:0 auto;
 }
-.acwbs-overlay.hide{ animation:fadeOut .18s ease forwards; }
-
-.acwbs-sheet{
-  width:100%; background:#fff; border-top-left-radius:16px; border-top-right-radius:16px;
-  box-shadow:0 -10px 30px rgba(0,0,0,.20); animation:acwbsUp .22s ease;
+.employee-modal .schedule-mini th{
+  background:rgba(0,120,255,0.05); color:var(--blue);
+  border-bottom:2px solid rgba(0,120,255,0.2);
+  border-radius:6px; padding:6px;
 }
-.acwbs-grip{ width:50px; height:5px; background:#e6e6e6; border-radius:3px; margin:10px auto 4px; }
-.acwbs-head{ padding:6px 16px 10px; text-align:center; position:relative; }
-.acwbs-close{ position:absolute; right:10px; top:6px; background:none; border:none; font-size:20px; cursor:pointer; color:#333; }
-.acwbs-title{ margin:6px 0 2px; color: var(--blue); }
-.acwbs-sub{ margin:0; color:#666; font-size:13px; }
-.acwbs-body{ max-height:65vh; overflow:auto; padding:6px 12px 16px; }
-
-/* Listado semanas */
-.acwbs-week-list{ list-style:none; margin:6px 0 4px; padding:0; }
-.acwbs-week{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:12px 12px; margin:8px 4px; border:1px solid rgba(0,0,0,.08); border-radius:10px;
-  background:rgba(0,120,255,.04); cursor:pointer; transition:.18s;
-}
-.acwbs-week:hover{ background:rgba(0,120,255,.08); }
-.acwbs-wtitle{ font-weight:700; }
-.acwbs-wsub{ font-size:12px; color:#777; margin-top:2px; }
-.acwbs-open{
-  background: linear-gradient(135deg, var(--blue), var(--blue-2));
-  color:#fff; border:none; border-radius:8px; padding:6px 10px; font-weight:700; cursor:pointer;
+.employee-modal .schedule-mini td{
+  padding:6px; border-bottom:1px solid rgba(0,0,0,0.05);
 }
 
-/* Vista de una semana */
-.acwbs-view{ padding:4px 6px 14px; }
-.acwbs-vhead{ display:flex; gap:10px; align-items:center; border-bottom:1px solid rgba(0,0,0,.08); padding-bottom:8px; margin-bottom:8px; }
-.acwbs-back{ background:#f1f6ff; color:var(--blue); border:1px solid rgba(0,120,255,.25); border-radius:8px; padding:6px 10px; font-weight:700; cursor:pointer; }
-.acwbs-vtitle{ font-weight:700; color:var(--blue); }
-.acwbs-vsub{ font-size:12px; color:#777; margin-top:2px; }
-.acwbs-loading{ color:#777; padding:12px; }
+.employee-modal .total{ color:var(--red); font-weight:700; margin-top:14px; font-size:18px; }
+.employee-modal .live-hours{ color:var(--blue); font-weight:600; margin-top:6px; font-size:16px; }
 
-.acwbs-table{ width:100%; border-collapse:collapse; font-size:15px; }
-.acwbs-table th{ text-align:left; color:var(--blue); border-bottom:2px solid rgba(0,120,255,.15); padding:6px 4px; }
-.acwbs-table td{ border-bottom:1px solid rgba(0,0,0,.06); padding:6px 4px; }
-.acwbs-right{ text-align:right; }
-.acwbs-dim{ color:#999; }
-.acwbs-total{ text-align:right; font-weight:700; color:var(--red); margin-top:8px; }
+.emp-actions{
+  display:flex; justify-content:center; gap:10px; margin-top:12px; flex-wrap:wrap;
+}
+.emp-actions button{
+  color:#fff; border:none; border-radius:8px; font-weight:600;
+  padding:8px 14px; cursor:pointer; transition:.25s;
+  box-shadow:0 4px 12px rgba(0,0,0,0.15);
+}
+.emp-actions .btn-update{ background:linear-gradient(135deg,#007bff,#0096ff); }
+.emp-actions .btn-update:hover{ background:linear-gradient(135deg,#0096ff,#33a0ff); transform:translateY(-2px); }
+.emp-actions .btn-today{ background:linear-gradient(135deg,#e60000,#ff3333); }
+.emp-actions .btn-today:hover{ background:linear-gradient(135deg,#ff3333,#ff6666); transform:translateY(-2px); }
+.emp-actions .btn-tomorrow{ background:linear-gradient(135deg,#ff8800,#ffaa33); }
+.emp-actions .btn-tomorrow:hover{ background:linear-gradient(135deg,#ffaa33,#ffbb55); transform:translateY(-2px); }
 
-/* animaciones locales */
-@keyframes acwbsUp { from{ transform:translateY(12px); opacity:.98;} to{ transform:translateY(0); opacity:1;} }
+.emp-status-msg{ width:100%; text-align:center; font-weight:600; font-size:.9em; margin-top:6px; }
 
-/* ===== ACW – History Floating (Team View style) ===== */
-#acwHistOverlay{
-  position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-  background:rgba(0,0,0,.45); backdrop-filter:blur(8px); z-index:9999;
-}
-#acwHistOverlay.show{ display:flex; animation: fadeIn .22s ease; }
-
-.acw-hist-box{
-  width:92%; max-width:780px; background:rgba(255,255,255,.97);
-  border-radius:16px; box-shadow:0 0 40px rgba(0,120,255,.30);
-  padding:18px 20px 22px;
-}
-.acw-hist-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
-.acw-hist-title{ margin:0; color:#0078ff; font-weight:700; }
-
-.acw-hist-body{
-  display:grid; grid-template-columns:170px 1fr; gap:12px;
-  max-height:65vh;
-}
-.acw-hist-weeks{
-  list-style:none; margin:0; padding:0; overflow:auto;
-}
-.acw-hist-weeks li{
-  border:1px solid rgba(0,0,0,.08); border-radius:10px; padding:8px 10px; margin-bottom:8px;
-  cursor:pointer; background:#fff;
-}
-.acw-hist-weeks li.active{
-  border-color:rgba(0,120,255,.35); box-shadow:0 0 0 2px rgba(0,120,255,.12) inset;
-  color:#0078ff; font-weight:700;
-}
-
-.acw-hist-table{ width:100%; border-collapse:collapse; font-size:15px; }
-.acw-hist-table th{
-  text-align:left; padding:6px 4px; color:#0078ff;
-  border-bottom:2px solid rgba(0,120,255,.15);
-}
-.acw-hist-table td{
-  padding:6px 4px; border-bottom:1px solid rgba(0,0,0,.08);
-}
-.acw-hist-total{ text-align:right; font-weight:700; color:#e60000; margin-top:8px; }
-
-.acw-hist-off td{ color:#999; }
-.acw-hist-today td{ font-weight:600; }
-.acw-hist-close{ background:none; border:none; font-size:22px; cursor:pointer; }
-
-/* ===== History Picker (mini, estilo Settings) ===== */
-#historyPickerModal .modal-content {
-  width: 360px; max-width: 92%;
-}
-
-.hp-head { color:#777; margin:0 0 6px 0; text-align:center; }
-.hp-table { width:100%; border-collapse:collapse; font-size:15px; }
-.hp-table th {
-  text-align:left; padding:6px 4px; color:#0078ff;
-  border-bottom:2px solid rgba(0,120,255,.15);
-}
-.hp-table td { padding:8px 4px; border-bottom:1px solid rgba(0,0,0,.08); }
-.hp-row { cursor:pointer; }
-.hp-row:hover { background:rgba(0,120,255,.06); }
-
-.hp-total { text-align:right; font-weight:700; color:var(--red); margin-top:8px; }
-.hp-back {
-  background:#fff; color:#0078ff; border:2px solid rgba(0,120,255,.35);
-  border-radius:8px; padding:6px 10px; font-weight:600; cursor:pointer;
-}
 /* ============================================================
-   🧰 HX — History Picker (Settings-style modal, scoped)
+   🔐 Change Password Modal
    ============================================================ */
-.hx-overlay{
-  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-  background:rgba(0,0,0,.45); z-index:9999; animation: fadeIn .25s ease;
+#changePasswordModal{ z-index:9999; display:none; align-items:center; justify-content:center; animation:fadeIn .25s ease; }
+#changePasswordModal.show{ display:flex !important; }
+#changePasswordModal .modal-content.glass{
+  background:rgba(255,255,255,.97); border-radius:14px; box-shadow:0 0 40px rgba(0,120,255,.3);
+  backdrop-filter:blur(10px); padding:28px 30px; width:340px; text-align:center; animation:popIn .25s ease;
 }
-.hx-box{
-  position:relative;
-  width: 360px; max-width:92vw;
-  background: rgba(255,255,255,.97);
-  border-radius:16px;
-  padding: 22px 24px 16px;
-  text-align:center;
-  box-shadow: 0 0 40px rgba(0,120,255,.30);
-  animation: popIn .22s ease;
-}
-.hx-head{ margin-bottom:8px; }
-.hx-title{ margin:0; font-weight:800; color:#0078ff; letter-spacing:.3px; }
-.hx-sub{ margin:4px 0 0; font-size:12px; color:#777; }
 
-.hx-close{
-  position:absolute; right:10px; top:8px;
-  background:none; border:none; font-size:20px; cursor:pointer; color:#555;
-}
-.hx-close:hover{ color:#000; }
-
-.hx-body{ margin-top:8px; }
-
-.hx-row{
-  display:grid; grid-template-columns: 1fr auto auto;
-  align-items:center; gap:10px;
-  padding:10px 12px;
-  border:1px solid rgba(0,0,0,.08);
-  border-radius:10px;
-  background:#fff;
-  margin:8px 0;
-  transition:.2s ease;
-}
-.hx-row:hover{
-  background: rgba(0,120,255,.06);
-  box-shadow: 0 6px 14px rgba(0,120,255,.10);
-}
-.hx-week{ text-align:left; font-weight:600; }
-.hx-hours{ font-weight:800; color:#111; }
-.hx-arrow{ color:#0078ff; font-weight:800; padding-left:4px; }
-
-.hx-back{
-  display:inline-flex; align-items:center; gap:6px;
-  color:#0078ff; background:#fff;
-  border:2px solid rgba(0,120,255,.2);
-  border-radius:8px; padding:6px 10px; font-weight:600;
-  cursor:pointer; margin: 2px 0 10px;
-}
-.hx-back:active{ transform: translateY(1px); }
-
-.hx-table{ width:100%; border-collapse:collapse; font-size:14px; }
-.hx-table th{
-  text-align:left; color:#0078ff;
-  border-bottom:2px solid rgba(0,120,255,.15);
-  padding:6px 4px;
-}
-.hx-table td{
-  border-bottom:1px solid rgba(0,0,0,.08);
-  padding:6px 4px;
-}
-.hx-total{ text-align:right; font-weight:700; color: var(--red, #e60000); margin-top:10px; }
-
-/* ===== ACW — History (Centered like Settings) ===== */
+/* ============================================================
+   📚 History (Centered Settings-style) — .acwh-*
+   ============================================================ */
 .acwh-overlay{
   position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
   background:rgba(0,0,0,.45); z-index:9999; animation:fadeIn .25s ease;
 }
 .acwh-card{
-  width:340px; max-width:90vw;
-  background:rgba(255,255,255,.97); border-radius:16px;
-  box-shadow:0 0 40px rgba(0,120,255,.30);
+  width:340px; max-width:90vw; background:rgba(255,255,255,.97);
+  border-radius:16px; box-shadow:0 0 40px rgba(0,120,255,.30);
   padding:22px 24px; text-align:center; animation:popIn .25s ease;
 }
 .acwh-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
-.acwh-title{ margin:0 auto; color:#0078ff; font-weight:700; }
+.acwh-title{ margin:0 auto; color:var(--blue); font-weight:700; }
 .acwh-close{ background:none; border:none; font-size:22px; cursor:pointer; color:#333; }
 .acwh-sub{ color:#777; font-size:13px; margin:2px 0 10px; }
 
@@ -617,22 +254,44 @@ tr.today td {
 
 .acwh-week{ text-align:left; }
 .acwh-week small{ color:#999; display:block; margin-top:2px; }
-
 .acwh-total{ font-weight:800; color:var(--red); margin-left:auto; margin-right:8px; }
 
 .acwh-btn{
-  background: var(--red); color:#fff; border:none; border-radius:8px;
+  background:var(--red); color:#fff; border:none; border-radius:8px;
   padding:8px 12px; font-weight:700; cursor:pointer;
 }
 .acwh-back{
-  background:#fff; color:#0078ff; border:2px solid rgba(0,120,255,.35);
+  background:#fff; color:var(--blue); border:2px solid rgba(0,120,255,.35);
   border-radius:10px; padding:6px 10px; font-weight:600; cursor:pointer;
 }
 
 .acwh-table{ width:100%; border-collapse:collapse; margin-top:10px; }
 .acwh-table th{
-  text-align:left; color:#0078ff; border-bottom:2px solid rgba(0,120,255,.15); padding:6px 4px;
+  text-align:left; color:var(--blue);
+  border-bottom:2px solid rgba(0,120,255,.15);
+  padding:6px 4px;
 }
 .acwh-table td{ padding:6px 4px; border-bottom:1px solid rgba(0,0,0,.08); }
 .acwh-table td:last-child{ text-align:right; }
 .acwh-total-line{ text-align:right; font-weight:800; color:var(--red); margin:10px 0 2px; }
+
+/* ============================================================
+   ⬇️ Download button
+   ============================================================ */
+.download-btn{
+  display:inline-block; width:90%; margin-top:8px; padding:10px 18px;
+  border:none; border-radius:8px;
+  background:linear-gradient(135deg,var(--blue),var(--blue-2));
+  color:#fff; font-weight:600; font-size:1em;
+  box-shadow:0 4px 12px rgba(0,123,255,.35);
+  cursor:pointer; transition:.25s;
+}
+.download-btn:hover{
+  transform:translateY(-1px);
+  background:linear-gradient(135deg,#1a8cff,#4db8ff);
+  box-shadow:0 6px 16px rgba(0,136,255,.45);
+}
+
+/* ---------- Shared Animations ---------- */
+@keyframes fadeIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+@keyframes popIn{ from{opacity:0; transform:scale(.96);} to{opacity:1; transform:scale(1);} }
