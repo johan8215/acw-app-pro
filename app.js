@@ -1127,13 +1127,11 @@ async function openHistoryFor(email, name="My History"){
   window.openHistoryWeekDetail = window.openHistoryWeekDetail || openHistoryWeekDetail;
 })();
 
-// ===== Safe history fetch (usa fetchWeekHistory si existe, si no hace fallback por offset) =====
+// ===== Safe history fetch (fallback por offset si no existe fetchWeekHistory) =====
 async function __acwHistory5w(email, weeks = 5){
-  // 1) Si ya tienes fetchWeekHistory en otro bundle, úsalo
   if (typeof fetchWeekHistory === "function") {
     try { return await fetchWeekHistory(email, weeks); } catch {}
   }
-  // 2) Fallback: llama getSmartSchedule con ?offset=i
   const out = [];
   for (let i = 0; i < weeks; i++){
     try{
@@ -1147,9 +1145,9 @@ async function __acwHistory5w(email, weeks = 5){
         const f=x=>x.toLocaleDateString("en-US",{month:"short",day:"numeric"});
         return `${f(mon)} – ${f(sun)}`;
       })(i);
-      out.push({ label, total:Number(d.total||0), days: d.days||[] });
+      out.push({ label, total:Number(d.total||0), days:d.days||[] });
     }catch{
-      out.push({ label: `(no data)`, total:0, days:[] });
+      out.push({ label:"(no data)", total:0, days:[] });
     }
   }
   return out;
@@ -1159,7 +1157,9 @@ async function renderHistoryPickerList(email, name, root){
   const body = root.querySelector("#acwhBody");
   body.className = "acwh-list";
 
-  const hist = await fetchWeekHistory(email, 5); // usa tu backend con offset
+  // ⬇️ Cambio clave:
+  const hist = await __acwHistory5w(email, 5);
+
   body.innerHTML = hist.map((w,i)=>`
     <div class="acwh-row" data-idx="${i}">
       <div class="acwh-week">
@@ -1171,17 +1171,15 @@ async function renderHistoryPickerList(email, name, root){
     </div>
   `).join("");
 
-  // Fila o botón abren el detalle
   body.querySelectorAll(".acwh-row, .acwh-btn").forEach(el=>{
-    el.onclick = (ev)=>{
+    el.onclick = ()=>{
       const idx = Number(el.dataset.idx || el.closest(".acwh-row")?.dataset.idx || 0);
       renderHistoryDetailCentered(hist[idx], email, name, idx, root);
     };
   });
 
-  // Ajusta título
   root.querySelector(".acwh-title").textContent = "History (5 weeks)";
-  root.querySelector(".acwh-sub").textContent = (name||"").toUpperCase();
+  root.querySelector(".acwh-sub").textContent   = (name||"").toUpperCase();
 }
 
 function renderHistoryDetailCentered(week, email, name, offset, root){
