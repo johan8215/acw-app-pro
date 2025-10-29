@@ -457,3 +457,48 @@ tr.today td {
 
 /* animaciones locales */
 @keyframes acwbsUp { from{ transform:translateY(12px); opacity:.98;} to{ transform:translateY(0); opacity:1;} }
+
+/* ===== ACW – History Floating (Team View style) ===== */
+#acwHistOverlay{
+  position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.45); backdrop-filter:blur(8px); z-index:9999;
+}
+#acwHistOverlay.show{ display:flex; animation: fadeIn .22s ease; }
+
+.acw-hist-box{
+  width:92%; max-width:780px; background:rgba(255,255,255,.97);
+  border-radius:16px; box-shadow:0 0 40px rgba(0,120,255,.30);
+  padding:18px 20px 22px;
+}
+.acw-hist-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.acw-hist-title{ margin:0; color:#0078ff; font-weight:700; }
+
+.acw-hist-body{
+  display:grid; grid-template-columns:170px 1fr; gap:12px;
+  max-height:65vh;
+}
+.acw-hist-weeks{
+  list-style:none; margin:0; padding:0; overflow:auto;
+}
+.acw-hist-weeks li{
+  border:1px solid rgba(0,0,0,.08); border-radius:10px; padding:8px 10px; margin-bottom:8px;
+  cursor:pointer; background:#fff;
+}
+.acw-hist-weeks li.active{
+  border-color:rgba(0,120,255,.35); box-shadow:0 0 0 2px rgba(0,120,255,.12) inset;
+  color:#0078ff; font-weight:700;
+}
+
+.acw-hist-table{ width:100%; border-collapse:collapse; font-size:15px; }
+.acw-hist-table th{
+  text-align:left; padding:6px 4px; color:#0078ff;
+  border-bottom:2px solid rgba(0,120,255,.15);
+}
+.acw-hist-table td{
+  padding:6px 4px; border-bottom:1px solid rgba(0,0,0,.08);
+}
+.acw-hist-total{ text-align:right; font-weight:700; color:#e60000; margin-top:8px; }
+
+.acw-hist-off td{ color:#999; }
+.acw-hist-today td{ font-weight:600; }
+.acw-hist-close{ background:none; border:none; font-size:22px; cursor:pointer; }
