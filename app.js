@@ -664,153 +664,124 @@ function closeSettings() {
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
 
-/* ============== HISTORY (5 weeks) ============== */
-// Reutiliza el mismo backend: soporta offset por semana (0 = actual, 1 = -1 semana, etc.)
-async function fetchWeekHistory(email, weeks = 5) {
-  const out = [];
-  for (let i = 0; i < weeks; i++) {
-    const url = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${i}`;
-    try {
-      const r = await fetch(url, { cache: "no-store" });
-      const d = await r.json();
-      // d: { ok, weekLabel?, days:[{name,shift,hours}], total }
-      if (d?.ok) {
-        out.push({
-          label: d.weekLabel || getWeekLabelFromOffset(i),
-          total: Number(d.total || 0),
-          days: d.days || []
-        });
-      } else {
-        out.push({ label: getWeekLabelFromOffset(i), total: 0, days: [] });
-      }
-    } catch {
-      out.push({ label: getWeekLabelFromOffset(i), total: 0, days: [] });
-    }
-  }
-  return out;
-}
+/* ============== HISTORY PICKER (5w) — Bottom Sheet (scoped) ============== */
+function openHistoryFor(email, name="My History"){ openHistoryPicker(email, name); }
+window.openHistoryFor = openHistoryFor;
 
-function getWeekLabelFromOffset(offset = 0) {
-  // Lunes de la semana (offset semanas atrás)
-  const now = new Date();
-  const day = now.getDay();                  // 0=Dom ... 1=Lun ...
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - ((day + 6) % 7) - (offset * 7));
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  const fmt = (d)=> d.toLocaleDateString("en-US", {month:"short", day:"numeric"});
-  return `${fmt(monday)} – ${fmt(sunday)}`;
-}
-
-function openHistoryFor(email, name="My History") {
-  renderHistoryModal(email, name);
-}
-
-/* ============== HISTORY (5 weeks) ============== */
-// Reutiliza el mismo backend: soporta offset por semana (0 = actual, 1 = -1 semana, etc.)
-async function fetchWeekHistory(email, weeks = 5) {
-  const out = [];
-  for (let i = 0; i < weeks; i++) {
-    const url = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${i}`;
-    try {
-      const r = await fetch(url, { cache: "no-store" });
-      const d = await r.json();
-      // d: { ok, weekLabel?, days:[{name,shift,hours}], total }
-      if (d?.ok) {
-        out.push({
-          label: d.weekLabel || getWeekLabelFromOffset(i),
-          total: Number(d.total || 0),
-          days: d.days || []
-        });
-      } else {
-        out.push({ label: getWeekLabelFromOffset(i), total: 0, days: [] });
-      }
-    } catch {
-      out.push({ label: getWeekLabelFromOffset(i), total: 0, days: [] });
-    }
-  }
-  return out;
-}
-
-function getWeekLabelFromOffset(offset = 0) {
-  const now = new Date();
-  const day = now.getDay(); // 0=Sun
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - ((day + 6) % 7) - (offset * 7));
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  const fmt = (d)=> d.toLocaleDateString("en-US", {month:"short", day:"numeric"});
-  return `${fmt(monday)} – ${fmt(sunday)}`;
-}
-
-function openHistoryFor(email, name="My History") {
-  renderHistoryModal(email, name);
-}
-
-async function renderHistoryModal(email, name){
-  const id = "historyModal";
-  document.getElementById(id)?.remove();
-
-  const box = document.createElement("div");
-  box.id = id;
-  box.className = "history-modal";
-  box.innerHTML = `
-    <div class="hm-content">
-      <button class="hm-close">×</button>
-      <h3 style="margin:0 0 6px 0;color:#0078ff;">${name} — Last 5 Weeks</h3>
-      <p style="margin:0 0 10px 0;color:#666;">Weekly totals and daily breakdown</p>
-      <div class="hm-body">
-        <div class="hm-list" id="hmList">
-          <div class="hm-row" style="opacity:.6;">Loading history…</div>
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(box);
-  box.querySelector(".hm-close").onclick = ()=> box.remove();
-
-  const hist = await fetchWeekHistory(email, 5);
-  const list = box.querySelector("#hmList");
-
-  // Render limpio
-  list.innerHTML = hist.map((w,i)=>`
-    <div class="hm-row" style="border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:10px 12px;margin:10px 0;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <div><b>Week ${i===0?"(current)":`-${i}`}</b> • ${w.label}</div>
-        <div style="font-weight:700;color:#0078ff;">${w.total.toFixed(1)}h</div>
-      </div>
-      <table class="hm-table" style="width:100%;font-size:14px;border-collapse:collapse">
-        <tr><th style="text-align:left">Day</th><th>Shift</th><th>Hours</th></tr>
-        ${w.days.map(d=>{
-          const off = /off/i.test(d.shift||"");
-          return `<tr>
-            <td style="padding:4px 0">${d.name}</td>
-            <td style="padding:4px 0;${off?'color:#999':''}">${d.shift||'-'}</td>
-            <td style="padding:4px 0;text-align:right;${off?'color:#999':''}">${(Number(d.hours)||0).toFixed(1)}</td>
-          </tr>`;
-        }).join("")}
-      </table>
-    </div>
-  `).join("");
-} // ←←← IMPORTANTE: cerrar la función aquí
-
-/* ——— Hook en el dashboard (todos lo ven) ——— */
+// Botón fijo “History (5w)” (igual que antes)
 function addHistoryButtonForMe(){
   if (document.getElementById("historyBtnMe")) return;
   const btn = document.createElement("button");
   btn.id="historyBtnMe";
   btn.textContent = "History (5w)";
-  btn.style.cssText = "position:fixed;top:25px;left:40px;background:#fff;color:#0078ff;border:2px solid rgba(0,120,255,.4);border-radius:10px;padding:8px 16px;font-weight:600;box-shadow:0 4px 20px rgba(0,120,255,.4);cursor:pointer;z-index:9999;";
-  btn.onclick = ()=> openHistoryFor(currentUser?.email||"", `${currentUser?.name||"Me"}`);
+  btn.style.cssText = "position:fixed;top:25px;left:40px;background:#fff;color:#0078ff;border:2px solid rgba(0,120,255,.4);border-radius:10px;padding:8px 16px;font-weight:600;box-shadow:0 4px 20px rgba(0,120,255,.4);cursor:pointer;z-index:10050;";
+  btn.onclick = ()=> openHistoryPicker(currentUser?.email||"", `${currentUser?.name||"Me"}`);
   document.body.appendChild(btn);
 }
+// enganchar una sola vez al welcome
+(function(){
+  const prev = window.showWelcome || (async()=>{});
+  window.showWelcome = async function(name, role){
+    await prev.call(this, name, role);
+    addHistoryButtonForMe();
+  };
+})();
 
-/* ——— Llamarlo cuando el usuario entra ——— */
-const __prevShowWelcome = window.showWelcome || (async ()=>{});
-window.showWelcome = async function(name, role){
-  await __prevShowWelcome.call(this, name, role);
-  addHistoryButtonForMe(); // todos
-};
+function openHistoryPicker(email, name){
+  closeHistorySheet();
+  const wrap = document.createElement("div");
+  wrap.id = "acwbs";
+  wrap.className = "acwbs-overlay";
+  wrap.innerHTML = `
+    <div class="acwbs-sheet">
+      <div class="acwbs-grip"></div>
+      <div class="acwbs-head">
+        <button class="acwbs-close">✕</button>
+        <h3 class="acwbs-title">History (5 weeks)</h3>
+        <p class="acwbs-sub">${name}</p>
+      </div>
+      <div class="acwbs-body">
+        <ul class="acwbs-week-list" id="acwbsList"></ul>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+  wrap.querySelector(".acwbs-close").onclick = closeHistorySheet;
+  wrap.addEventListener("click", (e)=>{ if(e.target.classList.contains("acwbs-overlay")) closeHistorySheet(); });
+  renderWeekList(email);
+}
+function closeHistorySheet(){
+  const el=document.getElementById("acwbs"); if(!el) return;
+  el.classList.add("hide"); setTimeout(()=>el.remove(),180);
+}
+
+// Label Lunes→Domingo
+function _wkLabel(offset=0){
+  const now=new Date(), dow=now.getDay();
+  const mon=new Date(now); mon.setHours(0,0,0,0); mon.setDate(mon.getDate()-((dow+6)%7)-(offset*7));
+  const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  const fmt=(d)=>d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+  return `${fmt(mon)} – ${fmt(sun)}`;
+}
+
+function renderWeekList(email){
+  const ul=document.getElementById("acwbsList");
+  const items=[];
+  for(let i=0;i<5;i++){
+    items.push(`
+      <li class="acwbs-week" data-off="${i}">
+        <div class="acwbs-wtxt">
+          <div class="acwbs-wtitle">${_wkLabel(i)}</div>
+          <div class="acwbs-wsub">Week ${i===0?"(current)":"-"+i}</div>
+        </div>
+        <button class="acwbs-open">Open ›</button>
+      </li>`);
+  }
+  ul.innerHTML=items.join("");
+  ul.querySelectorAll(".acwbs-week").forEach(li=>{
+    li.addEventListener("click",()=> loadHistoryWeek(email, Number(li.dataset.off||0)));
+  });
+}
+
+async function loadHistoryWeek(email, offset){
+  const body=document.querySelector("#acwbs .acwbs-body");
+  body.innerHTML = `
+    <div class="acwbs-view">
+      <div class="acwbs-vhead">
+        <button class="acwbs-back">‹ Weeks</button>
+        <div>
+          <div class="acwbs-vtitle">${_wkLabel(offset)}</div>
+          <div class="acwbs-vsub">Offset: ${offset===0?"current":"-"+offset}</div>
+        </div>
+      </div>
+      <div class="acwbs-vcontent"><div class="acwbs-loading">Loading…</div></div>
+    </div>`;
+  body.querySelector(".acwbs-back").onclick = ()=> renderWeekList(email);
+
+  try{
+    const url = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${offset}`;
+    const r = await fetch(url,{cache:"no-store"}); const d = await r.json();
+    const content = body.querySelector(".acwbs-vcontent");
+    if(!d?.ok || !Array.isArray(d.days)){ content.innerHTML=`<p style="color:#c00;">No data for this week.</p>`; return; }
+
+    const rows = d.days.map(it=>{
+      const off=/off/i.test(it.shift||""); const hrs=Number(it.hours||0);
+      return `<tr>
+        <td>${it.name}</td>
+        <td class="${off?'acwbs-dim':''}">${it.shift||'-'}</td>
+        <td class="acwbs-right ${off?'acwbs-dim':''}">${hrs.toFixed(1)}h</td>
+      </tr>`;
+    }).join("");
+
+    content.innerHTML = `
+      <table class="acwbs-table">
+        <tr><th>Day</th><th>Shift</th><th class="acwbs-right">Hours</th></tr>
+        ${rows}
+      </table>
+      <div class="acwbs-total">Total: <b>${Number(d.total||0).toFixed(1)}h</b></div>`;
+  }catch(_){
+    body.querySelector(".acwbs-vcontent").innerHTML=`<p style="color:#c00;">Error loading week.</p>`;
+  }
+}
 
 // (opcional) expón en window por si llamas desde HTML
 window.openHistoryFor = openHistoryFor;
