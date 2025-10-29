@@ -346,7 +346,8 @@ function renderTeamViewPage() {
     try {
       const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
       const d = await r.json();
-      const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
+      const tr = Array.from(body.querySelectorAll('tr[data-email]'))
+  .find(el => el.dataset.email === emp.email);
       if (tr) tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
     } catch { }
   });
