@@ -1,26 +1,119 @@
 /* ============================================================
-   🧠 ACW-App v5.6.2 — Blue Glass White Connected
-   Johan A. Giraldo (JAG15) & Sky — Oct 2025
+   🧠 ACW-App v5.6.3 Turbo — Blue Glass White Connected
+   Johan A. Giraldo (JAG15) & Sky — Nov 2025
    ============================================================
-   - Login conectado a GAS (login, getSmartSchedule, directory)
-   - Dashboard: welcome + schedule + live hours + total estable
-   - Team View (manager/supervisor) + Employee Modal
-   - Envíos sendtoday / sendtomorrow (fallback simple)
-   - Change password
-   - Restauración de sesión + toasts
+   Mejoras clave:
+   - Caché en memoria con TTL (desduplica y acelera)
+   - Team View sin intervalos cuando está cerrado
+   - Carga por página con concurrencia limitada
+   - AbortController para cancelar al cerrar
+   - Menos repaints/DOM touches
    ============================================================ */
 
 let currentUser = null;
 
-/* ============== helpers UI ============== */
+/* =================== Utils / Core =================== */
 function $(sel, root=document){ return root.querySelector(sel); }
 function $all(sel, root=document){ return Array.from(root.querySelectorAll(sel)); }
 function isManagerRole(role){ return ["manager","supervisor"].includes(String(role||"").toLowerCase()); }
-
 function safeText(el, txt){ if(el) el.textContent = txt; }
 function setVisible(el, show){ if(!el) return; el.style.display = show ? "" : "none"; }
+function cssEscape(s){ try{return CSS.escape(s);}catch{ return String(s).replace(/[^a-zA-Z0-9_\-]/g,"_"); } }
 
-/* ============== LOGIN ============== */
+/* Hoy cacheado + refresco a medianoche */
+const Today = (()=> {
+  let key = new Date().toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase();
+  // programa cambio a medianoche
+  const now = new Date();
+  const next = new Date(now); next.setHours(24,0,0,0);
+  setTimeout(()=>{ key = new Date().toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase(); }, next-now+50);
+  return { get key(){ return key; } };
+})();
+
+/* Caché en memoria con TTL + de-dupe */
+const Net = (()=> {
+  const store = new Map(); // key -> {expires, value} | inflight: Promise
+  function get(key){
+    const it = store.get(key);
+    if (!it) return null;
+    if (it.value && it.expires > Date.now()) return it.value;
+    if (it.inflight) return it.inflight; // de-dupe concurrente
+    store.delete(key);
+    return null;
+  }
+  function set(key, value, ttl){
+    store.set(key, { value, expires: Date.now()+ttl });
+    return value;
+  }
+  function setInflight(key, p){
+    store.set(key, { inflight: p, expires: 0 });
+  }
+  function clearInflight(key){
+    const it = store.get(key);
+    if (it && it.inflight) store.delete(key);
+  }
+  return { get, set, setInflight, clearInflight };
+})();
+
+/* fetch JSON con TTL y dedupe */
+async function fetchJSON(url, { ttl=0, signal } = {}){
+  if (ttl>0){
+    const cached = Net.get(url);
+    if (cached) return cached;
+  }
+  const inflight = fetch(url, { cache:"no-store", signal }).then(r=>r.json());
+  if (ttl>0) Net.setInflight(url, inflight);
+  try{
+    const data = await inflight;
+    if (ttl>0) Net.set(url, data, ttl);
+    return data;
+  }finally{
+    if (ttl>0) Net.clearInflight(url);
+  }
+}
+
+/* API helpers con TTL inteligentes */
+const API = {
+  dirTTL: 5*60*1000,         // 5 min
+  schedTTL0: 60*1000,        // semana actual 60s (para live y TeamView)
+  schedTTLOld: 5*60*1000,    // semanas -1..-4 más relajado
+
+  getDirectory(controller){
+    const u = `${CONFIG.BASE_URL}?action=getEmployeesDirectory`;
+    return fetchJSON(u, { ttl: API.dirTTL, signal: controller?.signal });
+  },
+  getSchedule(email, offset=0, controller){
+    const ttl = offset===0 ? API.schedTTL0 : API.schedTTLOld;
+    const u = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${offset}`;
+    return fetchJSON(u, { ttl, signal: controller?.signal });
+  }
+};
+
+/* Concurrencia limitada simple (p-limit) */
+function runLimited(items, limit, iteratee){
+  const queue = [...items];
+  let running = 0;
+  return new Promise((resolve) => {
+    const results = new Array(items.length);
+    let idx = 0, done = 0;
+    function next(){
+      while (running < limit && idx < items.length){
+        const cur = idx++;
+        running++;
+        Promise.resolve(iteratee(items[cur], cur))
+          .then(res => { results[cur]=res; })
+          .finally(()=>{
+            running--; done++;
+            if (done===items.length) return resolve(results);
+            next();
+          });
+      }
+    }
+    next();
+  });
+}
+
+/* =================== LOGIN =================== */
 async function loginUser() {
   const email = $("#email")?.value.trim();
   const password = $("#password")?.value.trim();
@@ -35,7 +128,6 @@ async function loginUser() {
 
     const res  = await fetch(`${CONFIG.BASE_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {cache:"no-store"});
     const data = await res.json();
-
     if (!data?.ok) throw new Error(data?.error || "Invalid email or password.");
 
     currentUser = data; // {ok,name,email,role,week}
@@ -51,7 +143,7 @@ async function loginUser() {
   }
 }
 
-/* ============== WELCOME DASHBOARD ============== */
+/* =================== WELCOME DASHBOARD =================== */
 async function showWelcome(name, role) {
   setVisible($("#login"), false);
   setVisible($("#welcome"), true);
@@ -60,12 +152,11 @@ async function showWelcome(name, role) {
 
   if (isManagerRole(role)) addTeamButton();
 
-  // Inserta teléfono del usuario (si existe)
+  // Teléfono del usuario (usando caché de directorio)
   try {
-    const r = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`, {cache:"no-store"});
-    const j = await r.json();
-    if (j.ok && Array.isArray(j.directory)) {
-      const self = j.directory.find(e => (e.email||"").toLowerCase() === (currentUser?.email||"").toLowerCase());
+    const dir = await API.getDirectory();
+    if (dir?.ok && Array.isArray(dir.directory)) {
+      const self = dir.directory.find(e => (e.email||"").toLowerCase() === (currentUser?.email||"").toLowerCase());
       if (self?.phone) {
         $(".user-phone")?.remove();
         $("#welcomeName")?.insertAdjacentHTML("afterend",
@@ -76,31 +167,31 @@ async function showWelcome(name, role) {
   } catch {}
 }
 
-/* ============== LOAD SCHEDULE + LIVE ============== */
+/* =================== LOAD SCHEDULE + LIVE =================== */
 async function loadSchedule(email) {
   const schedDiv = $("#schedule");
   schedDiv.innerHTML = `<p style="color:#007bff;font-weight:500;">Loading your shift...</p>`;
 
   try {
-    const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, {cache:"no-store"});
-    const d = await r.json();
-
-    if (!d.ok || !Array.isArray(d.days)) {
+    const d = await API.getSchedule(email, 0);
+    if (!d?.ok || !Array.isArray(d.days)) {
       schedDiv.innerHTML = `<p style="color:#c00;">No schedule found for this week.</p>`;
       return;
     }
 
     let html = `<table><tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
+    const todayKey = Today.key;
     d.days.forEach(day=>{
-      const isToday = new Date().toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase() === day.name.slice(0,3).toLowerCase();
+      const isToday = todayKey === day.name.slice(0,3).toLowerCase();
       html += `<tr class="${isToday?"today":""}"><td>${day.name}</td><td>${day.shift||"-"}</td><td>${day.hours||"0"}</td></tr>`;
     });
-    html += `</table><p class="total">Total Hours: <b>${(d.total??0).toFixed?.(1) ?? d.total ?? 0}</b></p>`;
-
+    const totalFmt = (d.total??0);
+    html += `</table><p class="total">Total Hours: <b>${Number(totalFmt).toFixed(1)}</b></p>`;
     schedDiv.innerHTML = html;
 
-    // Arranca live 1s después para asegurar que el DOM esté
-    setTimeout(()=> startLiveTimer(d.days, Number(d.total||0)), 1000);
+    // Arranca live tras DOM listo
+    clearInterval(window.__acwLiveTick__); // evita duplicados
+    setTimeout(()=> startLiveTimer(d.days, Number(d.total||0)), 300);
 
   } catch (e) {
     console.warn(e);
@@ -108,7 +199,7 @@ async function loadSchedule(email) {
   }
 }
 
-/* ============== SESSION RESTORE ============== */
+/* =================== SESSION RESTORE =================== */
 window.addEventListener("load", () => {
   try {
     const saved = localStorage.getItem("acwUser");
@@ -120,7 +211,7 @@ window.addEventListener("load", () => {
   } catch {}
 });
 
-/* ============== LIVE TIMER (dashboard) ============== */
+/* =================== LIVE TIMER (dashboard) =================== */
 function parseTime(str){
   const clean = String(str||"").trim();
   const m = clean.match(/^(\d{1,2})(?::(\d{1,2}))?\s*(am|pm)?$/i);
@@ -134,7 +225,11 @@ function updateTotalDisplay(value, active=false){
   const totalEl = $(".total");
   if (!totalEl || isNaN(value)) return;
   const color = active? "#33a0ff":"#e60000";
-  totalEl.innerHTML = `<span style="color:${color}">⚪ Total Hours: <b>${value.toFixed(1)}</b></span>`;
+  const html = `⚪ Total Hours: <b>${value.toFixed(1)}</b>`;
+  if (totalEl.__lastHTML !== html){
+    totalEl.__lastHTML = html;
+    totalEl.innerHTML = `<span style="color:${color}">${html}</span>`;
+  }
 }
 function showLiveHours(hours, active=true){
   let el = $(".live-hours");
@@ -157,14 +252,13 @@ function removeOnlineBadge(){ $("#onlineBadge")?.remove(); }
 
 function startLiveTimer(days, total){
   try{
-    const todayKey = new Date().toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase();
+    const todayKey = Today.key;
     const today = days.find(d=> d.name.slice(0,3).toLowerCase()===todayKey);
     if(!today || !today.shift || /off/i.test(today.shift)) return;
 
     const shift = today.shift.trim();
     removeOnlineBadge();
 
-    // Turno activo estilo "7:30."
     if (shift.endsWith(".")) {
       addOnlineBadge();
       const startStr = shift.replace(/\.$/,"").trim();
@@ -174,7 +268,6 @@ function startLiveTimer(days, total){
         const diff = Math.max(0,(Date.now()-startTime.getTime())/36e5);
         updateTotalDisplay(total+diff, true);
         showLiveHours(diff, true);
-        // también pinta dentro de la tabla (Horas de hoy)
         paintLiveInTable(todayKey, diff);
       };
       tick();
@@ -182,7 +275,6 @@ function startLiveTimer(days, total){
       return;
     }
 
-    // Turno cerrado "7:30 - 6"
     const p = shift.split("-"); if (p.length<2) return;
     const a = parseTime(p[0].trim()), b = parseTime(p[1].trim());
     if(!a || !b) return;
@@ -202,7 +294,7 @@ function paintLiveInTable(todayKey, hours, staticMode=false){
   row.cells[2].style.fontWeight = staticMode ? "500" : "600";
 }
 
-/* ============== SETTINGS ============== */
+/* =================== SETTINGS =================== */
 function openSettings(){ setVisible($("#settingsModal"), true); }
 function closeSettings(){ setVisible($("#settingsModal"), false); }
 function openChangePassword(){ setVisible($("#changePasswordModal"), true); }
@@ -219,7 +311,7 @@ function logoutUser(){
   setTimeout(()=>location.reload(), 500);
 }
 
-/* ============== CHANGE PASSWORD ============== */
+/* =================== CHANGE PASSWORD =================== */
 async function submitChangePassword() {
   const oldPass = $("#oldPass")?.value.trim();
   const newPass = $("#newPass")?.value.trim();
@@ -250,9 +342,11 @@ async function submitChangePassword() {
   }
 }
 
-/* ============== TEAM VIEW (gestión) ============== */
+/* =================== TEAM VIEW (gestión) =================== */
 const TEAM_PAGE_SIZE = 8;
 let __teamList=[], __teamPage=0;
+let __tvController = null;      // Abort controller del TV
+let __tvIntervalId = null;      // Interval solo cuando está abierto
 
 function addTeamButton(){
   if ($("#teamBtn")) return;
@@ -262,28 +356,34 @@ function addTeamButton(){
 }
 function toggleTeamOverview(){
   const w = $("#directoryWrapper");
-  if (w){ w.classList.add("fade-out"); setTimeout(()=>w.remove(), 220); return; }
+  if (w){
+    w.classList.add("fade-out");
+    setTimeout(()=>{ w.remove(); }, 180);
+    if (__tvIntervalId){ clearInterval(__tvIntervalId); __tvIntervalId=null; }
+    if (__tvController){ __tvController.abort(); __tvController=null; }
+    return;
+  }
   loadEmployeeDirectory();
 }
 async function loadEmployeeDirectory() {
   try {
-    const r = await fetch(`${CONFIG.BASE_URL}?action=getEmployeesDirectory`, { cache: "no-store" });
-    const j = await r.json();
-    if (!j.ok) return;
+    __tvController?.abort();
+    __tvController = new AbortController();
+
+    const j = await API.getDirectory(__tvController);
+    if (!j?.ok) return;
 
     __teamList = j.directory || [];
     __teamPage = 0;
     renderTeamViewPage();
   } catch (e) {
-    console.warn(e);
+    if (e.name!=="AbortError") console.warn(e);
   }
 }
 
 function renderTeamViewPage() {
-  // 🔄 Limpia anterior si existe
   $("#directoryWrapper")?.remove();
 
-  // 🧱 Crea el contenedor principal centrado
   const box = document.createElement("div");
   box.id = "directoryWrapper";
   box.className = "directory-wrapper tv-wrapper";
@@ -306,7 +406,6 @@ function renderTeamViewPage() {
     transition: "all 0.35s ease"
   });
 
-  // 🧩 Contenido del Team View
   box.innerHTML = `
     <div class="tv-head" style="display:flex;justify-content:space-between;align-items:center;">
       <h3 style="margin:0;color:#0078ff;text-shadow:0 0 8px rgba(0,120,255,0.25);">Team View</h3>
@@ -325,10 +424,10 @@ function renderTeamViewPage() {
 
   document.body.appendChild(box);
 
-  // 📊 Carga datos de empleados
   const start = __teamPage * TEAM_PAGE_SIZE;
   const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
   const body = $("#tvBody", box);
+
   body.innerHTML = slice.map(emp => `
     <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role || ''}" data-phone="${emp.phone || ''}">
       <td><b>${emp.name}</b></td>
@@ -337,59 +436,79 @@ function renderTeamViewPage() {
       <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
     </tr>`).join("");
 
-  // 📄 Navegación por páginas
   $("#tvPrev", box).onclick = () => { __teamPage = Math.max(0, __teamPage - 1); renderTeamViewPage(); };
   $("#tvNext", box).onclick = () => { __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1); renderTeamViewPage(); };
 
-  // 🔢 Llenar horas totales
-  slice.forEach(async emp => {
-    try {
-      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
-      const d = await r.json();
-      const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
-      if (tr) tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
-    } catch { }
-  });
+  // Horas totales del slice con concurrencia limitada (4)
+  const todayKey = Today.key;
+  runLimited(slice, 4, async (emp)=>{
+    try{
+      const d = await API.getSchedule(emp.email, 0, __tvController);
+      const tr = body.querySelector(`tr[data-email="${cssEscape(emp.email)}"]`);
+      if (!tr) return;
+      tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
 
-  // 🔁 Actualiza Live Status
-  updateTeamViewLiveStatus();
-
-  // 🧠 Animación de aparición centrada (sin “baile”)
-  setTimeout(() => {
-    box.style.visibility = "visible";
-    box.style.opacity = "1";
-    box.style.transform = "translate(-50%, -50%) scale(1)";
-  }, 100);
-}
-async function updateTeamViewLiveStatus(){
-  try{
-    const rows = $all(".tv-table tr[data-email]"); if (!rows.length) return;
-    for (const row of rows){
-      const email=row.dataset.email, liveCell=row.querySelector(".tv-live"), totalCell=row.querySelector(".tv-hours");
-      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, {cache:"no-store"});
-      const d = await r.json(); if (!d.ok || !d.days) continue;
-
-      const todayKey = new Date().toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase();
-      const today = d.days.find(x=> x.name.slice(0,3).toLowerCase()===todayKey);
-      if (!today?.shift) { liveCell.innerHTML="—"; continue; }
+      // Live
+      const liveCell = tr.querySelector(".tv-live");
+      const today = d?.days?.find(x=> x.name.slice(0,3).toLowerCase()===todayKey);
+      if (!today?.shift){ liveCell.textContent="—"; return; }
 
       if (today.shift.trim().endsWith(".")){
         const startTime = parseTime(today.shift.replace(/\.$/,"").trim());
-        if(!startTime) continue;
+        if (!startTime) return;
+        const diff = Math.max(0,(Date.now()-startTime.getTime())/36e5);
+        liveCell.innerHTML = `🟢 ${diff.toFixed(1)}h`;
+        liveCell.style.color="#33ff66"; liveCell.style.fontWeight="600"; liveCell.style.textShadow="0 0 10px rgba(51,255,102,.6)";
+        const totalCell = tr.querySelector(".tv-hours");
+        const base = parseFloat(totalCell.textContent)||0;
+        totalCell.innerHTML = `${(base+diff).toFixed(1)} <span style="color:#33a0ff;font-size:.85em;">(+${diff.toFixed(1)})</span>`;
+      } else {
+        liveCell.textContent = "—";
+        liveCell.style.color="#aaa"; liveCell.style.fontWeight="400"; liveCell.style.textShadow="none";
+      }
+    }catch(e){}
+  });
+
+  // Interval SOLO mientras Team View está visible (cada 2 min)
+  if (__tvIntervalId){ clearInterval(__tvIntervalId); __tvIntervalId=null; }
+  __tvIntervalId = setInterval(async ()=>{
+    const rows = $all(".tv-table tr[data-email]", box);
+    const sliceNow = rows.map(r=>({
+      email: r.dataset.email, rowEl: r
+    }));
+    // actualiza live del slice usando caché de 60s
+    await runLimited(sliceNow, 4, async (info)=>{
+      const d = await API.getSchedule(info.email, 0, __tvController);
+      const today = d?.days?.find(x=> x.name.slice(0,3).toLowerCase()===Today.key);
+      const liveCell = info.rowEl.querySelector(".tv-live");
+      const totalCell= info.rowEl.querySelector(".tv-hours");
+      if (!today?.shift){ liveCell.textContent="—"; return; }
+      if (today.shift.trim().endsWith(".")){
+        const startTime = parseTime(today.shift.replace(/\.$/,"").trim());
+        if (!startTime) return;
         const diff = Math.max(0,(Date.now()-startTime.getTime())/36e5);
         liveCell.innerHTML = `🟢 ${diff.toFixed(1)}h`;
         liveCell.style.color="#33ff66"; liveCell.style.fontWeight="600"; liveCell.style.textShadow="0 0 10px rgba(51,255,102,.6)";
         const base = parseFloat(totalCell.textContent)||0;
-        totalCell.innerHTML = `${(base+diff).toFixed(1)} <span style="color:#33a0ff;font-size:.85em;">(+${diff.toFixed(1)})</span>`;
-      }else{
-        liveCell.innerHTML="—"; liveCell.style.color="#aaa"; liveCell.style.fontWeight="400"; liveCell.style.textShadow="none";
+        if (!/span/.test(totalCell.innerHTML)){
+          totalCell.innerHTML = `${(base+diff).toFixed(1)} <span style="color:#33a0ff;font-size:.85em;">(+${diff.toFixed(1)})</span>`;
+        }
+      } else {
+        liveCell.textContent = "—";
+        liveCell.style.color="#aaa"; liveCell.style.fontWeight="400"; liveCell.style.textShadow="none";
       }
-    }
-  }catch(e){ console.warn("Live col error:", e); }
-}
-setInterval(updateTeamViewLiveStatus, 120000);
+    });
+  }, 120000);
 
-/* ============== EMPLOYEE MODAL (gestión) ============== */
+  // Animación de aparición
+  setTimeout(() => {
+    box.style.visibility = "visible";
+    box.style.opacity = "1";
+    box.style.transform = "translate(-50%, -50%) scale(1)";
+  }, 60);
+}
+
+/* =================== EMPLOYEE MODAL =================== */
 async function openEmployeePanel(btnEl){
   const tr = btnEl.closest("tr");
   const email = tr.dataset.email, name = tr.dataset.name, role = tr.dataset.role||"", phone = tr.dataset.phone||"";
@@ -398,9 +517,8 @@ async function openEmployeePanel(btnEl){
 
   let data = null;
   try{
-    const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, {cache:"no-store"});
-    data = await r.json();
-    if (!data.ok) throw new Error();
+    data = await API.getSchedule(email, 0);
+    if (!data?.ok) throw new Error();
   }catch{
     alert("No schedule found for this employee.");
     return;
@@ -409,7 +527,6 @@ async function openEmployeePanel(btnEl){
   const m = document.createElement("div");
   m.className = "employee-modal emp-panel";
   m.id = modalId;
-
   m.innerHTML = `
     <div class="emp-box">
       <button class="emp-close">×</button>
@@ -444,8 +561,7 @@ async function openEmployeePanel(btnEl){
 
       <button class="emp-refresh" style="margin-top:8px;">⚙️ Check for Updates</button>
     </div>
-  `; // ← ← ← Cierra el template string aquí (importante)
-
+  `;
   document.body.appendChild(m);
 
   // binds
@@ -455,7 +571,7 @@ async function openEmployeePanel(btnEl){
     refBtn.onclick = () => {
       try { if ("caches" in window) caches.keys().then(k => k.forEach(n => caches.delete(n))); } catch {}
       m.classList.add("flash");
-      setTimeout(() => location.reload(), 900);
+      setTimeout(() => location.reload(), 600);
     };
   }
 
@@ -464,7 +580,7 @@ async function openEmployeePanel(btnEl){
     m.querySelector(".btn-today").onclick    = () => sendShiftMessage(email, "sendtoday");
     m.querySelector(".btn-tomorrow").onclick = () => sendShiftMessage(email, "sendtomorrow");
     const hb = m.querySelector(".btn-history");
-    if (hb) hb.onclick = () => openHistoryFor(email, name);  // botón History
+    if (hb) hb.onclick = () => openHistoryFor(email, name);
   }
 
   enableModalLiveShift(m, data.days||[]);
@@ -472,7 +588,7 @@ async function openEmployeePanel(btnEl){
 
 function enableModalLiveShift(modal, days){
   try{
-    const key = new Date().toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase();
+    const key = Today.key;
     const today = days.find(d=> d.name.slice(0,3).toLowerCase()===key);
     if (!today?.shift || /off/i.test(today.shift)) return;
 
@@ -507,7 +623,7 @@ function enableModalLiveShift(modal, days){
   }catch(e){ console.warn("modal live err:", e); }
 }
 
-/* ============== MANAGER ACTIONS (simple fallback) ============== */
+/* =================== MANAGER ACTIONS =================== */
 async function updateShiftFromModal(targetEmail, modalEl){
   const msg = $(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || $(".emp-status-msg", modalEl);
   const actor = currentUser?.email;
@@ -536,23 +652,15 @@ async function updateShiftFromModal(targetEmail, modalEl){
   else { msg.textContent="❌ Could not update."; toast("❌ Update failed","error"); }
 }
 
-/* ============== SEND SHIFT MESSAGE ============== */
-/* ============== SEND SHIFT MESSAGE (v5.6.3) ============== */
+/* =================== SEND SHIFT MESSAGE =================== */
 async function sendShiftMessage(targetEmail, action) {
-  const msgBox = document.querySelector(
-    `#empStatusMsg-${targetEmail.replace(/[@.]/g, "_")}`
-  );
+  const msgBox = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g, "_")}`);
   if (msgBox) msgBox.textContent = "📤 Sending...";
   const actor = currentUser?.email;
-  if (!actor) {
-    if (msgBox) msgBox.textContent = "⚠️ Session expired";
-    return;
-  }
+  if (!actor) { if (msgBox) msgBox.textContent = "⚠️ Session expired"; return; }
 
   try {
-    const url = `${CONFIG.BASE_URL}?action=${action}&actor=${encodeURIComponent(
-      actor
-    )}&target=${encodeURIComponent(targetEmail)}`;
+    const url = `${CONFIG.BASE_URL}?action=${action}&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}`;
     const r = await fetch(url, { cache: "no-store" });
     const data = await r.json();
 
@@ -561,26 +669,21 @@ async function sendShiftMessage(targetEmail, action) {
       const shift = data.sent?.shift || "-";
       const mode = data.sent?.mode?.toUpperCase?.() || action.toUpperCase();
 
-      msgBox.textContent = `✅ ${name} (${mode}) → ${shift}`;
-      msgBox.style.color = "#00b341";
+      if (msgBox){ msgBox.textContent = `✅ ${name} (${mode}) → ${shift}`; msgBox.style.color = "#00b341"; }
       toast(`✅ WhatsApp sent to ${name}`, "success");
-
-      // 🔔 Vibración ligera en móviles
       if (window.navigator.vibrate) window.navigator.vibrate(100);
     } else {
       const err = data.error || "unknown_error";
-      msgBox.textContent = `⚠️ ${err}`;
-      msgBox.style.color = "#ff4444";
+      if (msgBox){ msgBox.textContent = `⚠️ ${err}`; msgBox.style.color = "#ff4444"; }
       toast(`⚠️ Send failed (${err})`, "error");
     }
   } catch (err) {
     console.error("sendShiftMessage error:", err);
-    msgBox.textContent = "❌ Network error";
-    msgBox.style.color = "#ff4444";
+    if (msgBox){ msgBox.textContent = "❌ Network error"; msgBox.style.color = "#ff4444"; }
   }
 }
 
-/* ============== TOASTS ============== */
+/* =================== TOASTS =================== */
 (function ensureToast(){
   if ($("#toastContainer")) return;
   const c=document.createElement("div"); c.id="toastContainer";
@@ -599,115 +702,29 @@ function toast(msg, type="info"){
   setTimeout(()=>{ t.style.opacity="0"; t.style.transform="translateY(-10px)"; setTimeout(()=>t.remove(),380); }, 2600);
 }
 
-function openChangePassword() {
-  const modal = $("#changePasswordModal");
-  closeSettings(); // 🔹 cierra el Settings primero
-  if (modal) {
-    modal.classList.add("show");
-    modal.style.display = "flex";
-  }
-}
-
-function closeChangePassword() {
-  const modal = $("#changePasswordModal");
-  if (modal) {
-    modal.classList.remove("show");
-    setTimeout(() => (modal.style.display = "none"), 200);
-  }
-}
-
-/* ============== GLOBAL BINDS ============== */
-window.loginUser = loginUser;
-window.openSettings = openSettings;
-window.closeSettings = closeSettings;
-window.refreshApp = refreshApp;
-window.logoutUser = logoutUser;
-window.openChangePassword = openChangePassword;
-window.closeChangePassword = closeChangePassword;
-window.submitChangePassword = submitChangePassword;
-window.openEmployeePanel = openEmployeePanel;
-window.sendShiftMessage = sendShiftMessage;
-window.updateShiftFromModal = updateShiftFromModal;
-window.showWelcome = showWelcome;
-window.renderTeamViewPage = renderTeamViewPage;
-
-console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.2"} | Base: ${CONFIG?.BASE_URL||"<no-config>"}`);
-
-/* ============================================================
-   ⚙️ ACW-App Behavior Fix Pack v5.6.2
-   Johan A. Giraldo (JAG15) & Sky — Nov 2025
-   ============================================================ */
-
-// 🧩 Corrige apertura del Team View con animación suave
-const _oldRenderTV = window.renderTeamViewPage;
-window.renderTeamViewPage = function(...args) {
-  _oldRenderTV.apply(this, args);
-  const box = document.querySelector("#directoryWrapper");
-  if (box) setTimeout(() => box.classList.add("show"), 50);
-};
-
-// 🧩 Reasigna visibilidad del modal de settings
-function openSettings() {
-  const modal = document.getElementById("settingsModal");
-  if (!modal) {
-    console.warn("⚠️ Settings modal not found");
-    return;
-  }
-  modal.style.display = "flex";
-  modal.style.alignItems = "center";
-  modal.style.justifyContent = "center";
-}
-function closeSettings() {
-  const modal = document.getElementById("settingsModal");
-  if (modal) modal.style.display = "none";
-}
-
-// 🔁 Asegura que las funciones globales sigan disponibles
-window.openSettings = openSettings;
-window.closeSettings = closeSettings;
-
-/* ============================================================
-   ACW — History Picker (Settings-card, 5 weeks) — Clean Build
-   Reqs: CONFIG.BASE_URL (GAS), fetchWeekHistory (opcional)
-   ============================================================ */
-
-/** 1) Fallback seguro: obtiene 5 semanas por offset si no existe fetchWeekHistory() */
+/* =================== HISTORY (ligero y en caché) =================== */
 async function __acwHistory5w(email, weeks = 5){
-  if (typeof fetchWeekHistory === "function") {
-    try { return await fetchWeekHistory(email, weeks); } catch {}
-  }
-  function weekLabelByOffset(off=0){
-    const now=new Date(), day=now.getDay();                 // 0=Sun
+  // 5 semanas en paralelo (usa cache de API.getSchedule con TTL)
+  const tasks = Array.from({length:weeks}, (_,i)=> i);
+  const mkLabel = (off=0)=>{
+    const now=new Date(), day=now.getDay();
     const mon=new Date(now); mon.setHours(0,0,0,0);
-    mon.setDate(mon.getDate()-((day+6)%7)-(off*7));         // lunes
-    const sun=new Date(mon); sun.setDate(mon.getDate()+6);  // domingo
-    const F = d=>d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+    mon.setDate(mon.getDate()-((day+6)%7)-(off*7));
+    const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+    const F=d=>d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
     return `${F(mon)} – ${F(sun)}`;
-  }
-
-  const out = [];
-  for (let i=0; i<weeks; i++){
+  };
+  const settled = await runLimited(tasks, 3, async (off)=>{
     try{
-      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${i}`, {cache:"no-store"});
-      const d = await r.json();
-      out.push({
-        label: d.weekLabel || weekLabelByOffset(i),
-        total: Number(d.total||0),
-        days:  Array.isArray(d.days) ? d.days : []
-      });
-    }catch{
-      out.push({ label: weekLabelByOffset(i), total: 0, days: [] });
-    }
-  }
-  return out;
+      const d = await API.getSchedule(email, off);
+      if (d?.ok) return { label: d.weekLabel || mkLabel(off), total: Number(d.total||0), days: Array.isArray(d.days)?d.days:[] };
+    }catch{}
+    return { label: mkLabel(off), total: 0, days: [] };
+  });
+  return settled;
 }
-
-/** 2) Abre tarjeta centrada tipo Settings */
 function openHistoryPicker(email, name="My History"){
-  // Cierra si ya está abierta
   document.getElementById("acwhOverlay")?.remove();
-
-  // Overlay + Card
   const overlay = document.createElement("div");
   overlay.id = "acwhOverlay";
   overlay.className = "acwh-overlay";
@@ -724,22 +741,14 @@ function openHistoryPicker(email, name="My History"){
       </div>
     </div>`;
   document.body.appendChild(overlay);
-
-  // Cerrar con botón o click fuera
   overlay.querySelector(".acwh-close").onclick = () => overlay.remove();
   overlay.addEventListener("click", e=>{ if(e.target===overlay) overlay.remove(); });
-
-  // Render lista inicial
   renderHistoryPickerList(email, name, overlay);
 }
-
-/** 3) Lista de semanas (usa fallback seguro) */
 async function renderHistoryPickerList(email, name, root){
   const body = root.querySelector("#acwhBody");
   body.className = "acwh-list";
-
   const hist = await __acwHistory5w(email, 5);
-
   body.innerHTML = hist.map((w,i)=>`
     <div class="acwh-row" data-idx="${i}">
       <div class="acwh-week">
@@ -750,31 +759,21 @@ async function renderHistoryPickerList(email, name, root){
       <button class="acwh-btn" data-idx="${i}">Open ›</button>
     </div>
   `).join("");
-
-  // Abrir detalle desde la fila o el botón
   body.querySelectorAll(".acwh-row, .acwh-btn").forEach(el=>{
     el.onclick = ()=>{
       const idx = Number(el.dataset.idx || el.closest(".acwh-row")?.dataset.idx || 0);
       renderHistoryDetailCentered(hist[idx], email, name, idx, root);
     };
   });
-
-  // Asegura títulos
   root.querySelector(".acwh-title").textContent = "History (5 weeks)";
   root.querySelector(".acwh-sub").textContent   = String(name||"").toUpperCase();
 }
-
-/** 4) Detalle de una semana en la MISMA tarjeta */
 function renderHistoryDetailCentered(week, email, name, offset, root){
   const body = root.querySelector("#acwhBody");
-  body.className = ""; // modo detalle
-
-  // Header dinámico
+  body.className = "";
   root.querySelector(".acwh-title").textContent = week.label;
   root.querySelector(".acwh-sub").textContent =
     `${offset===0 ? "Week (current)" : `Week -${offset}`} • ${String(name||"").toUpperCase()}`;
-
-  // Tabla de días
   const rows = (week.days||[]).map(d=>{
     const off = /off/i.test(String(d.shift||""));
     const styleCell = off ? 'style="color:#999"' : '';
@@ -785,7 +784,6 @@ function renderHistoryDetailCentered(week, email, name, offset, root){
       <td ${styleHours}>${Number(d.hours||0).toFixed(1)}</td>
     </tr>`;
   }).join("");
-
   body.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
       <button class="acwh-back">‹ Weeks</button>
@@ -797,76 +795,35 @@ function renderHistoryDetailCentered(week, email, name, offset, root){
     </table>
     <div class="acwh-total-line">Total: ${Number(week.total||0).toFixed(1)}h</div>
   `;
-
-  body.querySelector(".acwh-back").onclick = () =>
-    renderHistoryPickerList(email, name, root);
+  body.querySelector(".acwh-back").onclick = () => renderHistoryPickerList(email, name, root);
 }
 
-/** 5) Exports globales (compat con botones existentes) */
+/* =================== GLOBAL BINDS =================== */
+window.loginUser = loginUser;
+window.openSettings = openSettings;
+window.closeSettings = closeSettings;
+window.refreshApp = refreshApp;
+window.logoutUser = logoutUser;
+window.openChangePassword = openChangePassword;
+window.closeChangePassword = closeChangePassword;
+window.submitChangePassword = submitChangePassword;
+window.openEmployeePanel = openEmployeePanel;
+window.sendShiftMessage = sendShiftMessage;
+window.updateShiftFromModal = updateShiftFromModal;
+window.showWelcome = showWelcome;
+window.renderTeamViewPage = renderTeamViewPage;
 window.openHistoryPicker = openHistoryPicker;
 window.openHistoryFor   = (...args)=> openHistoryPicker(...args);
 
-/** 6) Botón “History (5w)” fijo + Hook único al dashboard */
-function addHistoryButtonForMe(){
-  if (document.getElementById("historyBtnMe")) return;
-  const btn = document.createElement("button");
-  btn.id="historyBtnMe";
-  btn.textContent = "History (5w)";
-  btn.style.cssText = "position:fixed;top:25px;left:40px;background:#fff;color:#0078ff;border:2px solid rgba(0,120,255,.4);border-radius:10px;padding:8px 16px;font-weight:600;box-shadow:0 4px 20px rgba(0,120,255,.4);cursor:pointer;z-index:9999;";
-  btn.onclick = ()=> openHistoryPicker(currentUser?.email||"", `${currentUser?.name||"Me"}`);
-  document.body.appendChild(btn);
-}
+console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3 Turbo"} | Base: ${CONFIG?.BASE_URL||"<no-config>"}`);
 
-// Hook único (no duplica si ya fue aplicado)
+/* =================== UI micro-fix (TV show class) =================== */
 (function(){
-  const prev = window.showWelcome || (async()=>{});
-  if (!prev.__acwHookedHistory){
-    const wrapped = async function(name, role){
-      await prev.call(this, name, role);
-      addHistoryButtonForMe();
-    };
-    wrapped.__acwHookedHistory = true;
-    window.showWelcome = wrapped;
-  }
-})();
-
-// === ACW v5.6.2 — Hotfix mini (pegar al FINAL) ===
-(function(){
-  // 1) Inyecta CSS mínimo para History y la animación del Team View
-  function injectStyleOnce(id, css){
-    if (document.getElementById(id)) return;
-    const s = document.createElement('style');
-    s.id = id; s.textContent = css; document.head.appendChild(s);
-  }
-  injectStyleOnce('acw-min-css', `
-    .acwh-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.25);backdrop-filter:blur(2px);z-index:10050;}
-    .acwh-card{width:90%;max-width:560px;background:rgba(255,255,255,.97);border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.25);padding:14px 16px;}
-    .acwh-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
-    .acwh-sub{color:#0078ff;font-weight:700;margin:0 0 6px 0;text-align:center}
-    .acwh-list{display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow:auto}
-    .acwh-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid rgba(0,0,0,.06);border-radius:10px;background:#fff}
-    .acwh-week small{color:#777}
-    .acwh-total{font-weight:700}
-    .acwh-btn{border:1px solid #0078ff;background:#f3f9ff;padding:6px 10px;border-radius:8px;cursor:pointer}
-    .acwh-table{width:100%;border-collapse:collapse;margin-top:6px}
-    .acwh-table th,.acwh-table td{padding:8px;border-bottom:1px solid rgba(0,0,0,.06)}
-    .acwh-total-line{margin-top:8px;font-weight:700;text-align:right}
-    /* Si el fix pack usa .show, garantizamos la animación */
-    .tv-wrapper.show{visibility:visible;opacity:1;transform:translate(-50%,-50%) scale(1)}
-  `);
-
-  // 2) Guard para el fix de Team View (evita undefined y flicker)
-  try{
-    const prev = typeof window.renderTeamViewPage==='function'
-      ? window.renderTeamViewPage
-      : (typeof renderTeamViewPage==='function' ? renderTeamViewPage : null);
-
-    if (prev){
-      window.renderTeamViewPage = function(...args){
-        prev.apply(this, args);
-        const box = document.querySelector('#directoryWrapper');
-        if (box) box.classList.add('show'); // activa el CSS de arriba
-      };
-    }
-  }catch(e){ console.warn('TV guard hotfix:', e); }
+  const prev = typeof window.renderTeamViewPage==='function' ? window.renderTeamViewPage : null;
+  if (!prev) return;
+  window.renderTeamViewPage = function(...args){
+    prev.apply(this, args);
+    const box = document.querySelector('#directoryWrapper');
+    if (box) box.classList.add('show');
+  };
 })();
