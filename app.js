@@ -670,10 +670,17 @@ window.closeSettings = closeSettings;
    ACW — History Picker (Settings-card, 5 weeks) — Clean Build
    Reqs: CONFIG.BASE_URL (GAS), fetchWeekHistory (opcional)
    ============================================================ */
+// ✅ ÚNICA versión — rápida (paralelo) + fallback a fetchWeekHistory si existe
+async function __acwHistory5w(email, weeks = 5) {
+  // 1) Intentar helper del servidor si existe
+  if (typeof fetchWeekHistory === "function") {
+    try {
+      const r = await fetchWeekHistory(email, weeks);
+      if (Array.isArray(r) && r.length) return r;
+    } catch {}
+  }
 
-/** 1) Fallback seguro: obtiene 5 semanas por offset si no existe fetchWeekHistory() */
-// ⚡ Fast: 5 semanas en paralelo (Promise.allSettled)
-async function __acwHistory5w(email, weeks = 5){
+  // 2) Cliente: 5 semanas en paralelo
   const mkLabel = (off=0)=>{
     const now=new Date(), day=now.getDay();
     const mon=new Date(now); mon.setHours(0,0,0,0);
@@ -683,79 +690,30 @@ async function __acwHistory5w(email, weeks = 5){
     return `${F(mon)} – ${F(sun)}`;
   };
 
-  const urls = Array.from({length:weeks}, (_,i)=>
+  const urls = Array.from({length: weeks}, (_, i) =>
     `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${i}`
   );
 
-  const results = await Promise.allSettled(
-    urls.map(u=>fetch(u,{cache:"no-store"}).then(r=>r.json()))
+  const settled = await Promise.allSettled(
+    urls.map(u => fetch(u, {cache: "no-store"}).then(r => r.json()).catch(()=>null))
   );
 
-  return results.map((res,i)=>{
-    if(res.status==="fulfilled" && res.value && res.value.ok){
-      const d = res.value;
-      return { label: d.weekLabel || mkLabel(i), total:Number(d.total||0), days:Array.isArray(d.days)?d.days:[] };
-    }
-    return { label: mkLabel(i), total: 0, days: [] };
-  });
-}
-  function weekLabelByOffset(off=0){
-    const now=new Date(), day=now.getDay();                 // 0=Sun
-    const mon=new Date(now); mon.setHours(0,0,0,0);
-    mon.setDate(mon.getDate()-((day+6)%7)-(off*7));         // lunes
-    const sun=new Date(mon); sun.setDate(mon.getDate()+6);  // domingo
-    const F = d=>d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
-    return `${F(mon)} – ${F(sun)}`;
-  }
-
   const out = [];
-  for (let i=0; i<weeks; i++){
-    try{
-      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${i}`, {cache:"no-store"});
-      const d = await r.json();
+  for (let i = 0; i < weeks; i++) {
+    const res = settled[i];
+    if (res && res.status === "fulfilled" && res.value && res.value.ok) {
+      const d = res.value;
       out.push({
-        label: d.weekLabel || weekLabelByOffset(i),
-        total: Number(d.total||0),
-        days:  Array.isArray(d.days) ? d.days : []
+        label: d.weekLabel || mkLabel(i),
+        total: Number(d.total || 0),
+        days: Array.isArray(d.days) ? d.days : []
       });
-    }catch{
-      out.push({ label: weekLabelByOffset(i), total: 0, days: [] });
+    } else {
+      out.push({ label: mkLabel(i), total: 0, days: [] });
     }
   }
   return out;
 }
-
-/** 2) Abre tarjeta centrada tipo Settings */
-function openHistoryPicker(email, name="My History"){
-  // Cierra si ya está abierta
-  document.getElementById("acwhOverlay")?.remove();
-
-  // Overlay + Card
-  const overlay = document.createElement("div");
-  overlay.id = "acwhOverlay";
-  overlay.className = "acwh-overlay";
-  overlay.innerHTML = `
-    <div class="acwh-card">
-      <div class="acwh-head">
-        <div style="width:22px"></div>
-        <h3 class="acwh-title">History (5 weeks)</h3>
-        <button class="acwh-close" aria-label="Close">×</button>
-      </div>
-      <div class="acwh-sub">${String(name||"").toUpperCase()}</div>
-      <div id="acwhBody" class="acwh-list">
-        <div class="acwh-row" style="justify-content:center;opacity:.7;">Loading…</div>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-
-  // Cerrar con botón o click fuera
-  overlay.querySelector(".acwh-close").onclick = () => overlay.remove();
-  overlay.addEventListener("click", e=>{ if(e.target===overlay) overlay.remove(); });
-
-  // Render lista inicial
-  renderHistoryPickerList(email, name, overlay);
-}
-
 /** 3) Lista de semanas (usa fallback seguro) */
 async function renderHistoryPickerList(email, name, root){
   const body = root.querySelector("#acwhBody");
