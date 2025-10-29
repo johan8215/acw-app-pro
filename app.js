@@ -346,8 +346,7 @@ function renderTeamViewPage() {
     try {
       const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
       const d = await r.json();
-      const tr = Array.from(body.querySelectorAll('tr[data-email]'))
-  .find(el => el.dataset.email === emp.email);
+      const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
       if (tr) tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
     } catch { }
   });
@@ -640,9 +639,9 @@ console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.2"} | Base: ${CONFI
    ============================================================ */
 
 // 🧩 Corrige apertura del Team View con animación suave
-const _oldRenderTV = window.renderTeamViewPage || renderTeamViewPage;
+const _oldRenderTV = window.renderTeamViewPage;
 window.renderTeamViewPage = function(...args) {
-  if (_oldRenderTV) _oldRenderTV.apply(this, args);
+  _oldRenderTV.apply(this, args);
   const box = document.querySelector("#directoryWrapper");
   if (box) setTimeout(() => box.classList.add("show"), 50);
 };
