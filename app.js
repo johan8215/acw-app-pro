@@ -1126,3 +1126,97 @@ async function openHistoryFor(email, name="My History"){
   window.openHistoryPicker = window.openHistoryPicker || openHistoryPicker;
   window.openHistoryWeekDetail = window.openHistoryWeekDetail || openHistoryWeekDetail;
 })();
+
+/* ===== ACW — History Picker (Centered like Settings) ===== */
+function openHistoryPicker(email, name="My History"){
+  // Cierra si ya está abierto
+  document.getElementById("acwhOverlay")?.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "acwhOverlay";
+  overlay.className = "acwh-overlay";
+  overlay.innerHTML = `
+    <div class="acwh-card">
+      <div class="acwh-head">
+        <div style="width:22px"></div>
+        <h3 class="acwh-title">History (5 weeks)</h3>
+        <button class="acwh-close">×</button>
+      </div>
+      <div class="acwh-sub">${(name||"").toUpperCase()}</div>
+      <div id="acwhBody" class="acwh-list">
+        <div class="acwh-row" style="justify-content:center;opacity:.7;">Loading…</div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector(".acwh-close").onclick = () => overlay.remove();
+
+  renderHistoryPickerList(email, name, overlay);
+}
+
+async function renderHistoryPickerList(email, name, root){
+  const body = root.querySelector("#acwhBody");
+  body.className = "acwh-list";
+
+  const hist = await fetchWeekHistory(email, 5); // usa tu backend con offset
+  body.innerHTML = hist.map((w,i)=>`
+    <div class="acwh-row" data-idx="${i}">
+      <div class="acwh-week">
+        <div>${w.label}</div>
+        <small>${i===0 ? "Week (current)" : `Week -${i}`}</small>
+      </div>
+      <div class="acwh-total">${Number(w.total||0).toFixed(1)}h</div>
+      <button class="acwh-btn" data-idx="${i}">Open ›</button>
+    </div>
+  `).join("");
+
+  // Fila o botón abren el detalle
+  body.querySelectorAll(".acwh-row, .acwh-btn").forEach(el=>{
+    el.onclick = (ev)=>{
+      const idx = Number(el.dataset.idx || el.closest(".acwh-row")?.dataset.idx || 0);
+      renderHistoryDetailCentered(hist[idx], email, name, idx, root);
+    };
+  });
+
+  // Ajusta título
+  root.querySelector(".acwh-title").textContent = "History (5 weeks)";
+  root.querySelector(".acwh-sub").textContent = (name||"").toUpperCase();
+}
+
+function renderHistoryDetailCentered(week, email, name, offset, root){
+  const body = root.querySelector("#acwhBody");
+  body.className = ""; // modo detalle
+
+  // Header
+  root.querySelector(".acwh-title").textContent = week.label;
+  root.querySelector(".acwh-sub").textContent =
+    `${offset===0 ? "Week (current)" : `Week -${offset}`} • ${(name||"").toUpperCase()}`;
+
+  // Tabla
+  const rows = (week.days||[]).map(d=>{
+    const off = /off/i.test(String(d.shift||""));
+    return `<tr>
+      <td>${d.name}</td>
+      <td ${off?'style="color:#999"':''}>${d.shift||'-'}</td>
+      <td ${off?'style="color:#999;text-align:right"':'style="text-align:right"'}>${Number(d.hours||0).toFixed(1)}</td>
+    </tr>`;
+  }).join("");
+
+  body.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <button class="acwh-back">‹ Weeks</button>
+      <div class="acwh-total">${Number(week.total||0).toFixed(1)}h</div>
+    </div>
+    <table class="acwh-table">
+      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+      ${rows}
+    </table>
+    <div class="acwh-total-line">Total: ${Number(week.total||0).toFixed(1)}h</div>
+  `;
+
+  body.querySelector(".acwh-back").onclick = () =>
+    renderHistoryPickerList(email, name, root);
+}
+
+// Exponer (y mantener compat)
+window.openHistoryPicker = openHistoryPicker;
+window.openHistoryFor = (...args)=> openHistoryPicker(...args);
