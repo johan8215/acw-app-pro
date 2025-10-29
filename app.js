@@ -639,9 +639,9 @@ console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.2"} | Base: ${CONFI
    ============================================================ */
 
 // 🧩 Corrige apertura del Team View con animación suave
-const _oldRenderTV = window.renderTeamViewPage;
+const _oldRenderTV = window.renderTeamViewPage || renderTeamViewPage;
 window.renderTeamViewPage = function(...args) {
-  _oldRenderTV.apply(this, args);
+  if (_oldRenderTV) _oldRenderTV.apply(this, args);
   const box = document.querySelector("#directoryWrapper");
   if (box) setTimeout(() => box.classList.add("show"), 50);
 };
