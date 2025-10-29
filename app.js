@@ -1127,30 +1127,32 @@ async function openHistoryFor(email, name="My History"){
   window.openHistoryWeekDetail = window.openHistoryWeekDetail || openHistoryWeekDetail;
 })();
 
-/* ===== ACW — History Picker (Centered like Settings) ===== */
-function openHistoryPicker(email, name="My History"){
-  // Cierra si ya está abierto
-  document.getElementById("acwhOverlay")?.remove();
-
-  const overlay = document.createElement("div");
-  overlay.id = "acwhOverlay";
-  overlay.className = "acwh-overlay";
-  overlay.innerHTML = `
-    <div class="acwh-card">
-      <div class="acwh-head">
-        <div style="width:22px"></div>
-        <h3 class="acwh-title">History (5 weeks)</h3>
-        <button class="acwh-close">×</button>
-      </div>
-      <div class="acwh-sub">${(name||"").toUpperCase()}</div>
-      <div id="acwhBody" class="acwh-list">
-        <div class="acwh-row" style="justify-content:center;opacity:.7;">Loading…</div>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-  overlay.querySelector(".acwh-close").onclick = () => overlay.remove();
-
-  renderHistoryPickerList(email, name, overlay);
+// ===== Safe history fetch (usa fetchWeekHistory si existe, si no hace fallback por offset) =====
+async function __acwHistory5w(email, weeks = 5){
+  // 1) Si ya tienes fetchWeekHistory en otro bundle, úsalo
+  if (typeof fetchWeekHistory === "function") {
+    try { return await fetchWeekHistory(email, weeks); } catch {}
+  }
+  // 2) Fallback: llama getSmartSchedule con ?offset=i
+  const out = [];
+  for (let i = 0; i < weeks; i++){
+    try{
+      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${i}`, {cache:"no-store"});
+      const d = await r.json();
+      const label = d.weekLabel || (function lbl(off=0){
+        const now=new Date(), day=now.getDay();
+        const mon=new Date(now); mon.setHours(0,0,0,0);
+        mon.setDate(mon.getDate()-((day+6)%7)-(off*7));
+        const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+        const f=x=>x.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+        return `${f(mon)} – ${f(sun)}`;
+      })(i);
+      out.push({ label, total:Number(d.total||0), days: d.days||[] });
+    }catch{
+      out.push({ label: `(no data)`, total:0, days:[] });
+    }
+  }
+  return out;
 }
 
 async function renderHistoryPickerList(email, name, root){
