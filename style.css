@@ -590,3 +590,49 @@ tr.today td {
   padding:6px 4px;
 }
 .hx-total{ text-align:right; font-weight:700; color: var(--red, #e60000); margin-top:10px; }
+
+/* ===== ACW — History (Centered like Settings) ===== */
+.acwh-overlay{
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.45); z-index:9999; animation:fadeIn .25s ease;
+}
+.acwh-card{
+  width:340px; max-width:90vw;
+  background:rgba(255,255,255,.97); border-radius:16px;
+  box-shadow:0 0 40px rgba(0,120,255,.30);
+  padding:22px 24px; text-align:center; animation:popIn .25s ease;
+}
+.acwh-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.acwh-title{ margin:0 auto; color:#0078ff; font-weight:700; }
+.acwh-close{ background:none; border:none; font-size:22px; cursor:pointer; color:#333; }
+.acwh-sub{ color:#777; font-size:13px; margin:2px 0 10px; }
+
+.acwh-list{ display:flex; flex-direction:column; gap:10px; margin-top:8px; }
+.acwh-row{
+  display:flex; align-items:center; justify-content:space-between;
+  background:#fff; border:1px solid rgba(0,0,0,.08); border-radius:10px;
+  padding:10px 12px;
+}
+.acwh-row:hover{ box-shadow:0 4px 14px rgba(0,0,0,.10); }
+
+.acwh-week{ text-align:left; }
+.acwh-week small{ color:#999; display:block; margin-top:2px; }
+
+.acwh-total{ font-weight:800; color:var(--red); margin-left:auto; margin-right:8px; }
+
+.acwh-btn{
+  background: var(--red); color:#fff; border:none; border-radius:8px;
+  padding:8px 12px; font-weight:700; cursor:pointer;
+}
+.acwh-back{
+  background:#fff; color:#0078ff; border:2px solid rgba(0,120,255,.35);
+  border-radius:10px; padding:6px 10px; font-weight:600; cursor:pointer;
+}
+
+.acwh-table{ width:100%; border-collapse:collapse; margin-top:10px; }
+.acwh-table th{
+  text-align:left; color:#0078ff; border-bottom:2px solid rgba(0,120,255,.15); padding:6px 4px;
+}
+.acwh-table td{ padding:6px 4px; border-bottom:1px solid rgba(0,0,0,.08); }
+.acwh-table td:last-child{ text-align:right; }
+.acwh-total-line{ text-align:right; font-weight:800; color:var(--red); margin:10px 0 2px; }
