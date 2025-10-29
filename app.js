@@ -897,3 +897,102 @@ console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3 Turbo"} | Base: $
   // Exporta open actualizado
   window.openSettings = openSettingsFix;
 })();
+// === ACW v5.6.3 — Change Password hard-fix (pegar al FINAL) ===
+(function () {
+  function injectStyleOnce(id, css){
+    if (document.getElementById(id)) return;
+    const s = document.createElement('style'); s.id = id; s.textContent = css;
+    document.head.appendChild(s);
+  }
+  injectStyleOnce('acw-cp2-css', `
+    #changePasswordModal{position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.45); backdrop-filter:blur(8px); z-index:13000;}
+    #changePasswordModal.show{ display:flex !important; }
+    #changePasswordModal .modal-content.glass{
+      background:rgba(255,255,255,.97); border-radius:14px; box-shadow:0 0 40px rgba(0,120,255,.3);
+      padding:24px 26px; width:340px; max-width:92vw; animation:popIn .22s ease; position:relative; text-align:center;
+    }
+    #changePasswordModal .close{ position:absolute; right:10px; top:8px; background:none; border:none; font-size:22px; cursor:pointer; }
+    #changePasswordModal input{
+      display:block; margin:8px auto; width:90%; max-width:280px; padding:10px;
+      border:1px solid rgba(0,120,255,.25); border-radius:6px; outline:none;
+    }
+  `);
+
+  // Crea el modal si no existe, con los IDs que usa submitChangePassword()
+  function ensureChangePasswordModal(){
+    let cp = document.getElementById('changePasswordModal');
+    if (!cp){
+      cp = document.createElement('div');
+      cp.id = 'changePasswordModal';
+      cp.className = 'modal';
+      cp.innerHTML = `
+        <div class="modal-content glass">
+          <button class="close" aria-label="Close">×</button>
+          <h3 style="margin:0 0 8px">Change Password</h3>
+          <input id="oldPass" type="password" placeholder="Current password" autocomplete="current-password">
+          <input id="newPass" type="password" placeholder="New password" autocomplete="new-password">
+          <input id="confirmPass" type="password" placeholder="Confirm new password" autocomplete="new-password">
+          <p id="passDiag" class="error"></p>
+          <div style="display:flex;gap:8px;justify-content:center;margin-top:6px;">
+            <button id="cpSaveBtn">Save</button>
+            <button id="cpCancelBtn" type="button">Cancel</button>
+          </div>
+        </div>`;
+      document.body.appendChild(cp);
+      // binds básicos
+      cp.querySelector('.close').onclick = closeChangePassword2;
+      cp.querySelector('#cpCancelBtn').onclick = closeChangePassword2;
+      cp.addEventListener('click', (e)=>{ if (e.target === cp) closeChangePassword2(); });
+      cp.querySelector('#cpSaveBtn').onclick = submitChangePassword;
+    }
+    return cp;
+  }
+
+  let _settingsWasVisible = null;
+
+  function openChangePassword2(){
+    const cp = ensureChangePasswordModal();
+    const settings = document.getElementById('settingsModal');
+
+    // Recuerda si Settings estaba visible y ocúltalo para evitar overlays dobles
+    if (settings){
+      _settingsWasVisible = (settings.style.display !== 'none' && settings.offsetParent !== null);
+      settings.style.display = 'none';
+      settings.classList.remove('show');
+    }
+
+    // Muestra el CP por encima de todo
+    cp.style.zIndex = '13000';
+    cp.classList.add('show');
+
+    // ESC para cerrar
+    const onKey = (ev)=>{ if (ev.key === 'Escape') closeChangePassword2(); };
+    document.addEventListener('keydown', onKey, { once:true });
+
+    // focus
+    setTimeout(()=> document.getElementById('oldPass')?.focus(), 50);
+  }
+
+  function closeChangePassword2(){
+    const cp = document.getElementById('changePasswordModal');
+    const settings = document.getElementById('settingsModal');
+    if (cp){ cp.classList.remove('show'); cp.style.display = 'none'; }
+    if (settings && _settingsWasVisible){
+      settings.style.display = 'flex';
+      settings.classList.add('show');
+      settings.style.alignItems = 'center';
+      settings.style.justifyContent = 'center';
+      settings.style.zIndex = '12000';
+    }
+    _settingsWasVisible = null;
+  }
+
+  // Sobrescribe globales (sin tocar submitChangePassword)
+  window.openChangePassword = openChangePassword2;
+  window.closeChangePassword = closeChangePassword2;
+
+  // Si existe un botón #changePassBtn, engánchalo
+  const btn = document.getElementById('changePassBtn');
+  if (btn) btn.onclick = openChangePassword2;
+})();
