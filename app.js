@@ -802,3 +802,112 @@ window.showWelcome = async function(name, role){
   await _oldShowWelcome_hist.call(this, name, role);
   addHistoryButtonForMe();                  // todos
 };
+/* ===== ACW – History Floating (Team View style) ===== */
+async function _acwFetchWeekHistory5w(email, weeks=5){
+  const out=[];
+  for (let i=0;i<weeks;i++){
+    const url = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${i}`;
+    try{
+      const r = await fetch(url, {cache:"no-store"}); const d = await r.json();
+      if (d?.ok){
+        out.push({
+          label: d.weekLabel || _acwWeekLabelByOffset(i),
+          total: Number(d.total||0),
+          days:  Array.isArray(d.days)? d.days : []
+        });
+      }else{
+        out.push({ label:_acwWeekLabelByOffset(i), total:0, days:[] });
+      }
+    }catch(_){
+      out.push({ label:_acwWeekLabelByOffset(i), total:0, days:[] });
+    }
+  }
+  return out;
+}
+function _acwWeekLabelByOffset(offset=0){
+  const now=new Date(), day=now.getDay();
+  const monday=new Date(now); monday.setHours(0,0,0,0);
+  monday.setDate(monday.getDate()-((day+6)%7)-(offset*7));
+  const sunday=new Date(monday); sunday.setDate(monday.getDate()+6);
+  const fmt=d=>d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+  return `${fmt(monday)} – ${fmt(sunday)}`;
+}
+
+function _acwRenderHistTable(container, week){
+  const todayKey = new Date().toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase();
+  const rows = (week.days||[]).map(d=>{
+    const isToday = d.name.slice(0,3).toLowerCase()===todayKey;
+    const off = /off/i.test(String(d.shift||""));
+    const hh  = Number(d.hours||0).toFixed(1);
+    return `
+      <tr class="${off?'acw-hist-off':''} ${isToday?'acw-hist-today':''}">
+        <td>${isToday?'• ':''}${d.name}</td>
+        <td>${d.shift||'-'}</td>
+        <td style="text-align:right">${hh}h</td>
+      </tr>
+    `;
+  }).join("");
+  container.innerHTML = `
+    <table class="acw-hist-table">
+      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+      ${rows}
+    </table>
+    <div class="acw-hist-total">Total: ${(Number(week.total)||0).toFixed(1)}h</div>
+  `;
+}
+
+async function openHistoryFor(email, name="My History"){
+  // Overlay base
+  document.getElementById("acwHistOverlay")?.remove();
+  const overlay = document.createElement("div");
+  overlay.id="acwHistOverlay";
+  overlay.innerHTML = `
+    <div class="acw-hist-box" role="dialog" aria-label="History (5 weeks)">
+      <div class="acw-hist-head">
+        <h3 class="acw-hist-title">History (5 weeks) — <span style="font-weight:700">${name.toUpperCase?.()||name}</span></h3>
+        <button class="acw-hist-close" aria-label="Close">×</button>
+      </div>
+      <div class="acw-hist-body">
+        <ul class="acw-hist-weeks" id="acwWeeksList">
+          <li style="opacity:.7">Loading…</li>
+        </ul>
+        <div id="acwWeekView">
+          <p style="color:#777;margin:0">Fetching…</p>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.classList.add("show");
+
+  // Cerrar
+  const close = ()=> overlay.remove();
+  overlay.querySelector(".acw-hist-close").onclick = close;
+  overlay.addEventListener("click", e=>{ if (e.target===overlay) close(); });
+  document.addEventListener("keydown", function esc(e){ if(e.key==="Escape"){ close(); document.removeEventListener("keydown", esc);} });
+
+  // Datos
+  const hist = await _acwFetchWeekHistory5w(email, 5);
+  const list = overlay.querySelector("#acwWeeksList");
+  const view = overlay.querySelector("#acwWeekView");
+
+  // Última selección recordada
+  const savedIdx = Math.min( +(localStorage.getItem("acw_hist_last")||0), hist.length-1 );
+  let selected = savedIdx;
+
+  // Render lista
+  const mkItem = (w, i)=> `<li data-i="${i}" class="${i===selected?'active':''}">${w.label}<br><span style="font-size:.85em;color:#777">${w.total.toFixed(1)}h</span></li>`;
+  list.innerHTML = hist.map(mkItem).join("");
+
+  // Click semana
+  list.addEventListener("click", e=>{
+    const li = e.target.closest("li[data-i]"); if (!li) return;
+    selected = +li.dataset.i;
+    localStorage.setItem("acw_hist_last", String(selected));
+    list.querySelectorAll("li").forEach(n=> n.classList.toggle("active", +n.dataset.i===selected));
+    _acwRenderHistTable(view, hist[selected]);
+  });
+
+  // Primera vista
+  _acwRenderHistTable(view, hist[selected]);
+}
