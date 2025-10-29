@@ -1007,3 +1007,122 @@ async function openHistoryFor(email, name="My History"){
     wrap.querySelector(".hp-back").onclick = renderPicker;
   }
 }
+/* ============================================================
+   HX — History Picker (Settings-size, Safe Build)
+   (no toca GAS; usa fetchWeekHistory() y getSmartSchedule)
+   ============================================================ */
+(function(){
+  "use strict";
+  if (window.__HX_PICKER__) return;  // evita duplicados
+  window.__HX_PICKER__ = 1;
+
+  // Util: crea/remove overlay
+  function hxRemove(){ document.getElementById("hxOverlay")?.remove(); }
+  function hxMakeOverlay(html){
+    const wrap = document.createElement("div");
+    wrap.id = "hxOverlay";
+    wrap.className = "hx-overlay";
+    wrap.innerHTML = html;
+    document.body.appendChild(wrap);
+    wrap.querySelector(".hx-close")?.addEventListener("click", hxRemove);
+    return wrap;
+  }
+
+  // Lista de 5 semanas (picker)
+  async function openHistoryPicker(email, name){
+    try{
+      hxRemove();
+      const box = `
+        <div class="hx-box">
+          <button class="hx-close" aria-label="Close">×</button>
+          <div class="hx-head">
+            <h3 class="hx-title">History (5 weeks)</h3>
+            <div class="hx-sub">${String(name||"").toUpperCase()}</div>
+          </div>
+          <div class="hx-body" id="hxBody">
+            <div class="hx-row" style="justify-content:center;grid-template-columns:1fr;">Loading…</div>
+          </div>
+        </div>`;
+      const overlay = hxMakeOverlay(box);
+
+      // Usa tu propio fetchWeekHistory(); si no existe, caemos a vacío
+      let hist = [];
+      try{
+        hist = (typeof fetchWeekHistory === "function")
+          ? await fetchWeekHistory(email, 5)
+          : [];
+      }catch(_){ hist = []; }
+
+      const body = overlay.querySelector("#hxBody");
+      if (!hist.length){
+        body.innerHTML = `<div class="hx-row" style="justify-content:center;grid-template-columns:1fr;">No history</div>`;
+        return;
+      }
+
+      body.innerHTML = hist.map((w,i)=>`
+        <div class="hx-row" data-off="${i}">
+          <div class="hx-week">${w.label}</div>
+          <div class="hx-hours">${Number(w.total||0).toFixed(1)}h</div>
+          <div class="hx-arrow">›</div>
+        </div>`).join("");
+
+      body.querySelectorAll(".hx-row").forEach(row=>{
+        row.addEventListener("click", ()=>{
+          const off = Number(row.getAttribute("data-off")||0);
+          openHistoryWeekDetail(email, name, off);
+        });
+      });
+
+    }catch(e){
+      console.warn("HX picker error:", e);
+      alert("History temporarily unavailable.");
+    }
+  }
+
+  // Detalle de una semana
+  async function openHistoryWeekDetail(email, name, offset){
+    const host = document.getElementById("hxOverlay")?.querySelector(".hx-body");
+    if (!host) return;
+
+    host.innerHTML = `<div class="hx-row" style="justify-content:center;grid-template-columns:1fr;">Loading week…</div>`;
+
+    let data = null;
+    try{
+      const url = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${offset}`;
+      const r = await fetch(url, { cache:"no-store" });
+      data = await r.json(); // {ok, weekLabel, days:[...], total}
+    }catch(_){}
+
+    if (!data || !data.ok){
+      host.innerHTML = `<div class="hx-row" style="justify-content:center;grid-template-columns:1fr;">No data</div>`;
+      return;
+    }
+
+    const rows = (data.days||[]).map(d=>{
+      const off = /off/i.test(d.shift||"");
+      return `<tr>
+        <td>${d.name||""}</td>
+        <td style="${off?'color:#999':''}">${d.shift||"-"}</td>
+        <td style="text-align:right;${off?'color:#999':''}">${Number(d.hours||0).toFixed(1)}</td>
+      </tr>`;
+    }).join("");
+
+    host.innerHTML = `
+      <button class="hx-back" id="hxBack">‹ Weeks</button>
+      <div class="hx-sub" style="margin:-4px 0 8px 0;color:#555;">${data.weekLabel||""}</div>
+      <table class="hx-table">
+        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+        ${rows}
+      </table>
+      <div class="hx-total">Total: ${Number(data.total||0).toFixed(1)}h</div>
+    `;
+
+    document.getElementById("hxBack")?.addEventListener("click", ()=>{
+      openHistoryPicker(email, name);
+    });
+  }
+
+  // Exponer en window (no pisa nada existente)
+  window.openHistoryPicker = window.openHistoryPicker || openHistoryPicker;
+  window.openHistoryWeekDetail = window.openHistoryWeekDetail || openHistoryWeekDetail;
+})();
