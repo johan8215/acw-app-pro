@@ -757,3 +757,142 @@ function renderHistoryDetailCentered(week, email, name, offset, root){
 // Exponer (y mantener compat)
 window.openHistoryPicker = openHistoryPicker;
 window.openHistoryFor = (...args)=> openHistoryPicker(...args);
+
+// 3.1) Fallback seguro: obtiene 5 semanas por offset si no existe fetchWeekHistory()
+async function __acwHistory5w(email, weeks = 5){
+  if (typeof fetchWeekHistory === "function") {
+    try { return await fetchWeekHistory(email, weeks); } catch {}
+  }
+  const out = [];
+  for (let i = 0; i < weeks; i++){
+    try{
+      const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${i}`, {cache:"no-store"});
+      const d = await r.json();
+      const label = d.weekLabel || (function lbl(off=0){
+        const now=new Date(), day=now.getDay();
+        const mon=new Date(now); mon.setHours(0,0,0,0);
+        mon.setDate(mon.getDate()-((day+6)%7)-(off*7));
+        const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+        const f=x=>x.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+        return `${f(mon)} – ${f(sun)}`;
+      })(i);
+      out.push({ label, total:Number(d.total||0), days:d.days||[] });
+    }catch{
+      out.push({ label:"(no data)", total:0, days:[] });
+    }
+  }
+  return out;
+}
+
+// 3.2) Tarjeta centrada tipo Settings (overlay .acwh-*)
+function openHistoryPicker(email, name="My History"){
+  // Cierra si ya está abierto
+  document.getElementById("acwhOverlay")?.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "acwhOverlay";
+  overlay.className = "acwh-overlay";
+  overlay.innerHTML = `
+    <div class="acwh-card">
+      <div class="acwh-head">
+        <div style="width:22px"></div>
+        <h3 class="acwh-title">History (5 weeks)</h3>
+        <button class="acwh-close">×</button>
+      </div>
+      <div class="acwh-sub">${(name||"").toUpperCase()}</div>
+      <div id="acwhBody" class="acwh-list">
+        <div class="acwh-row" style="justify-content:center;opacity:.7;">Loading…</div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector(".acwh-close").onclick = () => overlay.remove();
+
+  renderHistoryPickerList(email, name, overlay);
+}
+
+// 3.3) Lista de semanas (usa el fallback)
+async function renderHistoryPickerList(email, name, root){
+  const body = root.querySelector("#acwhBody");
+  body.className = "acwh-list";
+
+  const hist = await __acwHistory5w(email, 5);
+
+  body.innerHTML = hist.map((w,i)=>`
+    <div class="acwh-row" data-idx="${i}">
+      <div class="acwh-week">
+        <div>${w.label}</div>
+        <small>${i===0 ? "Week (current)" : `Week -${i}`}</small>
+      </div>
+      <div class="acwh-total">${Number(w.total||0).toFixed(1)}h</div>
+      <button class="acwh-btn" data-idx="${i}">Open ›</button>
+    </div>
+  `).join("");
+
+  body.querySelectorAll(".acwh-row, .acwh-btn").forEach(el=>{
+    el.onclick = ()=>{
+      const idx = Number(el.dataset.idx || el.closest(".acwh-row")?.dataset.idx || 0);
+      renderHistoryDetailCentered(hist[idx], email, name, idx, root);
+    };
+  });
+
+  root.querySelector(".acwh-title").textContent = "History (5 weeks)";
+  root.querySelector(".acwh-sub").textContent   = (name||"").toUpperCase();
+}
+
+// 3.4) Detalle de una semana (dentro de la misma tarjeta)
+function renderHistoryDetailCentered(week, email, name, offset, root){
+  const body = root.querySelector("#acwhBody");
+  body.className = ""; // modo detalle
+
+  // Header
+  root.querySelector(".acwh-title").textContent = week.label;
+  root.querySelector(".acwh-sub").textContent =
+    `${offset===0 ? "Week (current)" : `Week -${offset}`} • ${(name||"").toUpperCase()}`;
+
+  // Tabla
+  const rows = (week.days||[]).map(d=>{
+    const off = /off/i.test(String(d.shift||""));
+    return `<tr>
+      <td>${d.name}</td>
+      <td ${off?'style="color:#999"':''}>${d.shift||'-'}</td>
+      <td ${off?'style="color:#999;text-align:right"':'style="text-align:right"'}>${Number(d.hours||0).toFixed(1)}</td>
+    </tr>`;
+  }).join("");
+
+  body.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <button class="acwh-back">‹ Weeks</button>
+      <div class="acwh-total">${Number(week.total||0).toFixed(1)}h</div>
+    </div>
+    <table class="acwh-table">
+      <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+      ${rows}
+    </table>
+    <div class="acwh-total-line">Total: ${Number(week.total||0).toFixed(1)}h</div>
+  `;
+
+  body.querySelector(".acwh-back").onclick = () =>
+    renderHistoryPickerList(email, name, root);
+}
+
+// 3.5) Enlaces globales y botón del dashboard
+window.openHistoryPicker = openHistoryPicker;
+window.openHistoryFor = (...args)=> openHistoryPicker(...args); // compat
+
+function addHistoryButtonForMe(){
+  if (document.getElementById("historyBtnMe")) return;
+  const btn = document.createElement("button");
+  btn.id="historyBtnMe";
+  btn.textContent = "History (5w)";
+  btn.style.cssText = "position:fixed;top:25px;left:40px;background:#fff;color:#0078ff;border:2px solid rgba(0,120,255,.4);border-radius:10px;padding:8px 16px;font-weight:600;box-shadow:0 4px 20px rgba(0,120,255,.4);cursor:pointer;z-index:9999;";
+  btn.onclick = ()=> openHistoryPicker(currentUser?.email||"", `${currentUser?.name||"Me"}`);
+  document.body.appendChild(btn);
+}
+// Asegurar hook único
+(function(){
+  const prev = window.showWelcome || (async()=>{});
+  window.showWelcome = async function(name, role){
+    await prev.call(this, name, role);
+    addHistoryButtonForMe();
+  };
+})();
