@@ -1,3 +1,4 @@
+<script>
 /* ============================================================
    🧠 ACW-App v5.6.3 — Blue Glass White (Stable)
    Johan A. Giraldo (JAG15) & Sky — Nov 2025
@@ -721,3 +722,146 @@
 
   console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3"} | Base: ${CONFIG?.BASE_URL||"<no-config>"}`);
 })();
+</script>
+<script>
+// === ACW v5.6.3 — Login Fix Pack (pegar AL FINAL de app.js) ===
+(function(){
+  if (window.__ACW_LOGIN_FIX__) return;
+  window.__ACW_LOGIN_FIX__ = true;
+
+  // Polyfill mínimo
+  if (!window.CSS || !CSS.escape) {
+    window.CSS = window.CSS || {};
+    CSS.escape = CSS.escape || function(s){ return String(s).replace(/[^a-zA-Z0-9_\-]/g, ch => '\\' + ch.codePointAt(0).toString(16) + ' '); };
+  }
+
+  // Helpers locales
+  const $  = (sel, root=document)=> root.querySelector(sel);
+  const txt= (el, t)=>{ if(el) el.textContent = t; };
+
+  function normalizeBaseUrl(){
+    const base = (window.CONFIG && CONFIG.BASE_URL) ? String(CONFIG.BASE_URL).trim() : "";
+    return base.replace(/\/+$/,"");
+  }
+
+  function bindLogin(){
+    // Botón
+    const btn = $("#signInBtn") || document.querySelector('#login button[type="submit"], #login button');
+    if (btn && !btn.__bound){
+      btn.addEventListener("click", ev=>{ ev.preventDefault(); window.loginUser(); });
+      btn.__bound = true;
+    }
+    // Form submit (Enter)
+    const form = document.getElementById("login") || document.querySelector("form#login");
+    if (form && !form.__bound){
+      form.addEventListener("submit", ev=>{ ev.preventDefault(); window.loginUser(); });
+      form.__bound = true;
+    }
+    // Enter en inputs
+    ["email","password"].forEach(id=>{
+      const el = document.getElementById(id);
+      if (el && !el.__bound){
+        el.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); window.loginUser(); }});
+        el.__bound = true;
+      }
+    });
+  }
+
+  async function pingServer(base){
+    try{
+      const ctrl = new AbortController();
+      const t = setTimeout(()=>ctrl.abort("timeout"), 5000);
+      const r = await fetch(`${base}?action=ping`, {cache:"no-store", mode:"cors", signal:ctrl.signal});
+      clearTimeout(t);
+      let j=null; try{ j = await r.clone().json(); }catch{}
+      console.log("[ACW] PING", r.status, j || (await r.text()).slice(0,200));
+      return r.ok;
+    }catch(e){
+      console.warn("[ACW] PING failed:", e);
+      return false;
+    }
+  }
+
+  // Guardar referencia original (si existe)
+  const _origLogin = window.loginUser;
+
+  // Reemplazo seguro con diagnósticos/timeout
+  window.loginUser = async function(){
+    bindLogin();
+    const diag = document.getElementById("diag");
+    const btn  = document.getElementById("signInBtn") || document.querySelector('#login button');
+
+    const email = document.getElementById("email")?.value.trim();
+    const password = document.getElementById("password")?.value.trim();
+    if (!email || !password){ txt(diag, "Please enter your email and password."); return; }
+
+    const base = normalizeBaseUrl();
+    if (!base){ txt(diag, "⚠️ Missing CONFIG.BASE_URL"); console.error("CONFIG:", window.CONFIG); return; }
+
+    try{
+      if (btn){ btn.disabled = true; btn.innerHTML = "⏳ Checking credentials…"; }
+      txt(diag, "Contacting server…");
+
+      // Preflight
+      const reachable = await pingServer(base);
+      if (!reachable) console.warn("Server ping not OK; proceeding anyway…");
+
+      // Timeout + fetch robusto
+      const ctrl = new AbortController();
+      const timer = setTimeout(()=>ctrl.abort("timeout"), 12000);
+
+      const url = `${base}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+      console.log("[ACW] LOGIN →", url);
+
+      let res, raw, data;
+      try{
+        res = await fetch(url, {cache:"no-store", mode:"cors", signal:ctrl.signal});
+        raw = await res.text();
+        try{ data = JSON.parse(raw); }catch{ data = null; }
+      }finally{
+        clearTimeout(timer);
+      }
+
+      if (!res || !res.ok){
+        txt(diag, `❌ Server error (${res?.status||"no response"})`);
+        console.error("Login HTTP fail", {status:res?.status, body:raw});
+        if (btn){ btn.disabled=false; btn.innerHTML="Sign In"; }
+        return;
+      }
+      if (!data || data.ok !== true){
+        const err = data?.error || (raw ? raw.slice(0,200) : "Invalid response");
+        txt(diag, `❌ ${err}`);
+        if (btn){ btn.disabled=false; btn.innerHTML="Sign In"; }
+        return;
+      }
+
+      // Éxito
+      window.currentUser = data;
+      localStorage.setItem("acwUser", JSON.stringify(data));
+      txt(diag, "✅ Welcome, " + data.name + "!");
+
+      // Si había una versión previa de loginUser con lógica extra, respétala
+      // (no la llamamos para no duplicar fetch; continuamos con flujo estándar)
+      await (window.showWelcome?.(data.name, data.role));
+      await (window.loadSchedule?.(data.email));
+
+      if (btn){ btn.disabled=false; btn.innerHTML="Sign In"; }
+    }catch(e){
+      console.error("Login error", e);
+      if (String(e).includes("timeout")) txt(diag, "❌ Timeout contacting server (12s). Try again.");
+      else txt(diag, `❌ ${e?.message||"Network/CORS error"}`);
+      if (btn){ btn.disabled=false; btn.innerHTML="Sign In"; }
+    }
+  };
+
+  // Bind en load (por si el HTML no tiene onclick)
+  window.addEventListener("load", bindLogin);
+
+  // Hard reset útil si quedó cacheado algo viejo
+  window.acwHardReset = async function(){
+    try{ localStorage.clear(); sessionStorage.clear(); }catch{}
+    try{ if ("caches" in window){ const ks = await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); } }catch{}
+    location.reload();
+  };
+})();
+</script>
