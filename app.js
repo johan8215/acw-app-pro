@@ -664,135 +664,56 @@ function closeSettings() {
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
 
-/* ============== HISTORY (5 weeks) ============== */
-// Reutiliza el mismo backend: soporta offset por semana (0 = actual, 1 = -1 semana, etc.)
-async function fetchWeekHistory(email, weeks = 5) {
-  const out = [];
-  for (let i = 0; i < weeks; i++) {
-    const url = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${i}`;
-    try {
-      const r = await fetch(url, { cache: "no-store" });
-      const d = await r.json();
-      // d: { ok, weekLabel?, days:[{name,shift,hours}], total }
-      if (d?.ok) {
-        out.push({
-          label: d.weekLabel || getWeekLabelFromOffset(i),
-          total: Number(d.total || 0),
-          days: d.days || []
-        });
-      } else {
-        out.push({ label: getWeekLabelFromOffset(i), total: 0, days: [] });
-      }
-    } catch {
-      out.push({ label: getWeekLabelFromOffset(i), total: 0, days: [] });
-    }
-  }
-  return out;
+/* ===== ACW Bottom Sheet (scoped, no overrides) ===== */
+.acwbs-overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,.45); backdrop-filter:blur(8px);
+  z-index:10050; display:flex; align-items:flex-end; animation:fadeIn .2s ease;
+}
+.acwbs-overlay.hide{ animation:fadeOut .18s ease forwards; }
+
+.acwbs-sheet{
+  width:100%; background:#fff; border-top-left-radius:16px; border-top-right-radius:16px;
+  box-shadow:0 -10px 30px rgba(0,0,0,.20); animation:acwbsUp .22s ease;
+}
+.acwbs-grip{ width:50px; height:5px; background:#e6e6e6; border-radius:3px; margin:10px auto 4px; }
+.acwbs-head{ padding:6px 16px 10px; text-align:center; position:relative; }
+.acwbs-close{ position:absolute; right:10px; top:6px; background:none; border:none; font-size:20px; cursor:pointer; color:#333; }
+.acwbs-title{ margin:6px 0 2px; color: var(--blue); }
+.acwbs-sub{ margin:0; color:#666; font-size:13px; }
+.acwbs-body{ max-height:65vh; overflow:auto; padding:6px 12px 16px; }
+
+/* Listado semanas */
+.acwbs-week-list{ list-style:none; margin:6px 0 4px; padding:0; }
+.acwbs-week{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 12px; margin:8px 4px; border:1px solid rgba(0,0,0,.08); border-radius:10px;
+  background:rgba(0,120,255,.04); cursor:pointer; transition:.18s;
+}
+.acwbs-week:hover{ background:rgba(0,120,255,.08); }
+.acwbs-wtitle{ font-weight:700; }
+.acwbs-wsub{ font-size:12px; color:#777; margin-top:2px; }
+.acwbs-open{
+  background: linear-gradient(135deg, var(--blue), var(--blue-2));
+  color:#fff; border:none; border-radius:8px; padding:6px 10px; font-weight:700; cursor:pointer;
 }
 
-function getWeekLabelFromOffset(offset = 0) {
-  // Lunes de la semana (offset semanas atrás)
-  const now = new Date();
-  const day = now.getDay();                  // 0=Dom ... 1=Lun ...
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - ((day + 6) % 7) - (offset * 7));
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  const fmt = (d)=> d.toLocaleDateString("en-US", {month:"short", day:"numeric"});
-  return `${fmt(monday)} – ${fmt(sunday)}`;
-}
+/* Vista de una semana */
+.acwbs-view{ padding:4px 6px 14px; }
+.acwbs-vhead{ display:flex; gap:10px; align-items:center; border-bottom:1px solid rgba(0,0,0,.08); padding-bottom:8px; margin-bottom:8px; }
+.acwbs-back{ background:#f1f6ff; color:var(--blue); border:1px solid rgba(0,120,255,.25); border-radius:8px; padding:6px 10px; font-weight:700; cursor:pointer; }
+.acwbs-vtitle{ font-weight:700; color:var(--blue); }
+.acwbs-vsub{ font-size:12px; color:#777; margin-top:2px; }
+.acwbs-loading{ color:#777; padding:12px; }
 
-function openHistoryFor(email, name="My History") {
-  renderHistoryModal(email, name);
-}
+.acwbs-table{ width:100%; border-collapse:collapse; font-size:15px; }
+.acwbs-table th{ text-align:left; color:var(--blue); border-bottom:2px solid rgba(0,120,255,.15); padding:6px 4px; }
+.acwbs-table td{ border-bottom:1px solid rgba(0,0,0,.06); padding:6px 4px; }
+.acwbs-right{ text-align:right; }
+.acwbs-dim{ color:#999; }
+.acwbs-total{ text-align:right; font-weight:700; color:var(--red); margin-top:8px; }
 
-/* ============== HISTORY (5 weeks) ============== */
-// Reutiliza el mismo backend: soporta offset por semana (0 = actual, 1 = -1 semana, etc.)
-async function fetchWeekHistory(email, weeks = 5) {
-  const out = [];
-  for (let i = 0; i < weeks; i++) {
-    const url = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${i}`;
-    try {
-      const r = await fetch(url, { cache: "no-store" });
-      const d = await r.json();
-      // d: { ok, weekLabel?, days:[{name,shift,hours}], total }
-      if (d?.ok) {
-        out.push({
-          label: d.weekLabel || getWeekLabelFromOffset(i),
-          total: Number(d.total || 0),
-          days: d.days || []
-        });
-      } else {
-        out.push({ label: getWeekLabelFromOffset(i), total: 0, days: [] });
-      }
-    } catch {
-      out.push({ label: getWeekLabelFromOffset(i), total: 0, days: [] });
-    }
-  }
-  return out;
-}
-
-function getWeekLabelFromOffset(offset = 0) {
-  const now = new Date();
-  const day = now.getDay(); // 0=Sun
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - ((day + 6) % 7) - (offset * 7));
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  const fmt = (d)=> d.toLocaleDateString("en-US", {month:"short", day:"numeric"});
-  return `${fmt(monday)} – ${fmt(sunday)}`;
-}
-
-function openHistoryFor(email, name="My History") {
-  renderHistoryModal(email, name);
-}
-
-async function renderHistoryModal(email, name){
-  const id = "historyModal";
-  document.getElementById(id)?.remove();
-
-  const box = document.createElement("div");
-  box.id = id;
-  box.className = "history-modal";
-  box.innerHTML = `
-    <div class="hm-content">
-      <button class="hm-close">×</button>
-      <h3 style="margin:0 0 6px 0;color:#0078ff;">${name} — Last 5 Weeks</h3>
-      <p style="margin:0 0 10px 0;color:#666;">Weekly totals and daily breakdown</p>
-      <div class="hm-body">
-        <div class="hm-list" id="hmList">
-          <div class="hm-row" style="opacity:.6;">Loading history…</div>
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(box);
-  box.querySelector(".hm-close").onclick = ()=> box.remove();
-
-  const hist = await fetchWeekHistory(email, 5);
-  const list = box.querySelector("#hmList");
-
-  // Render limpio
-  list.innerHTML = hist.map((w,i)=>`
-    <div class="hm-row" style="border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:10px 12px;margin:10px 0;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <div><b>Week ${i===0?"(current)":`-${i}`}</b> • ${w.label}</div>
-        <div style="font-weight:700;color:#0078ff;">${w.total.toFixed(1)}h</div>
-      </div>
-      <table class="hm-table" style="width:100%;font-size:14px;border-collapse:collapse">
-        <tr><th style="text-align:left">Day</th><th>Shift</th><th>Hours</th></tr>
-        ${w.days.map(d=>{
-          const off = /off/i.test(d.shift||"");
-          return `<tr>
-            <td style="padding:4px 0">${d.name}</td>
-            <td style="padding:4px 0;${off?'color:#999':''}">${d.shift||'-'}</td>
-            <td style="padding:4px 0;text-align:right;${off?'color:#999':''}">${(Number(d.hours)||0).toFixed(1)}</td>
-          </tr>`;
-        }).join("")}
-      </table>
-    </div>
-  `).join("");
-} // ←←← IMPORTANTE: cerrar la función aquí
+/* animaciones locales */
+@keyframes acwbsUp { from{ transform:translateY(12px); opacity:.98;} to{ transform:translateY(0); opacity:1;} }
 
 /* ——— Hook en el dashboard (todos lo ven) ——— */
 function addHistoryButtonForMe(){
