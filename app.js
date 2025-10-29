@@ -306,7 +306,7 @@ function renderTeamViewPage() {
     transition: "all 0.35s ease"
   });
 
-  // 🧩 Contenido del Team View
+  // 🧩 Contenido
   box.innerHTML = `
     <div class="tv-head" style="display:flex;justify-content:space-between;align-items:center;">
       <h3 style="margin:0;color:#0078ff;text-shadow:0 0 8px rgba(0,120,255,0.25);">Team View</h3>
@@ -314,9 +314,7 @@ function renderTeamViewPage() {
     </div>
     <div class="tv-pager" style="margin:10px 0;">
       <button class="tv-nav" id="tvPrev" ${__teamPage === 0 ? "disabled" : ""}>‹ Prev</button>
-      <span class="tv-index" style="font-weight:600;color:#0078ff;">
-        Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}
-      </span>
+      <span class="tv-index" style="font-weight:600;color:#0078ff;">Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}</span>
       <button class="tv-nav" id="tvNext" ${(__teamPage + 1) >= Math.ceil(__teamList.length / TEAM_PAGE_SIZE) ? "disabled" : ""}>Next ›</button>
     </div>
     <table class="directory-table tv-table" style="width:100%;font-size:15px;border-collapse:collapse;margin-top:10px;">
@@ -327,44 +325,36 @@ function renderTeamViewPage() {
 
   document.body.appendChild(box);
 
-  // 📊 Carga datos de empleados visibles
+  // 📊 Carga datos visibles en esta página
   const start = __teamPage * TEAM_PAGE_SIZE;
   const slice = __teamList.slice(start, start + TEAM_PAGE_SIZE);
   const body = $("#tvBody", box);
-
   body.innerHTML = slice.map(emp => `
     <tr data-email="${emp.email}" data-name="${emp.name}" data-role="${emp.role || ''}" data-phone="${emp.phone || ''}">
       <td><b>${emp.name}</b></td>
       <td class="tv-hours">—</td>
       <td class="tv-live">—</td>
       <td><button class="open-btn" onclick="openEmployeePanel(this)">Open</button></td>
-    </tr>
-  `).join("");
+    </tr>`).join("");
 
-  // 📄 Navegación por páginas
+  // ⏮️⏭️ Paginación
   $("#tvPrev", box).onclick = () => { __teamPage = Math.max(0, __teamPage - 1); renderTeamViewPage(); };
   $("#tvNext", box).onclick = () => { __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1); renderTeamViewPage(); };
 
-  // 🔢 Llenar horas totales (SIN CSS.escape, usando dataset)
+  // 🔢 Totales por empleado
   slice.forEach(async emp => {
     try {
       const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(emp.email)}`, { cache: "no-store" });
       const d = await r.json();
-
-      const tr = Array.from(body.querySelectorAll('tr[data-email]'))
-        .find(el => (el.dataset.email || "").toLowerCase() === (emp.email || "").toLowerCase());
-
-      if (tr) {
-        tr.querySelector(".tv-hours").textContent =
-          (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
-      }
+      const tr = body.querySelector(`tr[data-email="${CSS.escape(emp.email)}"]`);
+      if (tr) tr.querySelector(".tv-hours").textContent = (d && d.ok) ? (Number(d.total || 0)).toFixed(1) : "0";
     } catch {}
   });
 
-  // 🔁 Actualiza columna Live
+  // 🟢 Estado en vivo
   updateTeamViewLiveStatus();
 
-  // 🧠 Animación de aparición centrada
+  // ✨ Aparición suave
   setTimeout(() => {
     box.style.visibility = "visible";
     box.style.opacity = "1";
