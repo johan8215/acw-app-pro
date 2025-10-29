@@ -829,3 +829,44 @@ function addHistoryButtonForMe(){
     window.showWelcome = wrapped;
   }
 })();
+
+// === ACW v5.6.2 — Hotfix mini (pegar al FINAL) ===
+(function(){
+  // 1) Inyecta CSS mínimo para History y la animación del Team View
+  function injectStyleOnce(id, css){
+    if (document.getElementById(id)) return;
+    const s = document.createElement('style');
+    s.id = id; s.textContent = css; document.head.appendChild(s);
+  }
+  injectStyleOnce('acw-min-css', `
+    .acwh-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.25);backdrop-filter:blur(2px);z-index:10050;}
+    .acwh-card{width:90%;max-width:560px;background:rgba(255,255,255,.97);border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.25);padding:14px 16px;}
+    .acwh-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+    .acwh-sub{color:#0078ff;font-weight:700;margin:0 0 6px 0;text-align:center}
+    .acwh-list{display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow:auto}
+    .acwh-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid rgba(0,0,0,.06);border-radius:10px;background:#fff}
+    .acwh-week small{color:#777}
+    .acwh-total{font-weight:700}
+    .acwh-btn{border:1px solid #0078ff;background:#f3f9ff;padding:6px 10px;border-radius:8px;cursor:pointer}
+    .acwh-table{width:100%;border-collapse:collapse;margin-top:6px}
+    .acwh-table th,.acwh-table td{padding:8px;border-bottom:1px solid rgba(0,0,0,.06)}
+    .acwh-total-line{margin-top:8px;font-weight:700;text-align:right}
+    /* Si el fix pack usa .show, garantizamos la animación */
+    .tv-wrapper.show{visibility:visible;opacity:1;transform:translate(-50%,-50%) scale(1)}
+  `);
+
+  // 2) Guard para el fix de Team View (evita undefined y flicker)
+  try{
+    const prev = typeof window.renderTeamViewPage==='function'
+      ? window.renderTeamViewPage
+      : (typeof renderTeamViewPage==='function' ? renderTeamViewPage : null);
+
+    if (prev){
+      window.renderTeamViewPage = function(...args){
+        prev.apply(this, args);
+        const box = document.querySelector('#directoryWrapper');
+        if (box) box.classList.add('show'); // activa el CSS de arriba
+      };
+    }
+  }catch(e){ console.warn('TV guard hotfix:', e); }
+})();
