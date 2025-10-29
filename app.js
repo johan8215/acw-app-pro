@@ -672,10 +672,33 @@ window.closeSettings = closeSettings;
    ============================================================ */
 
 /** 1) Fallback seguro: obtiene 5 semanas por offset si no existe fetchWeekHistory() */
+// ⚡ Fast: 5 semanas en paralelo (Promise.allSettled)
 async function __acwHistory5w(email, weeks = 5){
-  if (typeof fetchWeekHistory === "function") {
-    try { return await fetchWeekHistory(email, weeks); } catch {}
-  }
+  const mkLabel = (off=0)=>{
+    const now=new Date(), day=now.getDay();
+    const mon=new Date(now); mon.setHours(0,0,0,0);
+    mon.setDate(mon.getDate()-((day+6)%7)-(off*7));
+    const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+    const F=d=>d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+    return `${F(mon)} – ${F(sun)}`;
+  };
+
+  const urls = Array.from({length:weeks}, (_,i)=>
+    `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${i}`
+  );
+
+  const results = await Promise.allSettled(
+    urls.map(u=>fetch(u,{cache:"no-store"}).then(r=>r.json()))
+  );
+
+  return results.map((res,i)=>{
+    if(res.status==="fulfilled" && res.value && res.value.ok){
+      const d = res.value;
+      return { label: d.weekLabel || mkLabel(i), total:Number(d.total||0), days:Array.isArray(d.days)?d.days:[] };
+    }
+    return { label: mkLabel(i), total: 0, days: [] };
+  });
+}
   function weekLabelByOffset(off=0){
     const now=new Date(), day=now.getDay();                 // 0=Sun
     const mon=new Date(now); mon.setHours(0,0,0,0);
