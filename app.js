@@ -827,3 +827,38 @@ console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3 Turbo"} | Base: $
     if (box) box.classList.add('show');
   };
 })();
+// === HOTFIX Settings modal (v5.6.3) ===
+(function () {
+  function openSettingsFix() {
+    const modal = document.getElementById("settingsModal");
+    if (!modal) { console.warn("⚠️ Settings modal not found"); return; }
+
+    // Cierra overlays que podrían taparlo
+    document.getElementById("acwhOverlay")?.remove();      // History
+    document.getElementById("directoryWrapper")?.remove(); // Team View
+
+    // Mostrar por encima de todo
+    modal.style.display = "flex";         // <- sobrescribe .modal{display:none}
+    modal.style.alignItems = "center";
+    modal.style.justifyContent = "center";
+    modal.style.zIndex = 12000;           // por encima de history/team view
+    requestAnimationFrame(() => modal.classList.add("show"));
+
+    // Cerrar al click fuera
+    const onClick = (e) => { if (e.target === modal) closeSettingsFix(); };
+    modal.addEventListener("click", onClick, { once: true });
+
+    // Cerrar con ESC
+    const onKey = (ev) => { if (ev.key === "Escape") closeSettingsFix(); };
+    document.addEventListener("keydown", onKey, { once: true });
+
+    function closeSettingsFix() {
+      modal.classList.remove("show");
+      setTimeout(() => (modal.style.display = "none"), 150);
+    }
+    // Exporta close actualizado
+    window.closeSettings = closeSettingsFix;
+  }
+  // Exporta open actualizado
+  window.openSettings = openSettingsFix;
+})();
