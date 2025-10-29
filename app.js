@@ -628,6 +628,8 @@ window.submitChangePassword = submitChangePassword;
 window.openEmployeePanel = openEmployeePanel;
 window.sendShiftMessage = sendShiftMessage;
 window.updateShiftFromModal = updateShiftFromModal;
+window.showWelcome = showWelcome;
+window.renderTeamViewPage = renderTeamViewPage;
 
 console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.2"} | Base: ${CONFIG?.BASE_URL||"<no-config>"}`);
 
