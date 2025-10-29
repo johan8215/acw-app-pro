@@ -792,7 +792,7 @@ function addHistoryButtonForMe(){
   btn.id="historyBtnMe";
   btn.textContent = "History (5w)";
   btn.style.cssText = "position:fixed;top:25px;left:40px;background:#fff;color:#0078ff;border:2px solid rgba(0,120,255,.4);border-radius:10px;padding:8px 16px;font-weight:600;box-shadow:0 4px 20px rgba(0,120,255,.4);cursor:pointer;z-index:9999;";
-  btn.onclick = ()=> openHistoryFor(currentUser?.email||"", `${currentUser?.name||"Me"}`);
+  btn.onclick = ()=> openHistoryPicker(currentUser?.email||"", `${currentUser?.name||"Me"}`);
   document.body.appendChild(btn);
 }
 
