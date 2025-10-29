@@ -1,4 +1,3 @@
-<script>
 /* ============================================================
    🧠 ACW-App v5.6.3 — Blue Glass White (Stable)
    Johan A. Giraldo (JAG15) & Sky — Nov 2025
@@ -722,4 +721,3 @@
 
   console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3"} | Base: ${CONFIG?.BASE_URL||"<no-config>"}`);
 })();
-</script>
