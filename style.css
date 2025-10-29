@@ -523,3 +523,70 @@ tr.today td {
   background:#fff; color:#0078ff; border:2px solid rgba(0,120,255,.35);
   border-radius:8px; padding:6px 10px; font-weight:600; cursor:pointer;
 }
+/* ============================================================
+   🧰 HX — History Picker (Settings-style modal, scoped)
+   ============================================================ */
+.hx-overlay{
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.45); z-index:9999; animation: fadeIn .25s ease;
+}
+.hx-box{
+  position:relative;
+  width: 360px; max-width:92vw;
+  background: rgba(255,255,255,.97);
+  border-radius:16px;
+  padding: 22px 24px 16px;
+  text-align:center;
+  box-shadow: 0 0 40px rgba(0,120,255,.30);
+  animation: popIn .22s ease;
+}
+.hx-head{ margin-bottom:8px; }
+.hx-title{ margin:0; font-weight:800; color:#0078ff; letter-spacing:.3px; }
+.hx-sub{ margin:4px 0 0; font-size:12px; color:#777; }
+
+.hx-close{
+  position:absolute; right:10px; top:8px;
+  background:none; border:none; font-size:20px; cursor:pointer; color:#555;
+}
+.hx-close:hover{ color:#000; }
+
+.hx-body{ margin-top:8px; }
+
+.hx-row{
+  display:grid; grid-template-columns: 1fr auto auto;
+  align-items:center; gap:10px;
+  padding:10px 12px;
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:10px;
+  background:#fff;
+  margin:8px 0;
+  transition:.2s ease;
+}
+.hx-row:hover{
+  background: rgba(0,120,255,.06);
+  box-shadow: 0 6px 14px rgba(0,120,255,.10);
+}
+.hx-week{ text-align:left; font-weight:600; }
+.hx-hours{ font-weight:800; color:#111; }
+.hx-arrow{ color:#0078ff; font-weight:800; padding-left:4px; }
+
+.hx-back{
+  display:inline-flex; align-items:center; gap:6px;
+  color:#0078ff; background:#fff;
+  border:2px solid rgba(0,120,255,.2);
+  border-radius:8px; padding:6px 10px; font-weight:600;
+  cursor:pointer; margin: 2px 0 10px;
+}
+.hx-back:active{ transform: translateY(1px); }
+
+.hx-table{ width:100%; border-collapse:collapse; font-size:14px; }
+.hx-table th{
+  text-align:left; color:#0078ff;
+  border-bottom:2px solid rgba(0,120,255,.15);
+  padding:6px 4px;
+}
+.hx-table td{
+  border-bottom:1px solid rgba(0,0,0,.08);
+  padding:6px 4px;
+}
+.hx-total{ text-align:right; font-weight:700; color: var(--red, #e60000); margin-top:10px; }
