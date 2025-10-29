@@ -911,3 +911,99 @@ async function openHistoryFor(email, name="My History"){
   // Primera vista
   _acwRenderHistTable(view, hist[selected]);
 }
+/* ===== History Picker (mini, estilo Settings) ===== */
+async function openHistoryFor(email, name="My History"){
+  const id = "historyPickerModal";
+  document.getElementById(id)?.remove();
+
+  // Contenedor usando TU modal (mismas clases)
+  const wrap = document.createElement("div");
+  wrap.id = id;
+  wrap.className = "modal";
+  wrap.innerHTML = `
+    <div class="modal-content glass">
+      <span class="close">×</span>
+      <h3 style="margin:0 0 6px 0; text-align:center; color:#0078ff;">History (5 weeks)</h3>
+      <div id="hpView"><p style="color:#777; margin:6px 0 0; text-align:center;">Loading…</p></div>
+    </div>`;
+  document.body.appendChild(wrap);
+  wrap.style.display = "flex";
+  wrap.style.alignItems = "center";
+  wrap.style.justifyContent = "center";
+  wrap.querySelector(".close").onclick = () => wrap.remove();
+  wrap.addEventListener("click", e => { if (e.target === wrap) wrap.remove(); });
+
+  // Datos (usa tu backend con &offset=)
+  const hist = await (async function histFetch5w(email, weeks=5){
+    // Si ya existe fetchWeekHistory(), úsalo
+    if (typeof fetchWeekHistory === "function") {
+      try { return await fetchWeekHistory(email, weeks); } catch {}
+    }
+    // Fallback autónomo
+    const out=[];
+    for (let i=0;i<weeks;i++){
+      try{
+        const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${i}`, {cache:"no-store"});
+        const d = await r.json();
+        const label = d.weekLabel || (function lbl(off=0){
+          const now=new Date(), day=now.getDay();
+          const mon=new Date(now); mon.setHours(0,0,0,0);
+          mon.setDate(mon.getDate()-((day+6)%7)-(off*7));
+          const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+          const f=x=>x.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+          return `${f(mon)} – ${f(sun)}`;
+        })(i);
+        out.push({label, total:Number(d.total||0), days:d.days||[]});
+      }catch{ out.push({label:"(no data)", total:0, days:[]}); }
+    }
+    return out;
+  })(email, 5);
+
+  // Render: lista de semanas (picker)
+  renderPicker();
+
+  function renderPicker(){
+    const rows = hist.map((w,i)=>`
+      <tr class="hp-row" data-i="${i}">
+        <td>${w.label}</td>
+        <td style="text-align:right; font-weight:700;">${Number(w.total||0).toFixed(1)}h ▸</td>
+      </tr>`).join("");
+
+    $("#hpView", wrap).innerHTML = `
+      <div class="hp-head">${name}</div>
+      <table class="hp-table">
+        <tr><th>Week</th><th style="text-align:right">Total</th></tr>
+        ${rows}
+      </table>`;
+
+    $("#hpView", wrap).querySelectorAll(".hp-row").forEach(tr=>{
+      tr.onclick = () => renderWeekDetail(+tr.dataset.i);
+    });
+  }
+
+  function renderWeekDetail(i){
+    const w = hist[i] || {label:"", days:[], total:0};
+    const days = (w.days||[]).map(d=>{
+      const off = /off/i.test(d.shift||"");
+      return `<tr>
+        <td>${d.name}</td>
+        <td ${off?'style="color:#999"':''}>${d.shift||"-"}</td>
+        <td style="text-align:right; ${off?'color:#999':''}">${Number(d.hours||0).toFixed(1)}h</td>
+      </tr>`;
+    }).join("");
+
+    $("#hpView", wrap).innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <button class="hp-back">‹ Weeks</button>
+        <div style="font-weight:700; color:#0078ff;">${w.label}</div>
+        <span></span>
+      </div>
+      <table class="hp-table">
+        <tr><th>Day</th><th>Shift</th><th style="text-align:right">Hours</th></tr>
+        ${days}
+      </table>
+      <div class="hp-total">Total: ${Number(w.total||0).toFixed(1)}h</div>`;
+
+    wrap.querySelector(".hp-back").onclick = renderPicker;
+  }
+}
