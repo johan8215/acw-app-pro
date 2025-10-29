@@ -865,3 +865,16 @@
   };
 })();
 </script>
+function doGet(e){
+  var a = e.parameter.action;
+  if (a === 'login') {
+    var ok = /* valida usuario/clave */;
+    var out = ok ? {ok:true,name:"Johan",email:e.parameter.email,role:"manager"} 
+                 : {ok:false,error:"Invalid email or password."};
+    return ContentService.createTextOutput(JSON.stringify(out))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  return ContentService.createTextOutput(JSON.stringify({ok:false,error:"unknown_action"}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
