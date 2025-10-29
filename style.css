@@ -502,3 +502,24 @@ tr.today td {
 .acw-hist-off td{ color:#999; }
 .acw-hist-today td{ font-weight:600; }
 .acw-hist-close{ background:none; border:none; font-size:22px; cursor:pointer; }
+
+/* ===== History Picker (mini, estilo Settings) ===== */
+#historyPickerModal .modal-content {
+  width: 360px; max-width: 92%;
+}
+
+.hp-head { color:#777; margin:0 0 6px 0; text-align:center; }
+.hp-table { width:100%; border-collapse:collapse; font-size:15px; }
+.hp-table th {
+  text-align:left; padding:6px 4px; color:#0078ff;
+  border-bottom:2px solid rgba(0,120,255,.15);
+}
+.hp-table td { padding:8px 4px; border-bottom:1px solid rgba(0,0,0,.08); }
+.hp-row { cursor:pointer; }
+.hp-row:hover { background:rgba(0,120,255,.06); }
+
+.hp-total { text-align:right; font-weight:700; color:var(--red); margin-top:8px; }
+.hp-back {
+  background:#fff; color:#0078ff; border:2px solid rgba(0,120,255,.35);
+  border-radius:8px; padding:6px 10px; font-weight:600; cursor:pointer;
+}
