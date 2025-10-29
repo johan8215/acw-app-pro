@@ -664,37 +664,48 @@ function closeSettings() {
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
 
-// 3.1) Fallback seguro: obtiene 5 semanas por offset si no existe fetchWeekHistory()
+/* ============================================================
+   ACW — History Picker (Settings-card, 5 weeks) — Clean Build
+   Reqs: CONFIG.BASE_URL (GAS), fetchWeekHistory (opcional)
+   ============================================================ */
+
+/** 1) Fallback seguro: obtiene 5 semanas por offset si no existe fetchWeekHistory() */
 async function __acwHistory5w(email, weeks = 5){
   if (typeof fetchWeekHistory === "function") {
     try { return await fetchWeekHistory(email, weeks); } catch {}
   }
+  function weekLabelByOffset(off=0){
+    const now=new Date(), day=now.getDay();                 // 0=Sun
+    const mon=new Date(now); mon.setHours(0,0,0,0);
+    mon.setDate(mon.getDate()-((day+6)%7)-(off*7));         // lunes
+    const sun=new Date(mon); sun.setDate(mon.getDate()+6);  // domingo
+    const F = d=>d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+    return `${F(mon)} – ${F(sun)}`;
+  }
+
   const out = [];
-  for (let i = 0; i < weeks; i++){
+  for (let i=0; i<weeks; i++){
     try{
       const r = await fetch(`${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${i}`, {cache:"no-store"});
       const d = await r.json();
-      const label = d.weekLabel || (function lbl(off=0){
-        const now=new Date(), day=now.getDay();
-        const mon=new Date(now); mon.setHours(0,0,0,0);
-        mon.setDate(mon.getDate()-((day+6)%7)-(off*7));
-        const sun=new Date(mon); sun.setDate(mon.getDate()+6);
-        const f=x=>x.toLocaleDateString("en-US",{month:"short",day:"numeric"});
-        return `${f(mon)} – ${f(sun)}`;
-      })(i);
-      out.push({ label, total:Number(d.total||0), days:d.days||[] });
+      out.push({
+        label: d.weekLabel || weekLabelByOffset(i),
+        total: Number(d.total||0),
+        days:  Array.isArray(d.days) ? d.days : []
+      });
     }catch{
-      out.push({ label:"(no data)", total:0, days:[] });
+      out.push({ label: weekLabelByOffset(i), total: 0, days: [] });
     }
   }
   return out;
 }
 
-// 3.2) Tarjeta centrada tipo Settings (overlay .acwh-*)
+/** 2) Abre tarjeta centrada tipo Settings */
 function openHistoryPicker(email, name="My History"){
-  // Cierra si ya está abierto
+  // Cierra si ya está abierta
   document.getElementById("acwhOverlay")?.remove();
 
+  // Overlay + Card
   const overlay = document.createElement("div");
   overlay.id = "acwhOverlay";
   overlay.className = "acwh-overlay";
@@ -703,20 +714,24 @@ function openHistoryPicker(email, name="My History"){
       <div class="acwh-head">
         <div style="width:22px"></div>
         <h3 class="acwh-title">History (5 weeks)</h3>
-        <button class="acwh-close">×</button>
+        <button class="acwh-close" aria-label="Close">×</button>
       </div>
-      <div class="acwh-sub">${(name||"").toUpperCase()}</div>
+      <div class="acwh-sub">${String(name||"").toUpperCase()}</div>
       <div id="acwhBody" class="acwh-list">
         <div class="acwh-row" style="justify-content:center;opacity:.7;">Loading…</div>
       </div>
     </div>`;
   document.body.appendChild(overlay);
-  overlay.querySelector(".acwh-close").onclick = () => overlay.remove();
 
+  // Cerrar con botón o click fuera
+  overlay.querySelector(".acwh-close").onclick = () => overlay.remove();
+  overlay.addEventListener("click", e=>{ if(e.target===overlay) overlay.remove(); });
+
+  // Render lista inicial
   renderHistoryPickerList(email, name, overlay);
 }
 
-// 3.3) Lista de semanas (usa el fallback)
+/** 3) Lista de semanas (usa fallback seguro) */
 async function renderHistoryPickerList(email, name, root){
   const body = root.querySelector("#acwhBody");
   body.className = "acwh-list";
@@ -734,6 +749,7 @@ async function renderHistoryPickerList(email, name, root){
     </div>
   `).join("");
 
+  // Abrir detalle desde la fila o el botón
   body.querySelectorAll(".acwh-row, .acwh-btn").forEach(el=>{
     el.onclick = ()=>{
       const idx = Number(el.dataset.idx || el.closest(".acwh-row")?.dataset.idx || 0);
@@ -741,27 +757,30 @@ async function renderHistoryPickerList(email, name, root){
     };
   });
 
+  // Asegura títulos
   root.querySelector(".acwh-title").textContent = "History (5 weeks)";
-  root.querySelector(".acwh-sub").textContent   = (name||"").toUpperCase();
+  root.querySelector(".acwh-sub").textContent   = String(name||"").toUpperCase();
 }
 
-// 3.4) Detalle de una semana (dentro de la misma tarjeta)
+/** 4) Detalle de una semana en la MISMA tarjeta */
 function renderHistoryDetailCentered(week, email, name, offset, root){
   const body = root.querySelector("#acwhBody");
   body.className = ""; // modo detalle
 
-  // Header
+  // Header dinámico
   root.querySelector(".acwh-title").textContent = week.label;
   root.querySelector(".acwh-sub").textContent =
-    `${offset===0 ? "Week (current)" : `Week -${offset}`} • ${(name||"").toUpperCase()}`;
+    `${offset===0 ? "Week (current)" : `Week -${offset}`} • ${String(name||"").toUpperCase()}`;
 
-  // Tabla
+  // Tabla de días
   const rows = (week.days||[]).map(d=>{
     const off = /off/i.test(String(d.shift||""));
+    const styleCell = off ? 'style="color:#999"' : '';
+    const styleHours = off ? 'style="color:#999;text-align:right"' : 'style="text-align:right"';
     return `<tr>
-      <td>${d.name}</td>
-      <td ${off?'style="color:#999"':''}>${d.shift||'-'}</td>
-      <td ${off?'style="color:#999;text-align:right"':'style="text-align:right"'}>${Number(d.hours||0).toFixed(1)}</td>
+      <td>${d.name||""}</td>
+      <td ${styleCell}>${d.shift||'-'}</td>
+      <td ${styleHours}>${Number(d.hours||0).toFixed(1)}</td>
     </tr>`;
   }).join("");
 
@@ -781,10 +800,11 @@ function renderHistoryDetailCentered(week, email, name, offset, root){
     renderHistoryPickerList(email, name, root);
 }
 
-// 3.5) Enlaces globales y botón del dashboard
+/** 5) Exports globales (compat con botones existentes) */
 window.openHistoryPicker = openHistoryPicker;
-window.openHistoryFor = (...args)=> openHistoryPicker(...args); // compat
+window.openHistoryFor   = (...args)=> openHistoryPicker(...args);
 
+/** 6) Botón “History (5w)” fijo + Hook único al dashboard */
 function addHistoryButtonForMe(){
   if (document.getElementById("historyBtnMe")) return;
   const btn = document.createElement("button");
@@ -794,11 +814,16 @@ function addHistoryButtonForMe(){
   btn.onclick = ()=> openHistoryPicker(currentUser?.email||"", `${currentUser?.name||"Me"}`);
   document.body.appendChild(btn);
 }
-// Asegurar hook único
+
+// Hook único (no duplica si ya fue aplicado)
 (function(){
   const prev = window.showWelcome || (async()=>{});
-  window.showWelcome = async function(name, role){
-    await prev.call(this, name, role);
-    addHistoryButtonForMe();
-  };
+  if (!prev.__acwHookedHistory){
+    const wrapped = async function(name, role){
+      await prev.call(this, name, role);
+      addHistoryButtonForMe();
+    };
+    wrapped.__acwHookedHistory = true;
+    window.showWelcome = wrapped;
+  }
 })();
