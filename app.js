@@ -758,7 +758,7 @@ function __attachHistoryShare(root = document){
     btn.className = 'acwh-share';
     btn.type = 'button';
     btn.textContent = 'Share';
-    // Inserta ANTES de la X para que queden pegados
+    // Inserta ANTES de la X para que quede a la izquierda, rojo
     head.insertBefore(btn, head.querySelector('.acwh-close') || null);
   }
 
@@ -770,6 +770,61 @@ function __attachHistoryShare(root = document){
   };
 }
 
+// --- Estilos del botón Share (rojo, pegado a la X) ---
+(function injectShareCSS(){
+  if (document.getElementById('acw-share-css')) return;
+  const s = document.createElement('style'); s.id = 'acw-share-css';
+  s.textContent = `
+    .acwh-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .acwh-head .acwh-share{
+      background:#ff4d4f; color:#fff; border:0; border-radius:10px;
+      padding:6px 10px; font-weight:700; cursor:pointer;
+      box-shadow:0 2px 8px rgba(255,77,79,.35);
+    }
+    .acwh-head .acwh-share:active{ transform:translateY(1px); }
+  `;
+  document.head.appendChild(s);
+})();
+
+// --- Image Share helpers (carga html2canvas on-demand) ---
+async function __ensureH2C(){
+  if (window.html2canvas) return;
+  await new Promise((ok, fail)=>{
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+    s.onload = ok; s.onerror = ()=>fail(new Error('html2canvas load failed'));
+    document.head.appendChild(s);
+  });
+}
+
+async function __shareElAsImage(el, filename='acw.png'){
+  await __ensureH2C();
+  const canvas = await html2canvas(el, {
+    backgroundColor: '#ffffff',
+    scale: Math.min(2, window.devicePixelRatio || 1.5),
+    useCORS: true
+  });
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.95));
+  const file = new File([blob], filename, { type: 'image/png' });
+
+  try{
+    if (navigator.canShare && navigator.canShare({ files:[file] })){
+      await navigator.share({ files:[file] });
+      toast('✅ Shared image', 'success'); return;
+    }
+  }catch{}
+
+  try{
+    if (navigator.clipboard && window.ClipboardItem){
+      await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
+      toast('📋 Image copied to clipboard', 'success'); return;
+    }
+  }catch{}
+
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  toast('ℹ️ Opened image in new tab', 'info');
+}
 async function renderHistoryPickerList(email, name, root){
   const body = root.querySelector("#acwhBody");
   body.className = "acwh-list";
@@ -823,32 +878,6 @@ function renderHistoryDetailCentered(week, email, name, offset, root){
   `;
   body.querySelector(".acwh-back").onclick = () => renderHistoryPickerList(email, name, root);
    __attachHistoryShare(root);
-}
-async function __shareElAsImage(el, filename='acw.png'){
-  await __ensureH2C();
-  const canvas = await html2canvas(el, {
-    backgroundColor: '#ffffff',
-    scale: Math.min(2, window.devicePixelRatio || 1.5),
-    useCORS: true
-  });
-  const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.95));
-  const file = new File([blob], filename, { type: 'image/png' });
-
-  try{
-    if (navigator.canShare && navigator.canShare({ files:[file] })){
-      await navigator.share({ files:[file] });
-      toast('✅ Shared image', 'success'); return;
-    }
-  }catch{}
-  try{
-    if (navigator.clipboard && window.ClipboardItem){
-      await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
-      toast('📋 Image copied to clipboard', 'success'); return;
-    }
-  }catch{}
-  const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
-  toast('ℹ️ Opened image in new tab', 'info');
 }
 
 /* =================== GLOBAL BINDS =================== */
