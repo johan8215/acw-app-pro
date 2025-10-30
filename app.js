@@ -199,6 +199,51 @@ async function loadSchedule(email) {
   }
 }
 
+function __buildWeekShareCard({label, name, days, total}){
+  const card = document.createElement('div');
+  card.className = 'acw-share-card';
+  const rows = (days||[]).map(d=>{
+    const off = /off/i.test(String(d.shift||''));
+    const styleCell = off ? 'style="color:#999"' : '';
+    const styleHrs  = off ? 'style="color:#999;text-align:right"' : 'style="text-align:right"';
+    return `<tr><td>${d.name||''}</td><td ${styleCell}>${d.shift||'-'}</td><td ${styleHrs}>${Number(d.hours||0).toFixed(1)}</td></tr>`;
+  }).join('');
+  card.innerHTML = `
+    <div class="head">
+      <div style="width:22px"></div>
+      <h3 class="title">${label}</h3>
+      <div style="width:22px"></div>
+    </div>
+    <div class="sub">${(name||'').toUpperCase()}</div>
+    <table><tr><th>Day</th><th>Shift</th><th>Hours</th></tr>${rows}</table>
+    <div class="total-line">Total: ${Number(total||0).toFixed(1)}h</div>
+  `;
+  return card;
+}
+
+async function shareCurrentWeekImage(){
+  try{
+    const email = currentUser?.email;
+    const name  = currentUser?.name || 'ACW';
+    const data  = await API.getSchedule(email, 0);
+    const label = data?.weekLabel || __mkWeekLabel(0);
+    const card  = __buildWeekShareCard({ label, name, days: data?.days||[], total: data?.total||0 });
+    document.body.appendChild(card);
+    await __shareElAsImage(card, `${name} — ${label}.png`);
+    card.remove();
+  }catch(e){ console.warn(e); toast('⚠️ Share failed', 'error'); }
+}
+
+function attachShareCurrentButton(){
+  if (document.getElementById('shareCurrentBtn')) return;
+  const btn=document.createElement('button');
+  btn.id='shareCurrentBtn';
+  btn.className='acw-share-btn';
+  btn.textContent='Share';
+  btn.onclick = shareCurrentWeekImage;
+  $("#schedule")?.appendChild(btn);
+}
+
 /* =================== SESSION RESTORE =================== */
 window.addEventListener("load", () => {
   try {
@@ -744,6 +789,27 @@ function openHistoryPicker(email, name="My History"){
       </div>
     </div>`;
   document.body.appendChild(overlay);
+   
+   function __attachHistoryShare(root){
+  const head = root.querySelector('.acwh-head');
+  if (!head) return;
+
+  let btn = head.querySelector('.acwh-share');
+  if (!btn){
+    btn = document.createElement('button');
+    btn.className = 'acwh-share';
+    btn.textContent = 'Share';
+    head.appendChild(btn);
+  }
+  btn.onclick = async ()=>{
+    const card  = root.querySelector('.acwh-card');
+    const title = root.querySelector('.acwh-title')?.textContent?.trim() || 'History';
+    const who   = root.querySelector('.acwh-sub')?.textContent?.trim() || (currentUser?.name||'ACW');
+    await __shareElAsImage(card, `${who} — ${title}.png`);
+  };
+}
+
+   
   overlay.querySelector(".acwh-close").onclick = () => overlay.remove();
   overlay.addEventListener("click", e=>{ if(e.target===overlay) overlay.remove(); });
   renderHistoryPickerList(email, name, overlay);
