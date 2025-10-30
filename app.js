@@ -188,7 +188,6 @@ async function loadSchedule(email) {
     const totalFmt = (d.total??0);
     html += `</table><p class="total">Total Hours: <b>${Number(totalFmt).toFixed(1)}</b></p>`;
     schedDiv.innerHTML = html;
-     attachShareCurrentButton();
 
     // Arranca live tras DOM listo
     clearInterval(window.__acwLiveTick__); // evita duplicados
@@ -198,51 +197,6 @@ async function loadSchedule(email) {
     console.warn(e);
     schedDiv.innerHTML = `<p style="color:#c00;">Error loading schedule.</p>`;
   }
-}
-
-function __buildWeekShareCard({label, name, days, total}){
-  const card = document.createElement('div');
-  card.className = 'acw-share-card';
-  const rows = (days||[]).map(d=>{
-    const off = /off/i.test(String(d.shift||''));
-    const styleCell = off ? 'style="color:#999"' : '';
-    const styleHrs  = off ? 'style="color:#999;text-align:right"' : 'style="text-align:right"';
-    return `<tr><td>${d.name||''}</td><td ${styleCell}>${d.shift||'-'}</td><td ${styleHrs}>${Number(d.hours||0).toFixed(1)}</td></tr>`;
-  }).join('');
-  card.innerHTML = `
-    <div class="head">
-      <div style="width:22px"></div>
-      <h3 class="title">${label}</h3>
-      <div style="width:22px"></div>
-    </div>
-    <div class="sub">${(name||'').toUpperCase()}</div>
-    <table><tr><th>Day</th><th>Shift</th><th>Hours</th></tr>${rows}</table>
-    <div class="total-line">Total: ${Number(total||0).toFixed(1)}h</div>
-  `;
-  return card;
-}
-
-async function shareCurrentWeekImage(){
-  try{
-    const email = currentUser?.email;
-    const name  = currentUser?.name || 'ACW';
-    const data  = await API.getSchedule(email, 0);
-    const label = data?.weekLabel || __mkWeekLabel(0);
-    const card  = __buildWeekShareCard({ label, name, days: data?.days||[], total: data?.total||0 });
-    document.body.appendChild(card);
-    await __shareElAsImage(card, `${name} — ${label}.png`);
-    card.remove();
-  }catch(e){ console.warn(e); toast('⚠️ Share failed', 'error'); }
-}
-
-function attachShareCurrentButton(){
-  if (document.getElementById('shareCurrentBtn')) return;
-  const btn=document.createElement('button');
-  btn.id='shareCurrentBtn';
-  btn.className='acw-share-btn';
-  btn.textContent='Share';
-  btn.onclick = shareCurrentWeekImage;
-  $("#schedule")?.appendChild(btn);
 }
 
 /* =================== SESSION RESTORE =================== */
@@ -452,22 +406,21 @@ function renderTeamViewPage() {
     transition: "all 0.35s ease"
   });
 
-box.innerHTML = `
-  <div class="tv-head" style="display:flex;justify-content:space-between;align-items:center;">
-    <h3 style="margin:0;color:#0078ff;text-shadow:0 0 8px rgba(0,120,255,0.25);">Team View</h3>
-    <button class="tv-close" onclick="toggleTeamOverview()" style="background:none;border:none;font-size:22px;cursor:pointer;">✖️</button>
-  </div>
-  <div class="tv-pager" style="margin:10px 0;">
-    <button class="tv-nav" id="tvPrev" ${__teamPage === 0 ? "disabled" : ""}>‹ Prev</button>
-    <span class="tv-index" style="font-weight:600;color:#0078ff;">Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}</span>
-    <button class="tv-nav" id="tvNext" ${(__teamPage + 1) >= Math.ceil(__teamList.length / TEAM_PAGE_SIZE) ? "disabled" : ""}>Next ›</button>
-    <button class="tv-nav" id="tvShareBtn" style="margin-left:8px;">Share</button>
-  </div>
-  <table class="directory-table tv-table" style="width:100%;font-size:15px;border-collapse:collapse;margin-top:10px;">
-    <tr><th>Name</th><th>Hours</th><th>Live (Working)</th><th></th></tr>
-    <tbody id="tvBody"></tbody>
-  </table>
-`;
+  box.innerHTML = `
+    <div class="tv-head" style="display:flex;justify-content:space-between;align-items:center;">
+      <h3 style="margin:0;color:#0078ff;text-shadow:0 0 8px rgba(0,120,255,0.25);">Team View</h3>
+      <button class="tv-close" onclick="toggleTeamOverview()" style="background:none;border:none;font-size:22px;cursor:pointer;">✖️</button>
+    </div>
+    <div class="tv-pager" style="margin:10px 0;">
+      <button class="tv-nav" id="tvPrev" ${__teamPage === 0 ? "disabled" : ""}>‹ Prev</button>
+      <span class="tv-index" style="font-weight:600;color:#0078ff;">Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}</span>
+      <button class="tv-nav" id="tvNext" ${(__teamPage + 1) >= Math.ceil(__teamList.length / TEAM_PAGE_SIZE) ? "disabled" : ""}>Next ›</button>
+    </div>
+    <table class="directory-table tv-table" style="width:100%;font-size:15px;border-collapse:collapse;margin-top:10px;">
+      <tr><th>Name</th><th>Hours</th><th>Live (Working)</th><th></th></tr>
+      <tbody id="tvBody"></tbody>
+    </table>
+  `;
 
   document.body.appendChild(box);
 
@@ -485,8 +438,6 @@ box.innerHTML = `
 
   $("#tvPrev", box).onclick = () => { __teamPage = Math.max(0, __teamPage - 1); renderTeamViewPage(); };
   $("#tvNext", box).onclick = () => { __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1); renderTeamViewPage(); };
-  $("#tvShareBtn", box).onclick = shareTeamViewSlice; 
-
 
   // Horas totales del slice con concurrencia limitada (4)
   const todayKey = Today.key;
@@ -772,7 +723,28 @@ async function __acwHistory5w(email, weeks = 5){
   });
   return settled;
 }
-     
+function openHistoryPicker(email, name="My History"){
+  document.getElementById("acwhOverlay")?.remove();
+  const overlay = document.createElement("div");
+  overlay.id = "acwhOverlay";
+  overlay.className = "acwh-overlay";
+  overlay.innerHTML = `
+    <div class="acwh-card">
+      <div class="acwh-head">
+        <div style="width:22px"></div>
+        <h3 class="acwh-title">History (5 weeks)</h3>
+        <button class="acwh-close" aria-label="Close">×</button>
+      </div>
+      <div class="acwh-sub">${String(name||"").toUpperCase()}</div>
+      <div id="acwhBody" class="acwh-list">
+        <div class="acwh-row" style="justify-content:center;opacity:.7;">Loading…</div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector(".acwh-close").onclick = () => overlay.remove();
+  overlay.addEventListener("click", e=>{ if(e.target===overlay) overlay.remove(); });
+  renderHistoryPickerList(email, name, overlay);
+}
 async function renderHistoryPickerList(email, name, root){
   const body = root.querySelector("#acwhBody");
   body.className = "acwh-list";
@@ -825,152 +797,6 @@ function renderHistoryDetailCentered(week, email, name, offset, root){
   `;
   body.querySelector(".acwh-back").onclick = () => renderHistoryPickerList(email, name, root);
 }
-
-/* ===== Team View → Share slice ===== */
-function buildTeamViewSliceData(root = document){
-  const rows = $all(".tv-table tr[data-email]", root);
-  return rows.map(r=>{
-    const name = r.dataset.name || r.querySelector("td b")?.textContent?.trim() || "";
-    // Limpia horas (quita el (+x.x) si existe)
-    let hoursText = r.querySelector(".tv-hours")?.textContent ?? "—";
-    hoursText = hoursText.replace(/\(\+.*?\)/g, "").replace(/\s+/g, " ").trim();
-    const liveText  = (r.querySelector(".tv-live")?.textContent ?? "—").replace(/\s+/g, " ").trim();
-    return { name, hours: hoursText, live: liveText };
-  });
-}
-
-function buildCSVFromSlice(data){
-  const header = "Name,Hours,Live\n";
-  const esc = s => `"${String(s).replace(/"/g,'""')}"`;
-  // Intenta dejar solo número en Hours si viene "10.5 (+1.2)" o "🟢 1.2h"
-  const toNum = h => {
-    const m = String(h).match(/(\d+(?:\.\d+)?)/);
-    return m ? m[1] : "";
-  };
-  const rows = data.map(d => [esc(d.name), toNum(d.hours), esc(d.live)].join(","));
-  return header + rows.join("\n");
-}
-
-async function shareTeamViewSlice(){
-  const box = $("#directoryWrapper");
-  if (!box){ toast("Open Team View first", "error"); return; }
-
-  const data = buildTeamViewSliceData(box);
-  const pageInfo = $(".tv-index", box)?.textContent?.trim() || "";
-  const lines = data.map(d => `• ${d.name} — ${d.hours} — ${d.live}`);
-  const text  = `ACW — Team View ${pageInfo}\n${lines.join("\n")}`;
-
-  // CSV opcional (para adjuntar en share si el navegador puede)
-  const csv  = buildCSVFromSlice(data);
-  const blob = new Blob([csv], { type: "text/csv" });
-  const file = new File([blob], "acw-team-slice.csv", { type: "text/csv" });
-
-  try{
-    if (navigator.share){
-      const canFiles = navigator.canShare && navigator.canShare({ files: [file] });
-      await navigator.share(canFiles ? { text, files:[file] } : { text });
-      toast("✅ Shared", "success");
-      return;
-    }
-  }catch(e){
-    console.warn("share() failed, fallback to clipboard", e);
-  }
-
-  // Fallback: copiar al portapapeles
-  try{
-    await navigator.clipboard.writeText(text);
-    toast("📋 Copied slice to clipboard", "success");
-  }catch{
-    // Último recurso: prompt
-    window.prompt("Copy the slice:", text);
-  }
-}
-
-// Exponer por si lo necesitas en otros lados
-window.shareTeamViewSlice = shareTeamViewSlice;
-
-/* === Image Share helpers (html2canvas on-demand) === */
-async function __ensureH2C(){
-  if (window.html2canvas) return;
-  await new Promise((ok, fail)=>{
-    const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
-    s.onload = ok; s.onerror = ()=>fail(new Error('html2canvas load failed'));
-    document.head.appendChild(s);
-  });
-}
-
-async function __shareElAsImage(el, filename='acw.png'){
-  await __ensureH2C();
-  const canvas = await html2canvas(el, {
-    backgroundColor: '#ffffff',
-    scale: Math.min(2, window.devicePixelRatio || 1.5),
-    useCORS: true
-  });
-  const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.95));
-  const file = new File([blob], filename, { type: 'image/png' });
-
-  // 1) Web Share con archivo (iOS/Android modernos)
-  try{
-    if (navigator.canShare && navigator.canShare({ files:[file] })){
-      await navigator.share({ files:[file] });
-      toast('✅ Shared image', 'success');
-      return;
-    }
-  }catch(e){ console.warn('navigator.share failed', e); }
-
-  // 2) Clipboard (desktop moderno)
-  try{
-    if (navigator.clipboard && window.ClipboardItem){
-      await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
-      toast('📋 Image copied to clipboard', 'success');
-      return;
-    }
-  }catch(e){ console.warn('clipboard image failed', e); }
-
-  // 3) Fallback: abrir en nueva pestaña
-  const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
-  toast('ℹ️ Opened image in new tab', 'info');
-}
-
-/* === Mini estilos de tarjeta y botón Share (reutilizables) === */
-(function injectShareCSS(){
-  if (document.getElementById('acw-share-css')) return;
-  const s = document.createElement('style'); s.id='acw-share-css';
-  s.textContent = `
-    .acw-share-btn{
-      background:#fff; color:#0078ff; border:2px solid rgba(0,120,255,.35);
-      border-radius:10px; padding:8px 12px; font-weight:700; cursor:pointer;
-      box-shadow:0 4px 14px rgba(0,120,255,.20); transition:.25s; margin:8px auto 0;
-    }
-    .acw-share-btn:hover{ transform:translateY(-1px); }
-    .acw-share-card{
-      background:rgba(255,255,255,.97); border-radius:16px; width:360px; max-width:90vw;
-      padding:22px 24px; text-align:center; box-shadow:0 0 40px rgba(0,120,255,.30);
-      font-family:'Segoe UI', Roboto, Arial, sans-serif; color:#111;
-    }
-    .acw-share-card .head{
-      display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;
-    }
-    .acw-share-card .title{ margin:0 auto; color:#0078ff; font-weight:800; }
-    .acw-share-card .sub{ color:#777; font-size:13px; margin:2px 0 10px; }
-    .acw-share-card table{
-      width:100%; border-collapse:collapse; font-size:16px;
-    }
-    .acw-share-card th{
-      text-align:left; color:#0078ff; border-bottom:2px solid rgba(0,120,255,.15); padding:6px 4px;
-    }
-    .acw-share-card td{ padding:6px 4px; border-bottom:1px solid rgba(0,0,0,.08); }
-    .acw-share-card td:last-child{ text-align:right; }
-    .acw-share-card .total-line{ text-align:right; font-weight:800; color:#e60000; margin:10px 0 2px; }
-    .acwh-share{
-      background:#fff; color:#0078ff; border:2px solid rgba(0,120,255,.35);
-      border-radius:10px; padding:6px 10px; font-weight:700; cursor:pointer;
-    }
-  `;
-  document.head.appendChild(s);
-})();
 
 /* =================== GLOBAL BINDS =================== */
 window.loginUser = loginUser;
