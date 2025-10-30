@@ -196,6 +196,7 @@ async function loadSchedule(email) {
   } catch (e) {
     console.warn(e);
     schedDiv.innerHTML = `<p style="color:#c00;">Error loading schedule.</p>`;
+     attachShareCurrentButton();
   }
 }
 
