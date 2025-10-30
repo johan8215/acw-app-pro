@@ -789,6 +789,7 @@ function openHistoryPicker(email, name="My History"){
       </div>
     </div>`;
   document.body.appendChild(overlay);
+   __attachHistoryShare(overlay);
    
   function __attachHistoryShare(root){
   const head  = root.querySelector('.acwh-head');
