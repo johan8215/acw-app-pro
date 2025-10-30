@@ -824,16 +824,6 @@ function renderHistoryDetailCentered(week, email, name, offset, root){
   body.querySelector(".acwh-back").onclick = () => renderHistoryPickerList(email, name, root);
    __attachHistoryShare(root);
 }
-// === Image Share helpers (html2canvas on-demand) ===
-async function __ensureH2C(){
-  if (window.html2canvas) return;
-  await new Promise((ok, fail)=>{
-    const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
-    s.onload = ok; s.onerror = ()=>fail(new Error('html2canvas load failed'));
-    document.head.appendChild(s);
-  });
-}
 async function __shareElAsImage(el, filename='acw.png'){
   await __ensureH2C();
   const canvas = await html2canvas(el, {
