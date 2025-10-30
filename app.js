@@ -864,6 +864,89 @@ async function shareTeamViewSlice(){
 // Exponer por si lo necesitas en otros lados
 window.shareTeamViewSlice = shareTeamViewSlice;
 
+/* === Image Share helpers (html2canvas on-demand) === */
+async function __ensureH2C(){
+  if (window.html2canvas) return;
+  await new Promise((ok, fail)=>{
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+    s.onload = ok; s.onerror = ()=>fail(new Error('html2canvas load failed'));
+    document.head.appendChild(s);
+  });
+}
+
+async function __shareElAsImage(el, filename='acw.png'){
+  await __ensureH2C();
+  const canvas = await html2canvas(el, {
+    backgroundColor: '#ffffff',
+    scale: Math.min(2, window.devicePixelRatio || 1.5),
+    useCORS: true
+  });
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.95));
+  const file = new File([blob], filename, { type: 'image/png' });
+
+  // 1) Web Share con archivo (iOS/Android modernos)
+  try{
+    if (navigator.canShare && navigator.canShare({ files:[file] })){
+      await navigator.share({ files:[file] });
+      toast('✅ Shared image', 'success');
+      return;
+    }
+  }catch(e){ console.warn('navigator.share failed', e); }
+
+  // 2) Clipboard (desktop moderno)
+  try{
+    if (navigator.clipboard && window.ClipboardItem){
+      await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
+      toast('📋 Image copied to clipboard', 'success');
+      return;
+    }
+  }catch(e){ console.warn('clipboard image failed', e); }
+
+  // 3) Fallback: abrir en nueva pestaña
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  toast('ℹ️ Opened image in new tab', 'info');
+}
+
+/* === Mini estilos de tarjeta y botón Share (reutilizables) === */
+(function injectShareCSS(){
+  if (document.getElementById('acw-share-css')) return;
+  const s = document.createElement('style'); s.id='acw-share-css';
+  s.textContent = `
+    .acw-share-btn{
+      background:#fff; color:#0078ff; border:2px solid rgba(0,120,255,.35);
+      border-radius:10px; padding:8px 12px; font-weight:700; cursor:pointer;
+      box-shadow:0 4px 14px rgba(0,120,255,.20); transition:.25s; margin:8px auto 0;
+    }
+    .acw-share-btn:hover{ transform:translateY(-1px); }
+    .acw-share-card{
+      background:rgba(255,255,255,.97); border-radius:16px; width:360px; max-width:90vw;
+      padding:22px 24px; text-align:center; box-shadow:0 0 40px rgba(0,120,255,.30);
+      font-family:'Segoe UI', Roboto, Arial, sans-serif; color:#111;
+    }
+    .acw-share-card .head{
+      display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;
+    }
+    .acw-share-card .title{ margin:0 auto; color:#0078ff; font-weight:800; }
+    .acw-share-card .sub{ color:#777; font-size:13px; margin:2px 0 10px; }
+    .acw-share-card table{
+      width:100%; border-collapse:collapse; font-size:16px;
+    }
+    .acw-share-card th{
+      text-align:left; color:#0078ff; border-bottom:2px solid rgba(0,120,255,.15); padding:6px 4px;
+    }
+    .acw-share-card td{ padding:6px 4px; border-bottom:1px solid rgba(0,0,0,.08); }
+    .acw-share-card td:last-child{ text-align:right; }
+    .acw-share-card .total-line{ text-align:right; font-weight:800; color:#e60000; margin:10px 0 2px; }
+    .acwh-share{
+      background:#fff; color:#0078ff; border:2px solid rgba(0,120,255,.35);
+      border-radius:10px; padding:6px 10px; font-weight:700; cursor:pointer;
+    }
+  `;
+  document.head.appendChild(s);
+})();
+
 /* =================== GLOBAL BINDS =================== */
 window.loginUser = loginUser;
 window.openSettings = openSettings;
