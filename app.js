@@ -792,28 +792,7 @@ function openHistoryPicker(email, name="My History"){
   document.body.appendChild(overlay);
    __attachHistoryShare(overlay);
    
-  function __attachHistoryShare(root){
-  const head  = root.querySelector('.acwh-head');
-  if (!head) return;
-
-  let btn = head.querySelector('.acwh-share');
-  if (!btn){
-    btn = document.createElement('button');
-    btn.className = 'acwh-share';
-    btn.textContent = 'Share';
-    head.insertBefore(btn, head.querySelector('.acwh-close') || null); // ← antes de la X
-  }
-  btn.onclick = async ()=>{
-    const card  = root.querySelector('.acwh-card');
-    const title = root.querySelector('.acwh-title')?.textContent?.trim() || 'History';
-    const who   = root.querySelector('.acwh-sub')?.textContent?.trim() || (currentUser?.name||'ACW');
-    await __shareElAsImage(card, `${who} — ${title}.png`);
-  };
-}
-  overlay.querySelector(".acwh-close").onclick = () => overlay.remove();
-  overlay.addEventListener("click", e=>{ if(e.target===overlay) overlay.remove(); });
-  renderHistoryPickerList(email, name, overlay);
-}
+  
 async function renderHistoryPickerList(email, name, root){
   const body = root.querySelector("#acwhBody");
   body.className = "acwh-list";
