@@ -797,6 +797,42 @@ function renderHistoryDetailCentered(week, email, name, offset, root){
   `;
   body.querySelector(".acwh-back").onclick = () => renderHistoryPickerList(email, name, root);
 }
+// === Image Share helpers (html2canvas on-demand) ===
+async function __ensureH2C(){
+  if (window.html2canvas) return;
+  await new Promise((ok, fail)=>{
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+    s.onload = ok; s.onerror = ()=>fail(new Error('html2canvas load failed'));
+    document.head.appendChild(s);
+  });
+}
+async function __shareElAsImage(el, filename='acw.png'){
+  await __ensureH2C();
+  const canvas = await html2canvas(el, {
+    backgroundColor: '#ffffff',
+    scale: Math.min(2, window.devicePixelRatio || 1.5),
+    useCORS: true
+  });
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.95));
+  const file = new File([blob], filename, { type: 'image/png' });
+
+  try{
+    if (navigator.canShare && navigator.canShare({ files:[file] })){
+      await navigator.share({ files:[file] });
+      toast('✅ Shared image', 'success'); return;
+    }
+  }catch{}
+  try{
+    if (navigator.clipboard && window.ClipboardItem){
+      await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
+      toast('📋 Image copied to clipboard', 'success'); return;
+    }
+  }catch{}
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  toast('ℹ️ Opened image in new tab', 'info');
+}
 
 /* =================== GLOBAL BINDS =================== */
 window.loginUser = loginUser;
