@@ -772,27 +772,7 @@ async function __acwHistory5w(email, weeks = 5){
   });
   return settled;
 }
-function openHistoryPicker(email, name="My History"){
-  document.getElementById("acwhOverlay")?.remove();
-  const overlay = document.createElement("div");
-  overlay.id = "acwhOverlay";
-  overlay.className = "acwh-overlay";
-  overlay.innerHTML = `
-    <div class="acwh-card">
-      <div class="acwh-head">
-        <div style="width:22px"></div>
-        <h3 class="acwh-title">History (5 weeks)</h3>
-        <button class="acwh-close" aria-label="Close">×</button>
-      </div>
-      <div class="acwh-sub">${String(name||"").toUpperCase()}</div>
-      <div id="acwhBody" class="acwh-list">
-        <div class="acwh-row" style="justify-content:center;opacity:.7;">Loading…</div>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-   __attachHistoryShare(overlay);
-   
-  
+     
 async function renderHistoryPickerList(email, name, root){
   const body = root.querySelector("#acwhBody");
   body.className = "acwh-list";
