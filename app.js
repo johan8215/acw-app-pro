@@ -774,8 +774,7 @@ function __attachHistoryShare(root = document){
     }
   };
 }
-
-// --- Estilos del botón Share (rojo, pegado a la X) ---
+// Estilos para el botón y el "modo share"
 (function injectShareCSS(){
   if (document.getElementById('acw-share-css')) return;
   const s = document.createElement('style'); s.id = 'acw-share-css';
@@ -787,11 +786,22 @@ function __attachHistoryShare(root = document){
       box-shadow:0 2px 8px rgba(255,77,79,.35);
     }
     .acwh-head .acwh-share:active{ transform:translateY(1px); }
+
+    /* MODO SHARE: quitar transparencias y subir contraste */
+    #acwhOverlay[data-share="1"]{
+      background: rgba(0,0,0,.55) !important;
+      backdrop-filter: none !important;
+    }
+    #acwhOverlay[data-share="1"] .acwh-card{
+      background:#ffffff !important;
+      box-shadow: 0 12px 38px rgba(0,0,0,.35) !important;
+      opacity:1 !important; filter:none !important;
+    }
   `;
   document.head.appendChild(s);
 })();
 
-// --- Image Share helpers (carga html2canvas on-demand) ---
+// html2canvas on-demand
 async function __ensureH2C(){
   if (window.html2canvas) return;
   await new Promise((ok, fail)=>{
@@ -805,8 +815,8 @@ async function __ensureH2C(){
 async function __shareElAsImage(el, filename='acw.png'){
   await __ensureH2C();
   const canvas = await html2canvas(el, {
-    backgroundColor: '#ffffff',
-    scale: Math.min(2, window.devicePixelRatio || 1.5),
+    backgroundColor: null,                                // respetar overlay oscuro
+    scale: Math.min(3, (window.devicePixelRatio||1)*2),   // más HD ↑
     useCORS: true
   });
   const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.95));
