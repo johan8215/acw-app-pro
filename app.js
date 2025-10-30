@@ -439,6 +439,8 @@ box.innerHTML = `
 
   $("#tvPrev", box).onclick = () => { __teamPage = Math.max(0, __teamPage - 1); renderTeamViewPage(); };
   $("#tvNext", box).onclick = () => { __teamPage = Math.min(Math.ceil(__teamList.length / TEAM_PAGE_SIZE) - 1, __teamPage + 1); renderTeamViewPage(); };
+  $("#tvShareBtn", box).onclick = shareTeamViewSlice; 
+
 
   // Horas totales del slice con concurrencia limitada (4)
   const todayKey = Today.key;
@@ -798,6 +800,69 @@ function renderHistoryDetailCentered(week, email, name, offset, root){
   `;
   body.querySelector(".acwh-back").onclick = () => renderHistoryPickerList(email, name, root);
 }
+
+/* ===== Team View → Share slice ===== */
+function buildTeamViewSliceData(root = document){
+  const rows = $all(".tv-table tr[data-email]", root);
+  return rows.map(r=>{
+    const name = r.dataset.name || r.querySelector("td b")?.textContent?.trim() || "";
+    // Limpia horas (quita el (+x.x) si existe)
+    let hoursText = r.querySelector(".tv-hours")?.textContent ?? "—";
+    hoursText = hoursText.replace(/\(\+.*?\)/g, "").replace(/\s+/g, " ").trim();
+    const liveText  = (r.querySelector(".tv-live")?.textContent ?? "—").replace(/\s+/g, " ").trim();
+    return { name, hours: hoursText, live: liveText };
+  });
+}
+
+function buildCSVFromSlice(data){
+  const header = "Name,Hours,Live\n";
+  const esc = s => `"${String(s).replace(/"/g,'""')}"`;
+  // Intenta dejar solo número en Hours si viene "10.5 (+1.2)" o "🟢 1.2h"
+  const toNum = h => {
+    const m = String(h).match(/(\d+(?:\.\d+)?)/);
+    return m ? m[1] : "";
+  };
+  const rows = data.map(d => [esc(d.name), toNum(d.hours), esc(d.live)].join(","));
+  return header + rows.join("\n");
+}
+
+async function shareTeamViewSlice(){
+  const box = $("#directoryWrapper");
+  if (!box){ toast("Open Team View first", "error"); return; }
+
+  const data = buildTeamViewSliceData(box);
+  const pageInfo = $(".tv-index", box)?.textContent?.trim() || "";
+  const lines = data.map(d => `• ${d.name} — ${d.hours} — ${d.live}`);
+  const text  = `ACW — Team View ${pageInfo}\n${lines.join("\n")}`;
+
+  // CSV opcional (para adjuntar en share si el navegador puede)
+  const csv  = buildCSVFromSlice(data);
+  const blob = new Blob([csv], { type: "text/csv" });
+  const file = new File([blob], "acw-team-slice.csv", { type: "text/csv" });
+
+  try{
+    if (navigator.share){
+      const canFiles = navigator.canShare && navigator.canShare({ files: [file] });
+      await navigator.share(canFiles ? { text, files:[file] } : { text });
+      toast("✅ Shared", "success");
+      return;
+    }
+  }catch(e){
+    console.warn("share() failed, fallback to clipboard", e);
+  }
+
+  // Fallback: copiar al portapapeles
+  try{
+    await navigator.clipboard.writeText(text);
+    toast("📋 Copied slice to clipboard", "success");
+  }catch{
+    // Último recurso: prompt
+    window.prompt("Copy the slice:", text);
+  }
+}
+
+// Exponer por si lo necesitas en otros lados
+window.shareTeamViewSlice = shareTeamViewSlice;
 
 /* =================== GLOBAL BINDS =================== */
 window.loginUser = loginUser;
