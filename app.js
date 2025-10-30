@@ -188,6 +188,7 @@ async function loadSchedule(email) {
     const totalFmt = (d.total??0);
     html += `</table><p class="total">Total Hours: <b>${Number(totalFmt).toFixed(1)}</b></p>`;
     schedDiv.innerHTML = html;
+     attachShareCurrentButton();
 
     // Arranca live tras DOM listo
     clearInterval(window.__acwLiveTick__); // evita duplicados
@@ -196,7 +197,6 @@ async function loadSchedule(email) {
   } catch (e) {
     console.warn(e);
     schedDiv.innerHTML = `<p style="color:#c00;">Error loading schedule.</p>`;
-     attachShareCurrentButton();
   }
 }
 
