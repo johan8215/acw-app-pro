@@ -406,21 +406,22 @@ function renderTeamViewPage() {
     transition: "all 0.35s ease"
   });
 
-  box.innerHTML = `
-    <div class="tv-head" style="display:flex;justify-content:space-between;align-items:center;">
-      <h3 style="margin:0;color:#0078ff;text-shadow:0 0 8px rgba(0,120,255,0.25);">Team View</h3>
-      <button class="tv-close" onclick="toggleTeamOverview()" style="background:none;border:none;font-size:22px;cursor:pointer;">✖️</button>
-    </div>
-    <div class="tv-pager" style="margin:10px 0;">
-      <button class="tv-nav" id="tvPrev" ${__teamPage === 0 ? "disabled" : ""}>‹ Prev</button>
-      <span class="tv-index" style="font-weight:600;color:#0078ff;">Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}</span>
-      <button class="tv-nav" id="tvNext" ${(__teamPage + 1) >= Math.ceil(__teamList.length / TEAM_PAGE_SIZE) ? "disabled" : ""}>Next ›</button>
-    </div>
-    <table class="directory-table tv-table" style="width:100%;font-size:15px;border-collapse:collapse;margin-top:10px;">
-      <tr><th>Name</th><th>Hours</th><th>Live (Working)</th><th></th></tr>
-      <tbody id="tvBody"></tbody>
-    </table>
-  `;
+box.innerHTML = `
+  <div class="tv-head" style="display:flex;justify-content:space-between;align-items:center;">
+    <h3 style="margin:0;color:#0078ff;text-shadow:0 0 8px rgba(0,120,255,0.25);">Team View</h3>
+    <button class="tv-close" onclick="toggleTeamOverview()" style="background:none;border:none;font-size:22px;cursor:pointer;">✖️</button>
+  </div>
+  <div class="tv-pager" style="margin:10px 0;">
+    <button class="tv-nav" id="tvPrev" ${__teamPage === 0 ? "disabled" : ""}>‹ Prev</button>
+    <span class="tv-index" style="font-weight:600;color:#0078ff;">Page ${__teamPage + 1} / ${Math.max(1, Math.ceil(__teamList.length / TEAM_PAGE_SIZE))}</span>
+    <button class="tv-nav" id="tvNext" ${(__teamPage + 1) >= Math.ceil(__teamList.length / TEAM_PAGE_SIZE) ? "disabled" : ""}>Next ›</button>
+    <button class="tv-nav" id="tvShareBtn" style="margin-left:8px;">Share</button>
+  </div>
+  <table class="directory-table tv-table" style="width:100%;font-size:15px;border-collapse:collapse;margin-top:10px;">
+    <tr><th>Name</th><th>Hours</th><th>Live (Working)</th><th></th></tr>
+    <tbody id="tvBody"></tbody>
+  </table>
+`;
 
   document.body.appendChild(box);
 
