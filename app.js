@@ -758,7 +758,7 @@ function __attachHistoryShare(root=document){
     btn.className = 'acwh-share';
     btn.type = 'button';
     btn.textContent = 'Share';
-    // Coloca el botón justo antes de la X
+    __attachHistoryShare(overlay);
     head.insertBefore(btn, head.querySelector('.acwh-close') || null);
   }
 
@@ -792,6 +792,7 @@ async function renderHistoryPickerList(email, name, root){
   });
   root.querySelector(".acwh-title").textContent = "History (5 weeks)";
   root.querySelector(".acwh-sub").textContent   = String(name||"").toUpperCase();
+   __attachHistoryShare(root);
 }
 function renderHistoryDetailCentered(week, email, name, offset, root){
   const body = root.querySelector("#acwhBody");
@@ -821,6 +822,7 @@ function renderHistoryDetailCentered(week, email, name, offset, root){
     <div class="acwh-total-line">Total: ${Number(week.total||0).toFixed(1)}h</div>
   `;
   body.querySelector(".acwh-back").onclick = () => renderHistoryPickerList(email, name, root);
+   __attachHistoryShare(root);
 }
 // === Image Share helpers (html2canvas on-demand) ===
 async function __ensureH2C(){
