@@ -1184,3 +1184,102 @@ console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3 Turbo"} | Base: $
   const s = document.createElement('style'); s.id = id; s.textContent = css;
   document.head.appendChild(s);
 })();
+
+/* === ACW History UI skin v1 — Blue Glass White (safe drop-in) === */
+(function patchHistUI(){
+  // 1) Skin + colores
+  const id='acw-hist-skin';
+  if(!document.getElementById(id)){
+    const css = `
+      #acwhOverlay .acwh-card{
+        background:rgba(255,255,255,.98);
+        border-radius:16px;
+        box-shadow:0 12px 40px rgba(0,120,255,.22);
+      }
+      #acwhOverlay .acwh-title{ color:#0b6dff; letter-spacing:.2px; }
+      #acwhOverlay .acwh-sub{ color:rgba(0,0,0,.38); margin-top:2px; }
+
+      /* MISMO ROJO QUE OPEN */
+      #acwhOverlay .acwh-head .acwh-share{
+        background:#e60000 !important;
+        color:#fff; border:0; border-radius:12px;
+        padding:6px 12px; font-weight:700; cursor:pointer;
+        box-shadow:0 8px 18px rgba(230,0,0,.32);
+      }
+      #acwhOverlay .acwh-head .acwh-share:active{ transform:translateY(1px); }
+
+      #acwhOverlay .acwh-total,
+      #acwhOverlay .acwh-total-line{ color:#e60000; font-weight:700; }
+      #acwhOverlay .acwh-total-line{ text-align:right; margin-top:10px; }
+
+      /* Tabla limpia y alineada */
+      #acwhOverlay .acwh-table{
+        width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed;
+      }
+      #acwhOverlay .acwh-table thead th{
+        padding:10px 12px; color:#0b6dff; font-weight:700;
+      }
+      #acwhOverlay .acwh-table thead th.right{ text-align:right; }
+      #acwhOverlay .acwh-table tbody td{
+        padding:10px 12px; border-top:1px solid rgba(0,0,0,.06);
+      }
+      /* Números y horas perfectamente alineados */
+      #acwhOverlay .acwh-table td.c-shift,
+      #acwhOverlay .acwh-table td.c-hours{
+        font-variant-numeric: tabular-nums; letter-spacing:.2px;
+      }
+      #acwhOverlay .acwh-table td.c-hours{ text-align:right; }
+      #acwhOverlay .acwh-table tr.off td{ color:#9aa3ad; }
+
+      /* Modo captura (mantén tu data-share=1) */
+      #acwhOverlay[data-share="1"]{ background:transparent !important; backdrop-filter:none !important; filter:none !important; }
+      #acwhOverlay[data-share="1"] .acwh-card{
+        background:#fff !important; box-shadow:none !important; opacity:1 !important; filter:none !important;
+      }
+      #acwhOverlay[data-share="1"] .acwh-card *{ opacity:1 !important; filter:none !important; }
+    `;
+    const s=document.createElement('style'); s.id=id; s.textContent=css; document.head.appendChild(s);
+  }
+
+  // 2) Detalle con columnas fijas (mismo tamaño que te gustó)
+  const renderFixed = function(week, email, name, offset, root){
+    const body = root.querySelector("#acwhBody");
+    body.className = "";
+    root.querySelector(".acwh-title").textContent = week.label;
+    root.querySelector(".acwh-sub").textContent =
+      `${offset===0 ? "Week (current)" : `Week -${offset}`} • ${String(name||"").toUpperCase()}`;
+
+    const rows = (week.days||[]).map(d=>{
+      const off = /off/i.test(String(d.shift||""));
+      return `<tr class="${off?'off':''}">
+        <td class="c-day">${d.name||""}</td>
+        <td class="c-shift">${d.shift||'-'}</td>
+        <td class="c-hours">${Number(d.hours||0).toFixed(1)}</td>
+      </tr>`;
+    }).join("");
+
+    body.innerHTML = `
+      <div class="acwh-headrow" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <button class="acwh-back">‹ Weeks</button>
+        <div class="acwh-total">${Number(week.total||0).toFixed(1)}h</div>
+      </div>
+      <table class="acwh-table">
+        <colgroup>
+          <col style="width:38%">
+          <col style="width:40%">
+          <col style="width:22%">
+        </colgroup>
+        <thead>
+          <tr><th>Day</th><th>Shift</th><th class="right">Hours</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="acwh-total-line">Total: ${Number(week.total||0).toFixed(1)}h</div>
+    `;
+    body.querySelector(".acwh-back").onclick = () => renderHistoryPickerList(email, name, root);
+    __attachHistoryShare(root);
+  };
+
+  // Sobrescribe de forma segura
+  window.renderHistoryDetailCentered = renderFixed;
+})();
