@@ -1116,3 +1116,71 @@ console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3 Turbo"} | Base: $
   const btn = document.getElementById('changePassBtn');
   if (btn) btn.onclick = openChangePassword2;
 })();
+/* === ACW — History "Clean Skin" (solo estilos) === */
+(function(){
+  const id = 'acw-history-skin';
+  if (document.getElementById(id)) return;
+  const css = `
+  #acwhOverlay{
+    --acw-accent: #0a84ff;      /* azul títulos */
+    --acw-danger: #e53935;      /* rojo totales */
+    --acw-card:   #ffffff;      /* fondo tarjeta */
+    --acw-border: rgba(0,0,0,.08);
+    --acw-radius: 16px;
+    --acw-shadow: 0 8px 28px rgba(0,0,0,.08);
+    --acw-text:   #2a2a2a;
+    background: rgba(0,0,0,.22);
+    backdrop-filter: blur(1.5px);
+  }
+  #acwhOverlay .acwh-card{
+    background: var(--acw-card);
+    color: var(--acw-text);
+    border: 1px solid var(--acw-border);
+    border-radius: var(--acw-radius);
+    box-shadow: var(--acw-shadow);
+    padding: 16px 18px;
+  }
+  #acwhOverlay .acwh-title{
+    color: var(--acw-accent);
+    line-height: 1.05;
+  }
+  #acwhOverlay .acwh-sub{ color:#97a1ad; }
+
+  /* filas de la lista */
+  #acwhOverlay .acwh-list .acwh-row{
+    background:#fff;
+    border:1px solid var(--acw-border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px; margin:10px 0;
+  }
+  #acwhOverlay .acwh-week{ color:#2b2b2b; }
+  #acwhOverlay .acwh-total{ color: var(--acw-danger); font-weight:700; }
+
+  /* botón Open */
+  #acwhOverlay .acwh-btn{
+    background:#e00000; color:#fff; border:0; border-radius:14px;
+    padding:10px 14px; font-weight:700;
+  }
+
+  /* botón Share (encima a la derecha) */
+  #acwhOverlay .acwh-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  #acwhOverlay .acwh-head .acwh-share{
+    background:#ff6b6f; color:#fff; border:0; border-radius:12px;
+    padding:6px 10px; font-weight:700; box-shadow:0 2px 8px rgba(255,107,111,.28);
+  }
+  #acwhOverlay .acwh-head .acwh-share:active{ transform:translateY(1px); }
+
+  /* tabla detalle semana */
+  #acwhOverlay table.acwh-table th{ color: var(--acw-accent); }
+  #acwhOverlay .acwh-total-line{ color: var(--acw-danger); font-weight:700; text-align:right; }
+
+  /* durante captura (data-share="1") todo sin velos */
+  #acwhOverlay[data-share="1"]{ background: transparent !important; backdrop-filter:none !important; }
+  #acwhOverlay[data-share="1"] .acwh-card,
+  #acwhOverlay[data-share="1"] .acwh-card *{ opacity:1 !important; filter:none !important; box-shadow:none !important; }
+  `;
+  const s = document.createElement('style'); s.id = id; s.textContent = css;
+  document.head.appendChild(s);
+})();
