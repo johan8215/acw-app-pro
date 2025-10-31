@@ -774,34 +774,7 @@ function __attachHistoryShare(root = document){
     }
   };
 }
-// Estilos para el botón y el "modo share"
-(function injectShareCSS(){
-  if (document.getElementById('acw-share-css')) return;
-  const s = document.createElement('style'); s.id = 'acw-share-css';
-  s.textContent = `
-    .acwh-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
-    .acwh-head .acwh-share{
-      background:#ff4d4f; color:#fff; border:0; border-radius:10px;
-      padding:6px 10px; font-weight:700; cursor:pointer;
-      box-shadow:0 2px 8px rgba(255,77,79,.35);
-    }
-    .acwh-head .acwh-share:active{ transform:translateY(1px); }
-
-    /* MODO SHARE: quitar transparencias y subir contraste */
-    #acwhOverlay[data-share="1"]{
-      background: rgba(0,0,0,.55) !important;
-      backdrop-filter: none !important;
-    }
-    #acwhOverlay[data-share="1"] .acwh-card{
-      background:#ffffff !important;
-      box-shadow: 0 12px 38px rgba(0,0,0,.35) !important;
-      opacity:1 !important; filter:none !important;
-    }
-  `;
-  document.head.appendChild(s);
-})();
-
-// html2canvas on-demand
+// === SHARE (fallback claro y seguro) ===
 async function __ensureH2C(){
   if (window.html2canvas) return;
   await new Promise((ok, fail)=>{
@@ -813,32 +786,42 @@ async function __ensureH2C(){
 }
 
 async function __shareElAsImage(el, filename='acw.png'){
-  await __ensureH2C();
- const canvas = await html2canvas(el, {
-  backgroundColor: '#f7f9ff',                 // fondo clarito bajo el overlay
-  scale: Math.min(3, (window.devicePixelRatio||1)*2),
-  useCORS: true
-});
-  const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.95));
-  const file = new File([blob], filename, { type: 'image/png' });
-
   try{
-    if (navigator.canShare && navigator.canShare({ files:[file] })){
-      await navigator.share({ files:[file] });
-      toast('✅ Shared image', 'success'); return;
-    }
-  }catch{}
+    await __ensureH2C();
+    const canvas = await html2canvas(el, {
+      backgroundColor: '#ffffff',               // fondo claro (no oscurece)
+      scale: Math.min(2, window.devicePixelRatio || 1.5), // nítido pero estable
+      useCORS: true
+    });
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.95));
+    const file = new File([blob], filename, { type: 'image/png' });
 
-  try{
-    if (navigator.clipboard && window.ClipboardItem){
-      await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
-      toast('📋 Image copied to clipboard', 'success'); return;
-    }
-  }catch{}
+    // 1) Share nativo (si existe)
+    try{
+      if (navigator.canShare && navigator.canShare({ files:[file] })){
+        await navigator.share({ files:[file] });
+        toast('✅ Shared image','success'); 
+        return;
+      }
+    }catch{}
 
-  const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
-  toast('ℹ️ Opened image in new tab', 'info');
+    // 2) Copiar al portapapeles (si existe)
+    try{
+      if (navigator.clipboard && window.ClipboardItem){
+        await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
+        toast('📋 Image copied to clipboard','success'); 
+        return;
+      }
+    }catch{}
+
+    // 3) Abrir en pestaña (fallback)
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    toast('ℹ️ Opened image in new tab','info');
+  }catch(e){
+    console.warn('share error', e);
+    toast('❌ Share failed','error');
+  }
 }
 async function renderHistoryPickerList(email, name, root){
   const body = root.querySelector("#acwhBody");
