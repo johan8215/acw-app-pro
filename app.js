@@ -747,9 +747,8 @@ function openHistoryPicker(email, name="My History"){
   renderHistoryPickerList(email, name, overlay);
 }
 
-// --- Share en History (una sola función, reutilizable) ---
+// Botón Share pegado a la X (se crea una sola vez por overlay)
 function __attachHistoryShare(root = document){
-  // root es el overlay que ya pasas en openHistoryPicker/render...
   const head = root.querySelector('.acwh-head');
   if (!head) return;
 
@@ -759,19 +758,16 @@ function __attachHistoryShare(root = document){
     btn.className = 'acwh-share';
     btn.type = 'button';
     btn.textContent = 'Share';
+    // lo insertamos justo antes de la X
     head.insertBefore(btn, head.querySelector('.acwh-close') || null);
   }
 
+  // acción del botón
   btn.onclick = async ()=>{
-    const overlay = root.closest('#acwhOverlay') || root;   // << capturamos TODO
-    try{
-      overlay.setAttribute('data-share', '1');              // modo nítido temporal
-      const who   = root.querySelector('.acwh-sub')?.textContent?.trim() || (currentUser?.name||'ACW');
-      const title = root.querySelector('.acwh-title')?.textContent?.trim() || 'History';
-      await __shareElAsImage(overlay, `${who} — ${title}.png`);
-    } finally {
-      overlay.removeAttribute('data-share');
-    }
+    const card  = root.querySelector('.acwh-card') || root;
+    const title = root.querySelector('.acwh-title')?.textContent?.trim() || 'History';
+    const who   = root.querySelector('.acwh-sub')?.textContent?.trim() || (currentUser?.name || 'ACW');
+    await __shareElAsImage(card, `${who} — ${title}.png`);
   };
 }
 // === SHARE (fallback claro y seguro) ===
