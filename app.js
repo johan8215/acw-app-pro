@@ -995,26 +995,32 @@ console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3 Turbo"} | Base: $
   window.openSettings = openSettingsFix;
 })();
 // === ACW v5.6.3 — Change Password hard-fix (pegar al FINAL) ===
-(function () {
-  function injectStyleOnce(id, css){
-    if (document.getElementById(id)) return;
-    const s = document.createElement('style'); s.id = id; s.textContent = css;
-    document.head.appendChild(s);
-  }
-  injectStyleOnce('acw-cp2-css', `
-    #changePasswordModal{position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-      background:rgba(0,0,0,.45); backdrop-filter:blur(8px); z-index:13000;}
-    #changePasswordModal.show{ display:flex !important; }
-    #changePasswordModal .modal-content.glass{
-      background:rgba(255,255,255,.97); border-radius:14px; box-shadow:0 0 40px rgba(0,120,255,.3);
-      padding:24px 26px; width:340px; max-width:92vw; animation:popIn .22s ease; position:relative; text-align:center;
+(function injectShareCSS(){
+  if (document.getElementById('acw-share-css')) return;
+  const s = document.createElement('style'); s.id = 'acw-share-css';
+  s.textContent = `
+    .acwh-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .acwh-head .acwh-share{
+      background:#ff4d4f; color:#fff; border:0; border-radius:10px;
+      padding:6px 10px; font-weight:700; cursor:pointer;
+      box-shadow:0 2px 8px rgba(255,77,79,.35);
     }
-    #changePasswordModal .close{ position:absolute; right:10px; top:8px; background:none; border:none; font-size:22px; cursor:pointer; }
-    #changePasswordModal input{
-      display:block; margin:8px auto; width:90%; max-width:280px; padding:10px;
-      border:1px solid rgba(0,120,255,.25); border-radius:6px; outline:none;
+    .acwh-head .acwh-share:active{ transform:translateY(1px); }
+
+    /* MODO SHARE: más claro */
+    #acwhOverlay[data-share="1"]{
+      background: rgba(0,0,0,.22) !important;  /* antes .55 */
+      backdrop-filter: none !important;
+      filter: contrast(1.06) brightness(1.08) saturate(1.08);
     }
-  `);
+    #acwhOverlay[data-share="1"] .acwh-card{
+      background:#ffffff !important;
+      box-shadow: 0 16px 46px rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.06) !important;
+      opacity:1 !important; filter:none !important;
+    }
+  `;
+  document.head.appendChild(s);
+})();
 
   // Crea el modal si no existe, con los IDs que usa submitChangePassword()
   function ensureChangePasswordModal(){
