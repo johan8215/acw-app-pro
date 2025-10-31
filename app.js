@@ -1283,3 +1283,63 @@ console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3 Turbo"} | Base: $
   // Sobrescribe de forma segura
   window.renderHistoryDetailCentered = renderFixed;
 })();
+/* === ACW Schedule table alignment v1 — Blue Glass White (safe drop-in) === */
+(function scheduleSkin(){
+  const id='acw-sched-skin';
+  if (document.getElementById(id)) return;
+
+  const css = `
+    #schedule table{
+      width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0;
+    }
+    #schedule table th, #schedule table td{
+      padding:10px 12px; border-top:1px solid rgba(0,0,0,.06);
+    }
+    /* Anchos fijos */
+    #schedule table th:nth-child(1), #schedule table td:nth-child(1){ width:38%; }
+    #schedule table th:nth-child(2), #schedule table td:nth-child(2){
+      width:44%; white-space:nowrap; font-variant-numeric:tabular-nums;
+    }
+    #schedule table th:nth-child(3), #schedule table td:nth-child(3){
+      width:18%; text-align:right; font-variant-numeric:tabular-nums;
+    }
+    /* Hoy visible y OFF gris */
+    #schedule table tr.today td{ background:rgba(11,109,255,.06); }
+    #schedule table td.off{ color:#9aa3ad; }
+  `;
+  const s=document.createElement('style'); s.id=id; s.textContent=css; document.head.appendChild(s);
+
+  // Normaliza el guion para que no parta línea (NBSP–NBSP)
+  function formatShift(str){
+    const t = String(str||'-').trim();
+    return t.replace(/\s-\s/g, '\u00A0–\u00A0');
+  }
+
+  // Post-procesa la tabla después de que se renderiza
+  function fixTable(){
+    const table = document.querySelector('#schedule table');
+    if(!table) return;
+    const rows = Array.from(table.rows);
+    rows.forEach((r,i)=>{
+      if (i===0) return; // header
+      const shiftCell = r.cells[1], hoursCell = r.cells[2];
+      if (shiftCell){
+        const raw = shiftCell.textContent;
+        shiftCell.textContent = formatShift(raw);
+        if (/^\s*off\s*$/i.test(raw)) shiftCell.classList.add('off');
+      }
+      if (hoursCell){ /* ya queda derecha y tabular por CSS */ }
+    });
+  }
+
+  // Hook: vuelve a aplicar tras loadSchedule
+  const orig = window.loadSchedule;
+  if (typeof orig === 'function'){
+    window.loadSchedule = async function(...args){
+      await orig.apply(this, args);
+      requestAnimationFrame(fixTable);
+    };
+  } else {
+    requestAnimationFrame(fixTable);
+  }
+})();
