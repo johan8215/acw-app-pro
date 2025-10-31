@@ -797,22 +797,24 @@ function __attachHistoryShare(root = document){
   }
 
   // acción del botón
-btn.onclick = async ()=>{
-  const overlay = root.closest('#acwhOverlay') || root;
-  const card     = overlay.querySelector('.acwh-card') || overlay;
-  const title    = overlay.querySelector('.acwh-title')?.textContent?.trim() || 'History';
-  const who      = overlay.querySelector('.acwh-sub')?.textContent?.trim() || (currentUser?.name || 'ACW');
+  btn.onclick = async ()=>{
+    const overlay = root.closest('#acwhOverlay') || root;
+    const card    = overlay.querySelector('.acwh-card') || overlay;
+    const title   = overlay.querySelector('.acwh-title')?.textContent?.trim() || 'History';
+    const who     = overlay.querySelector('.acwh-sub')?.textContent?.trim() || (currentUser?.name || 'ACW');
 
-  // Activa modo nítido (quita vidrio/oscurecidos) solo para la captura
-  overlay.setAttribute('data-share','1');
-  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))); // asegura estilos aplicados
+    // Modo nítido SOLO durante la captura
+    overlay.setAttribute('data-share','1');
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 
-  try{
-    await __shareElAsImage(card, `${who} — ${title}.png`);
-  } finally {
-    overlay.removeAttribute('data-share'); // vuelve a normal
-  }
-};
+    try{
+      await __shareElAsImage(card, `${who} — ${title}.png`);
+    } finally {
+      overlay.removeAttribute('data-share');
+    }
+  };
+} // <-- este cierre faltaba
+
 // === SHARE (fallback claro y seguro) ===
 async function __ensureH2C(){
   if (window.html2canvas) return;
@@ -828,14 +830,13 @@ async function __shareElAsImage(el, filename='acw.png'){
   try{
     await __ensureH2C();
     const canvas = await html2canvas(el, {
-  backgroundColor: '#ffffff',
-  scale: Math.min(3, window.devicePixelRatio || 2), // 2–3 en iPad queda perfecto
-  useCORS: true
-});
+      backgroundColor: '#ffffff',
+      scale: Math.min(3, window.devicePixelRatio || 2),
+      useCORS: true
+    });
     const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.95));
     const file = new File([blob], filename, { type: 'image/png' });
 
-    // 1) Share nativo (si existe)
     try{
       if (navigator.canShare && navigator.canShare({ files:[file] })){
         await navigator.share({ files:[file] });
@@ -844,7 +845,6 @@ async function __shareElAsImage(el, filename='acw.png'){
       }
     }catch{}
 
-    // 2) Copiar al portapapeles (si existe)
     try{
       if (navigator.clipboard && window.ClipboardItem){
         await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
@@ -853,7 +853,6 @@ async function __shareElAsImage(el, filename='acw.png'){
       }
     }catch{}
 
-    // 3) Abrir en pestaña (fallback)
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
     toast('ℹ️ Opened image in new tab','info');
