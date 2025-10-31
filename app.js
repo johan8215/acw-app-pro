@@ -873,6 +873,20 @@ function renderHistoryDetailCentered(week, email, name, offset, root){
   body.querySelector(".acwh-back").onclick = () => renderHistoryPickerList(email, name, root);
    __attachHistoryShare(root);
 }
+(function(){
+  const id='acw-share-css';
+  if (document.getElementById(id)) return;
+  const s=document.createElement('style'); s.id=id;
+  s.textContent = `
+    .acwh-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .acwh-head .acwh-share{
+      background:#ff4d4f; border:none; color:#fff; font-weight:700;
+      padding:6px 10px; border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,.15);
+    }
+    .acwh-head .acwh-share:active{ transform:scale(.98); }
+  `;
+  document.head.appendChild(s);
+})();
 
 /* =================== GLOBAL BINDS =================== */
 window.loginUser = loginUser;
