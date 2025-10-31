@@ -1343,3 +1343,18 @@ console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3 Turbo"} | Base: $
     requestAnimationFrame(fixTable);
   }
 })();
+// Share = rojo fuerte (igual que Open)
+(function(){
+  const id='acw-share-red';
+  if (document.getElementById(id)) return;
+  const s=document.createElement('style'); s.id=id;
+  s.textContent = `
+    .acwh-head .acwh-share{
+      background:#e60000 !important;
+      box-shadow:0 2px 10px rgba(230,0,0,.35);
+      color:#fff; border:0; border-radius:10px;
+    }
+    .acwh-head .acwh-share:active{ transform:translateY(1px); }
+  `;
+  document.head.appendChild(s);
+})();
