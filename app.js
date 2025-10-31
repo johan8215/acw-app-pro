@@ -763,13 +763,22 @@ function __attachHistoryShare(root = document){
   }
 
   // acción del botón
-  btn.onclick = async ()=>{
-    const card  = root.querySelector('.acwh-card') || root;
-    const title = root.querySelector('.acwh-title')?.textContent?.trim() || 'History';
-    const who   = root.querySelector('.acwh-sub')?.textContent?.trim() || (currentUser?.name || 'ACW');
+btn.onclick = async ()=>{
+  const overlay = root.closest('#acwhOverlay') || root;
+  const card     = overlay.querySelector('.acwh-card') || overlay;
+  const title    = overlay.querySelector('.acwh-title')?.textContent?.trim() || 'History';
+  const who      = overlay.querySelector('.acwh-sub')?.textContent?.trim() || (currentUser?.name || 'ACW');
+
+  // Activa modo nítido (quita vidrio/oscurecidos) solo para la captura
+  overlay.setAttribute('data-share','1');
+  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))); // asegura estilos aplicados
+
+  try{
     await __shareElAsImage(card, `${who} — ${title}.png`);
-  };
-}
+  } finally {
+    overlay.removeAttribute('data-share'); // vuelve a normal
+  }
+};
 // === SHARE (fallback claro y seguro) ===
 async function __ensureH2C(){
   if (window.html2canvas) return;
