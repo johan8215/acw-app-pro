@@ -310,6 +310,40 @@ function logoutUser(){
   toast("👋 Logged out", "info");
   setTimeout(()=>location.reload(), 500);
 }
+(function ensureShareCSS(){
+  if (document.getElementById('acw-share-css')) return;
+  const s = document.createElement('style'); s.id = 'acw-share-css';
+  s.textContent = `
+    /* Botón Share junto a la X */
+    .acwh-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .acwh-head .acwh-share{
+      background:#ff4d4f; color:#fff; border:0; border-radius:10px;
+      padding:6px 10px; font-weight:700; cursor:pointer;
+      box-shadow:0 2px 8px rgba(255,77,79,.35);
+    }
+    .acwh-head .acwh-share:active{ transform:translateY(1px); }
+
+    /* MODO NÍTIDO PARA CAPTURA */
+    #acwhOverlay[data-share="1"]{
+      background: transparent !important;
+      backdrop-filter: none !important;
+      filter: none !important;
+    }
+    #acwhOverlay[data-share="1"] .acwh-card{
+      background:#ffffff !important;
+      opacity:1 !important;
+      filter:none !important;
+      backdrop-filter:none !important;
+      box-shadow:none !important; /* evita velo gris */
+    }
+    /* por si algún hijo tiene opacidades/filtros */
+    #acwhOverlay[data-share="1"] .acwh-card *{
+      opacity:1 !important;
+      filter:none !important;
+    }
+  `;
+  document.head.appendChild(s);
+})();
 
 /* =================== CHANGE PASSWORD =================== */
 async function submitChangePassword() {
