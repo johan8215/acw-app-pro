@@ -828,10 +828,10 @@ async function __shareElAsImage(el, filename='acw.png'){
   try{
     await __ensureH2C();
     const canvas = await html2canvas(el, {
-      backgroundColor: '#ffffff',               // fondo claro (no oscurece)
-      scale: Math.min(2, window.devicePixelRatio || 1.5), // nítido pero estable
-      useCORS: true
-    });
+  backgroundColor: '#ffffff',
+  scale: Math.min(3, window.devicePixelRatio || 2), // 2–3 en iPad queda perfecto
+  useCORS: true
+});
     const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.95));
     const file = new File([blob], filename, { type: 'image/png' });
 
