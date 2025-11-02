@@ -1359,3 +1359,278 @@ console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3 Turbo"} | Base: $
   document.head.appendChild(s);
 })();
 
+/* ================= ACW — Diagnostics Panel v1 (frontend only) ================= */
+(function ACW_Diagnostics(){
+  if (window.openDiagPanel) return; // evitar doble carga
+
+  // ---------- Utils ----------
+  const S = (sel, root=document)=> root.querySelector(sel);
+  const SS= (sel, root=document)=> Array.from(root.querySelectorAll(sel));
+  const hasCaches = ()=> 'caches' in window;
+
+  // sello anti-cache (más agresivo que el API normal para diagnóstico)
+  const ts = ()=> `&_ts=${Date.now()}`;
+
+  function friendlyErr(e){
+    const msg = (e && e.message) ? e.message : String(e);
+    if (/Failed to fetch/i.test(msg)) return "Fetch bloqueado (CORS/red) o URL inválida";
+    return msg;
+  }
+
+  async function fetchProbe(url, {as="json", signal} = {}){
+    const t0 = performance.now();
+    try{
+      const r = await fetch(url, { cache:"no-store", signal });
+      const ct = r.headers.get("content-type") || "";
+      const status = r.status;
+      const raw = as==="text" ? await r.text() : await r.text(); // primero texto
+      let json = null, parseError = null;
+
+      try { json = JSON.parse(raw); } catch(err){ parseError = err; }
+
+      const elapsed = Math.round(performance.now()-t0);
+      return { ok:true, status, ct, elapsed, raw, json, parseError };
+    }catch(e){
+      const elapsed = Math.round(performance.now()-t0);
+      return { ok:false, error:friendlyErr(e), elapsed };
+    }
+  }
+
+  function looksLikeLoginHTML(raw){
+    if (!raw) return false;
+    const t = raw.slice(0,400).toLowerCase();
+    return t.includes("<html") && (t.includes("accounts.google") || t.includes("signin") || t.includes("google"));
+  }
+
+  function looksLikeGASError(raw){
+    const t = (raw||"").toLowerCase();
+    return t.includes("internal error") || t.includes("exception") || t.includes("stack") || t.includes("script");
+  }
+
+  // ---------- UI ----------
+  function ensureCSS(){
+    if (document.getElementById("acw-diag-css")) return;
+    const s = document.createElement("style"); s.id="acw-diag-css";
+    s.textContent = `
+      #acwDiagOverlay{position:fixed; inset:0; z-index:13050; background:rgba(0,0,0,.35); backdrop-filter:blur(2px);
+        display:flex; align-items:center; justify-content:center; font-family:system-ui, -apple-system, Segoe UI, Roboto;}
+      .acwDiagCard{width:min(980px,95vw); max-height:86vh; overflow:auto; background:#fff; border-radius:16px;
+        box-shadow:0 24px 80px rgba(0,0,0,.25); padding:16px 18px;}
+      .acwDiagHead{display:flex; align-items:center; gap:10px; border-bottom:1px solid #eef2f6; padding-bottom:10px; margin-bottom:10px;}
+      .acwDiagHead h3{margin:0; color:#0a56cc;}
+      .pill{border:0; border-radius:10px; padding:6px 10px; font-weight:700; cursor:pointer;}
+      .pill.run{background:#0a84ff; color:#fff;}
+      .pill.copy{background:#00b341; color:#fff;}
+      .pill.clear{background:#ff3b30; color:#fff;}
+      .pill.close{background:#f2f6ff; color:#0a56cc;}
+      table.acwDiag{width:100%; border-collapse:separate; border-spacing:0;}
+      table.acwDiag th, table.acwDiag td{padding:8px 10px; border-bottom:1px solid #eef2f6; vertical-align:top;}
+      table.acwDiag th{color:#0a56cc; text-align:left;}
+      .muted{color:#789; font-size:.92em}
+      .status{font-weight:800;}
+      .ok{color:#00b341;} .warn{color:#f59e0b;} .fail{color:#e60000;}
+      pre.min{max-height:120px; overflow:auto; background:#f8fafc; border:1px solid #eef2f6; padding:8px; border-radius:8px;}
+      .tips{background:#fff8e6; border:1px solid #ffe1a6; border-radius:10px; padding:10px; margin-top:10px; font-size:.95em;}
+      .rowBtns{display:flex; gap:8px; flex-wrap:wrap;}
+      .rowBtns button{border:0; background:#f2f6ff; color:#0a56cc; border-radius:8px; padding:6px 8px; font-weight:700; cursor:pointer;}
+      #diagSmallBtns{display:flex; gap:8px; margin-left:auto;}
+      /* Botón flotante "Diag" */
+      #diagBtn{
+        position:fixed; top:12px; right:16px; z-index:9999; padding:8px 12px; border:0; border-radius:12px;
+        background:#0a84ff; color:#fff; font-weight:800; box-shadow:0 6px 16px rgba(10,132,255,.35); cursor:pointer;
+      }
+      @media (min-width:900px){ #diagBtn{ right:16px; } }
+    `;
+    document.head.appendChild(s);
+  }
+
+  function addDiagButton(){
+    if (document.getElementById("diagBtn")) return;
+    const b = document.createElement("button");
+    b.id = "diagBtn"; b.textContent = "Diag";
+    b.onclick = openDiagPanel;
+    document.body.appendChild(b);
+  }
+
+  function openDiagPanel(){
+    ensureCSS();
+    const ov = document.createElement("div"); ov.id="acwDiagOverlay";
+    ov.innerHTML = `
+      <div class="acwDiagCard">
+        <div class="acwDiagHead">
+          <h3>ACW Diagnostics</h3>
+          <div id="diagSmallBtns">
+            <button class="pill run"   id="acwDiagRun">Run diagnostics</button>
+            <button class="pill copy"  id="acwDiagCopy">Copy report</button>
+            <button class="pill clear" id="acwDiagClear">Clear app cache</button>
+            <button class="pill close" id="acwDiagClose">Close</button>
+          </div>
+        </div>
+        <table class="acwDiag">
+          <tr><th>Base URL</th><td><code id="diagBase"></code><div class="muted">CONFIG.BASE_URL</div></td></tr>
+          <tr><th>Usuario</th><td id="diagUser"><span class="muted">Sin sesión</span></td></tr>
+          <tr><th>getEmployeesDirectory</th>
+              <td id="diagDir"><span class="status">—</span><div class="rowBtns"></div><pre class="min" id="diagDirPre"></pre></td></tr>
+          <tr><th>getSmartSchedule (0)</th>
+              <td id="diagSched0"><span class="status">—</span><div class="rowBtns"></div><pre class="min" id="diagSched0Pre"></pre></td></tr>
+          <tr><th>getSmartSchedule (-1)</th>
+              <td id="diagSched1"><span class="status">—</span><div class="rowBtns"></div><pre class="min" id="diagSched1Pre"></pre></td></tr>
+        </table>
+        <div class="tips" id="diagTips">
+          <b>Tips rápidos:</b> Si ves HTML de Google/Sign-in, es un problema de <u>permisos del Web App</u> (Deploy como “Me”, acceso “Anyone”).<br>
+          Si el JSON está ok pero con listas vacías, apunta a <u>Spreadsheet/hoja incorrecta o sin datos</u>.<br>
+          Si aparece “Failed to fetch”, suele ser <u>CORS/red</u> o un BASE_URL mal escrito.
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+
+    S("#acwDiagClose").onclick = ()=> ov.remove();
+    S("#acwDiagClear").onclick = async ()=>{
+      try{
+        if (hasCaches()) { const keys = await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); }
+        localStorage.clear();
+        alert("✅ Caché/bases locales limpiadas. Recarga la app y vuelve a probar.");
+      }catch(e){ alert("⚠️ No se pudo limpiar: "+friendlyErr(e)); }
+    };
+    S("#acwDiagCopy").onclick = ()=> copyReport();
+    S("#acwDiagRun").onclick  = ()=> runAll();
+
+    // pintar base y usuario
+    S("#diagBase").textContent = (window.CONFIG && CONFIG.BASE_URL) ? CONFIG.BASE_URL : "❌ (CONFIG.BASE_URL no definido)";
+    const cu = window.currentUser;
+    S("#diagUser").innerHTML = cu ? `<b>${cu.name||cu.email||"User"}</b> <span class="muted">(${cu.email||"-"} • ${cu.role||"-"})</span>`
+                                  : `<span class="muted">Sin sesión</span>`;
+  }
+
+  async function runAll(){
+    const base = (window.CONFIG && CONFIG.BASE_URL) || "";
+    if (!base){ setCell("diagDir", "fail", "BASE_URL no definido"); setCell("diagSched0","fail","BASE_URL no definido"); return; }
+
+    // 1) Directory
+    await runDir(base);
+
+    // 2) Schedule 0 (usuario actual o prompt)
+    let email = (window.currentUser && currentUser.email) || "";
+    if (!email){
+      email = prompt("Email para probar getSmartSchedule:", "") || "";
+    }
+    await runSched(base, email, 0);
+    await runSched(base, email, 1);
+  }
+
+  function setCell(id, state, msg, raw){
+    const td = document.getElementById(id);
+    if (!td) return;
+    const st = S(".status", td);
+    const pre= S("pre", td);
+    st.className = `status ${state}`;
+    st.textContent = state === "ok" ? `OK — ${msg}` :
+                     state === "warn" ? `WARN — ${msg}` :
+                     `FAIL — ${msg}`;
+    if (pre) pre.textContent = raw ? (typeof raw==="string" ? raw : JSON.stringify(raw, null, 2)) : "";
+  }
+
+  function addRowBtns(id, url){
+    const td = document.getElementById(id);
+    if (!td) return;
+    const box = S(".rowBtns", td);
+    box.innerHTML = "";
+    const b1 = document.createElement("button"); b1.textContent = "Abrir endpoint"; b1.onclick = ()=> window.open(url, "_blank");
+    const b2 = document.createElement("button"); b2.textContent = "Reintentar"; b2.onclick = ()=> {
+      if (id==="diagDir") runDir((CONFIG||{}).BASE_URL);
+      if (id==="diagSched0") runSched((CONFIG||{}).BASE_URL, (currentUser||{}).email || prompt("Email:", ""), 0);
+      if (id==="diagSched1") runSched((CONFIG||{}).BASE_URL, (currentUser||{}).email || prompt("Email:", ""), 1);
+    };
+    box.appendChild(b1); box.appendChild(b2);
+  }
+
+  async function runDir(base){
+    const url = `${base}?action=getEmployeesDirectory${ts()}`;
+    addRowBtns("diagDir", url);
+    setCell("diagDir","warn","probando…");
+    const r = await fetchProbe(url, {as:"json"});
+    if (!r.ok){ setCell("diagDir","fail", `${r.error} (${r.elapsed}ms)`); return; }
+
+    // Clasificación
+    if (r.parseError){
+      const htmlHint = looksLikeLoginHTML(r.raw) ? " (parece login de Google; revisa Deploy permisos)" : "";
+      setCell("diagDir","fail", `Respuesta no-JSON${htmlHint} • status ${r.status} • ${r.elapsed}ms`, r.raw.slice(0,800));
+      return;
+    }
+    const j = r.json;
+    if (j && j.ok && Array.isArray(j.directory)){
+      const n = j.directory.length|0;
+      setCell("diagDir", n>0 ? "ok" : "warn", `ok=${j.ok} • empleados=${n} • ${r.elapsed}ms`, n>0? j.directory.slice(0,5) : j);
+    }else{
+      const hint = looksLikeGASError(r.raw) ? " (posible error Apps Script)" : "";
+      setCell("diagDir","fail", `JSON inesperado${hint} • ${r.elapsed}ms`, j||r.raw.slice(0,800));
+    }
+  }
+
+  async function runSched(base, email, offset){
+    const id = offset===0 ? "diagSched0" : "diagSched1";
+    if (!email){ setCell(id,"fail","Sin email para probar"); return; }
+    const url = `${base}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${offset}${ts()}`;
+    addRowBtns(id, url);
+    setCell(id,"warn","probando…");
+    const r = await fetchProbe(url, {as:"json"});
+
+    if (!r.ok){ setCell(id,"fail", `${r.error} (${r.elapsed}ms)`); return; }
+    if (r.parseError){
+      const htmlHint = looksLikeLoginHTML(r.raw) ? " (parece login de Google; revisa Deploy permisos)" : "";
+      setCell(id,"fail", `Respuesta no-JSON${htmlHint} • status ${r.status} • ${r.elapsed}ms`, r.raw.slice(0,800));
+      return;
+    }
+
+    const j = r.json;
+    if (j && j.ok && Array.isArray(j.days)){
+      const total = Number(j.total||0).toFixed(1);
+      const days  = j.days.length|0;
+      // Heurística “vacío pero ok”
+      const hasWork = j.days.some(x=>{
+        const s = String(x.shift||"").trim();
+        return s && !/^(-|off|n\/a)$/i.test(s);
+      });
+      const state = hasWork ? "ok" : "warn";
+      const msg   = hasWork ? `ok • días=${days} • total=${total} • ${r.elapsed}ms`
+                            : `ok (sin turnos activos) • días=${days} • total=${total} • ${r.elapsed}ms`;
+      setCell(id, state, msg, { weekLabel: j.weekLabel, sample: j.days.slice(0,3) });
+    }else{
+      const hint = looksLikeGASError(r.raw) ? " (posible error Apps Script)" : "";
+      setCell(id,"fail", `JSON inesperado${hint} • ${r.elapsed}ms`, j||r.raw.slice(0,800));
+    }
+  }
+
+  function copyReport(){
+    try{
+      const report = {
+        time: new Date().toISOString(),
+        base: (CONFIG||{}).BASE_URL || "<missing>",
+        user: (window.currentUser ? {name: currentUser.name, email: currentUser.email, role: currentUser.role} : null)
+      };
+      const rows = SS("table.acwDiag tr").slice(0);
+      rows.forEach(tr=>{
+        const th = tr.querySelector("th")?.textContent?.trim();
+        const st = tr.querySelector(".status")?.textContent?.trim();
+        const pre= tr.querySelector("pre")?.textContent?.trim();
+        if (th) report[th] = { status: st || "", sample: pre || "" };
+      });
+      const txt = JSON.stringify(report, null, 2);
+      navigator.clipboard.writeText(txt);
+      alert("✅ Reporte copiado al portapapeles");
+    }catch(e){
+      alert("⚠️ No se pudo copiar: "+friendlyErr(e));
+    }
+  }
+
+  // Exponer y auto-insertar botón
+  window.openDiagPanel = openDiagPanel;
+  ensureCSS();
+  addDiagButton();
+
+  // Abrir auto si viene ?diag=1
+  try{
+    const p = new URLSearchParams(location.search);
+    if (p.get("diag")==="1") setTimeout(openDiagPanel, 250);
+  }catch{}
+})();
