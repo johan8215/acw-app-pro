@@ -1358,4 +1358,48 @@ console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3 Turbo"} | Base: $
   `;
   document.head.appendChild(s);
 })();
+window.ACW_DIAG = async function runDiag({email, password, target}){
+  const BASE = (window.CONFIG && CONFIG.BASE_URL) || prompt("BASE_URL?");
+  const enc = encodeURIComponent;
+  const j = async (u) => (await fetch(u + "&_t=" + Date.now(), {cache:"no-store"})).json();
+  const out = {};
 
+  console.log("▶️ ACW DIAG start — BASE:", BASE);
+
+  out.ping  = await j(`${BASE}?action=ping`);
+  out.login = await j(`${BASE}?action=login&email=${enc(email)}&password=${enc(password)}`);
+  if (!out.login?.ok) { console.table([{check:"login", ok:false, error:out.login?.error}]); return out; }
+
+  const actor = out.login.email;
+  out.sched = {};
+  for (let off=0; off<5; off++){
+    out.sched[off] = await j(`${BASE}?action=getSmartSchedule&email=${enc(email)}&offset=${off}`);
+    console.log(`week -${off}:`, out.sched[off]?.weekLabel, "total:", out.sched[off]?.total, "days:", out.sched[off]?.days?.length);
+  }
+
+  out.dir = await j(`${BASE}?action=getEmployeesDirectory`);
+  const self = (out.dir?.directory||[]).find(e => (e.email||"").toLowerCase() === actor);
+
+  const tgt = target || actor; // prueba contigo mismo
+  out.dryToday    = await j(`${BASE}?action=sendtoday&actor=${enc(actor)}&target=${enc(tgt)}&dry=1`);
+  out.dryTomorrow = await j(`${BASE}?action=sendtomorrow&actor=${enc(actor)}&target=${enc(tgt)}&dry=1`);
+
+  console.table([
+    {check:"ping", ok: out.ping?.ok===true, version: out.ping?.version},
+    {check:"login", ok: out.login?.ok===true, role: out.login?.role, week: out.login?.week},
+    {check:"sched-0", ok: out.sched[0]?.ok===true, total: out.sched[0]?.total, days: out.sched[0]?.days?.length},
+    {check:"sched-1", ok: out.sched[1]?.ok===true, total: out.sched[1]?.total},
+    {check:"sched-2", ok: out.sched[2]?.ok===true, total: out.sched[2]?.total},
+    {check:"sched-3", ok: out.sched[3]?.ok===true, total: out.sched[3]?.total},
+    {check:"sched-4", ok: out.sched[4]?.ok===true, total: out.sched[4]?.total},
+    {check:"directory", ok: out.dir?.ok===true, count: out.dir?.directory?.length, selfPhone: !!self?.phone},
+    {check:"sendToday (dry)", ok: out.dryToday?.ok===true, shift: out.dryToday?.sent?.shift},
+    {check:"sendTomorrow (dry)", ok: out.dryTomorrow?.ok===true, shift: out.dryTomorrow?.sent?.shift},
+  ]);
+
+  console.log("✅ ACW DIAG done");
+  return out;
+};
+
+// Ejecuta:
+ACW_DIAG({ email: "TU_EMAIL", password: "TU_PASS" });
