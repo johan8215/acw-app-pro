@@ -72,22 +72,114 @@ async function fetchJSON(url, { ttl=0, signal } = {}){
   }
 }
 
-/* API helpers con TTL inteligentes */
+/* =====================  API helpers + Alias Resolver  ===================== */
 const API = {
-  dirTTL: 5*60*1000,         // 5 min
-  schedTTL0: 60*1000,        // semana actual 60s (para live y TeamView)
-  schedTTLOld: 5*60*1000,    // semanas -1..-4 más relajado
+  // TTLs
+  dirTTL: 5*60*1000,        // 5 min
+  schedTTL0: 60*1000,       // semana actual
+  schedTTLOld: 5*60*1000,   // semanas anteriores
+  _aliasCache: new Map(),
 
+  /* ------- Lecturas con cache ------- */
   getDirectory(controller){
     const u = `${CONFIG.BASE_URL}?action=getEmployeesDirectory`;
     return fetchJSON(u, { ttl: API.dirTTL, signal: controller?.signal });
   },
+
   getSchedule(email, offset=0, controller){
     const ttl = offset===0 ? API.schedTTL0 : API.schedTTLOld;
     const u = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${offset}`;
     return fetchJSON(u, { ttl, signal: controller?.signal });
+  },
+
+  /* ------- Resolver de alias (email/teléfono -> alias exacto de la fila) ------- */
+  async resolveAlias({email, phone}={}, controller){
+    const key = (email || phone || "").toLowerCase();
+    if (this._aliasCache.has(key)) return this._aliasCache.get(key);
+
+    // 1) Intento rápido: a veces getSmartSchedule devuelve un identificador de fila
+    try{
+      if (email){
+        const s = await this.getSchedule(email, 0, controller);
+        const cand = s?.rowAlias || s?.row || s?.alias || s?.nameInSheet || s?.row_name || s?.header;
+        if (typeof cand === "string" && cand.trim()){
+          const res = { alias: cand.trim(), foundBy: "schedule" };
+          this._aliasCache.set(key, res);
+          return res;
+        }
+      }
+    }catch{/* continua con directorio */}
+
+    // 2) Directorio: localizar registro y derivar alias a partir del nombre
+    const d = await this.getDirectory(controller);
+    const list = d?.employees || d?.rows || d?.data || Array.isArray(d)? d : [];
+    const norm = v => (v||"").toString().trim();
+    const nPhone = v => norm(v).replace(/\D/g,"");
+
+    const rec = list.find(x =>
+      (email && norm(x.email).toLowerCase() === norm(email).toLowerCase()) ||
+      (phone && nPhone(x.phone) && nPhone(x.phone) === nPhone(phone))
+    );
+    if (!rec) throw new Error("ALIAS_NOT_FOUND_IN_DIRECTORY");
+
+    const full = norm(rec.name || rec.employee || rec.fullname || "");
+    const alias = deriveAliasFromFullName(full);
+    if (!alias) throw new Error("ALIAS_EMPTY");
+
+    const res = { alias, foundBy: "directory" };
+    this._aliasCache.set(key, res);
+    return res;
+  },
+
+  /* ------- Operaciones seguras (siempre con alias resuelto) ------- */
+  async sendTodayForUser({email, phone}={}, controller){
+    const {alias} = await this.resolveAlias({email, phone}, controller);
+    const u = `${CONFIG.BASE_URL}?action=sendtoday&alias=${encodeURIComponent(alias)}`;
+    const j = await fetchJSON(u, { ttl: 0, signal: controller?.signal });
+    if (j?.error === "row_not_found_for_alias") throw new Error(`NO_ROW_IN_WEEK:${alias}`);
+    return j;
+  },
+
+  async sendTomorrowForUser({email, phone}={}, controller){
+    const {alias} = await this.resolveAlias({email, phone}, controller);
+    const u = `${CONFIG.BASE_URL}?action=sendtomorrow&alias=${encodeURIComponent(alias)}`;
+    const j = await fetchJSON(u, { ttl: 0, signal: controller?.signal });
+    if (j?.error === "row_not_found_for_alias") throw new Error(`NO_ROW_IN_WEEK:${alias}`);
+    return j;
+  },
+
+  async updateShiftForUser({email, phone, dowIndex, text}={}, controller){
+    const {alias} = await this.resolveAlias({email, phone}, controller);
+    const day = ["mon","tue","wed","thu","fri","sat","sun"][dowIndex];
+    const urls = [
+      `${CONFIG.BASE_URL}?action=updateShift&alias=${encodeURIComponent(alias)}&day=${day}&text=${encodeURIComponent(text)}`,
+      `${CONFIG.BASE_URL}?action=updateShiftAPI&alias=${encodeURIComponent(alias)}&day=${day}&text=${encodeURIComponent(text)}`,
+      `${CONFIG.BASE_URL}?action=updateShiftAPI_v1&alias=${encodeURIComponent(alias)}&day=${day}&text=${encodeURIComponent(text)}`
+    ];
+    for (const u of urls){
+      try{
+        const j = await fetchJSON(u, { ttl: 0, signal: controller?.signal });
+        if (j?.ok) return j;
+        if (j?.error === "row_not_found_for_alias") throw new Error(`NO_ROW_IN_WEEK:${alias}`);
+      }catch{/* intenta siguiente */}
+    }
+    throw new Error("UPDATE_FAILED");
   }
 };
+
+/* ===== Utilidades ===== */
+function deriveAliasFromFullName(full){
+  if (!full) return "";
+  full = full.replace(/\s+/g," ").trim();
+  // quitar iniciales tipo "J." al final del nombre
+  let parts = full.split(" ").filter(p => !/^[A-ZÁÉÍÓÚÜÑ]\.?$/.test(p));
+  if (parts.length === 0) return "";
+  const JOINERS = new Set(["DE","DEL","DE","LA","DELA","DE LAS","DE LOS","DA","DOS","VON","VAN","DI","DAL"]);
+  let last = parts[parts.length-1];
+  let prev = (parts[parts.length-2] || "");
+  if (JOINERS.has(prev.toUpperCase())) last = `${prev} ${last}`;
+  return last.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ ]/g,"").trim(); // alias como en la columna A
+}
 
 /* Concurrencia limitada simple (p-limit) */
 function runLimited(items, limit, iteratee){
