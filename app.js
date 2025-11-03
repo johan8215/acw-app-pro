@@ -258,67 +258,7 @@ async function showWelcome(name, role) {
     }
   } catch {}
 }
-
-/* =================== LOAD SCHEDULE + LIVE =================== */
-async function loadSchedule(email) {
-  const schedDiv = $("#schedule");
-  schedDiv.innerHTML = `<p style="color:#007bff;font-weight:500;">Loading your shift...</p>`;
-
-  try {
-    const d = await API.getSchedule(email, 0);
-    if (!d?.ok || !Array.isArray(d.days)) {
-      schedDiv.innerHTML = `<p style="color:#c00;">No schedule found for this week.</p>`;
-      return;
-    }
-
-    let html = `<table><tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
-    const todayKey = Today.key;
-    d.days.forEach(day=>{
-      const isToday = todayKey === day.name.slice(0,3).toLowerCase();
-      html += `<tr class="${isToday?"today":""}"><td>${day.name}</td><td>${day.shift||"-"}</td><td>${day.hours||"0"}</td></tr>`;
-    });
-    const totalFmt = (d.total??0);
-    html += `</table><p class="total">Total Hours: <b>${Number(totalFmt).toFixed(1)}</b></p>`;
-    schedDiv.innerHTML = html;
-
-     // 🔁 Dentro de loadSchedule, después de `const d = await API.getSchedule(email, 0);`
-
-const daysArr = d?.days || d?.week?.days || d?.schedule || [];
-if (!Array.isArray(daysArr) || daysArr.length === 0) {
-  schedDiv.innerHTML = `<p style="color:#c00;">No schedule found for this week.</p>`;
-  return;
-}
-
-// Normaliza estructura { name, shift, hours }
-const normDays = daysArr.map(x => {
-  const name  = x?.name || x?.day || "";
-  const shift = x?.shift ?? x?.text ?? x ?? "";
-  const hours = Number(x?.hours ?? 0) || parseHours(String(shift));
-  return { name, shift, hours };
-});
-
-const total = typeof d?.total === "number"
-  ? d.total
-  : normDays.reduce((a,b)=>a + (Number(b.hours)||0), 0);
-
-// Render
-let html = `<table><tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
-const todayKey = Today.key;
-normDays.forEach(day=>{
-  const isToday = todayKey === String(day.name||"").slice(0,3).toLowerCase();
-  html += `<tr class="${isToday?"today":""}">
-    <td>${day.name||""}</td>
-    <td>${day.shift||"-"}</td>
-    <td>${Number(day.hours||0).toFixed(1)}</td>
-  </tr>`;
-});
-html += `</table><p class="total">Total Hours: <b>${(Math.round(total*10)/10).toFixed(1)}</b></p>`;
-schedDiv.innerHTML = html;
-
-// sigue igual: startLiveTimer(normDays, total) …
-setTimeout(()=> startLiveTimer(normDays, Number(total||0)), 300);
-
-/* helper PEGAR si no lo tienes ya en este archivo */
+/* ===== Helpers de horas (ponlos una sola vez, fuera de la función) ===== */
 function parseHours(cell){
   if (!cell) return 0;
   const t = String(cell).trim().toUpperCase();
@@ -328,7 +268,7 @@ function parseHours(cell){
   const m = clean.match(/^([0-9]{1,2}(?::[0-9]{2})?\s*(?:AM|PM)?)\s*-\s*([0-9]{1,2}(?::[0-9]{2})?\s*(?:AM|PM)?)$/i);
   if (!m) return 0;
   const start = toMin(m[1]), end0 = toMin(m[2]); let end=end0;
-  if (!/[AP]M/i.test(m[1]) && !/[AP]M/i.test(m[2]) && end < start) end += 12*60;
+  if (!/[AP]M/i.test(m[1]) && !/[AP]M/i.test(m[2]) && end < start) end += 12*60; // cruza mediodía
   return Math.max(0, end - start) / 60;
 }
 function toMin(s){
@@ -341,9 +281,50 @@ function toMin(s){
   return h*60+m;
 }
 
-    // Arranca live tras DOM listo
-    clearInterval(window.__acwLiveTick__); // evita duplicados
-    setTimeout(()=> startLiveTimer(d.days, Number(d.total||0)), 300);
+/* =================== LOAD SCHEDULE + LIVE =================== */
+async function loadSchedule(email) {
+  const schedDiv = $("#schedule");
+  schedDiv.innerHTML = `<p style="color:#007bff;font-weight:500;">Loading your shift...</p>`;
+
+  try {
+    const d = await API.getSchedule(email, 0);
+
+    // 🔧 Soporta distintas formas de JSON
+    const daysArr = d?.days || d?.week?.days || d?.schedule || [];
+    if (!Array.isArray(daysArr) || daysArr.length === 0) {
+      schedDiv.innerHTML = `<p style="color:#c00;">No schedule found for this week.</p>`;
+      return;
+    }
+
+    // Normaliza
+    const normDays = daysArr.map(x => {
+      const name  = x?.name || x?.day || "";
+      const shift = x?.shift ?? x?.text ?? x ?? "";
+      const hours = Number(x?.hours ?? 0) || parseHours(String(shift));
+      return { name, shift, hours };
+    });
+
+    const total = (typeof d?.total === "number")
+      ? d.total
+      : normDays.reduce((a,b)=> a + (Number(b.hours)||0), 0);
+
+    // Render
+    const todayKey = Today.key;
+    let html = `<table><tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
+    normDays.forEach(day=>{
+      const isToday = todayKey === String(day.name||"").slice(0,3).toLowerCase();
+      html += `<tr class="${isToday?"today":""}">
+        <td>${day.name||""}</td>
+        <td>${day.shift||"-"}</td>
+        <td>${Number(day.hours||0).toFixed(1)}</td>
+      </tr>`;
+    });
+    html += `</table><p class="total">Total Hours: <b>${(Math.round(total*10)/10).toFixed(1)}</b></p>`;
+    schedDiv.innerHTML = html;
+
+    // Live: usar la lista normalizada y el total calculado
+    clearInterval(window.__acwLiveTick__);
+    setTimeout(()=> startLiveTimer(normDays, Number(total||0)), 300);
 
   } catch (e) {
     console.warn(e);
