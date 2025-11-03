@@ -1501,4 +1501,72 @@ console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3 Turbo"} | Base: $
   `;
   document.head.appendChild(s);
 })();
+// ================= ACW — DIAGNÓSTICO APP =================
+window.ACW_DIAG = {
+  async run(email){
+    const BASE = CONFIG.BASE_URL;
+    const out = { email, today: Today?.key, version: CONFIG?.VERSION };
+
+    // 1) Directory (sin cache)
+    try{
+      out.directory = await (await fetch(`${BASE}?action=getEmployeesDirectory`, {cache:"no-store"})).json();
+    }catch(e){ out.directoryErr = String(e); }
+
+    // 2) Schedule por email (sin cache)
+    try{
+      out.schedule = await (await fetch(`${BASE}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, {cache:"no-store"})).json();
+    }catch(e){ out.scheduleErr = String(e); }
+
+    // 3) Alias que usará el app para send/update
+    try{
+      out.alias = await API.resolveAlias({email});
+    }catch(e){ out.aliasErr = String(e); }
+
+    // 4) Normalización de días (soporta distintos formatos del GAS)
+    const d = out.schedule || {};
+    const rawDays = d.days || d.week?.days || d.schedule || [];
+    const parseHours = (cell)=>{
+      if (!cell) return 0;
+      const t = String(cell).trim().toUpperCase();
+      if (/^(OFF|OFFR|CERRADO|N\/A|APP)$/.test(t)) return 0;
+      const core  = t.split(/\s+(DONE|READY|SENT|UPDATE|UPDATED)\b/i)[0].trim();
+      const clean = core.replace(/\.+\s*$/,"").replace(/[–—]|to/gi,"-").replace(/\s*-\s*/,"-");
+      const m = clean.match(/^([0-9]{1,2}(?::[0-9]{2})?\s*(?:AM|PM)?)\s*-\s*([0-9]{1,2}(?::[0-9]{2})?\s*(?:AM|PM)?)$/i);
+      if (!m) return 0;
+      const toMin = (s)=>{ s = s.trim().toUpperCase(); let ampm=(s.match(/\b(AM|PM)\b/)||[])[1]||""; s=s.replace(/\s*(AM|PM)\s*$/,''); let [h,m]=s.split(":"); h=+h; m=+(m||0); if(ampm==="AM"&&h===12)h=0; if(ampm==="PM"&&h!==12)h+=12; return h*60+m; };
+      const a = toMin(m[1]), b0 = toMin(m[2]); let b=b0; if(!/[AP]M/i.test(m[1]) && !/[AP]M/i.test(m[2]) && b<a) b+=720;
+      return Math.max(0, b-a)/60;
+    };
+    out.normalized = Array.isArray(rawDays)
+      ? rawDays.map(x=>({ name: x?.name||x?.day||"", shift: x?.shift ?? x?.text ?? x ?? "", hours: Number(x?.hours ?? 0) || parseHours(x?.shift ?? x?.text ?? x ?? "") }))
+      : [];
+    out.total = (typeof d.total==="number") ? d.total : out.normalized.reduce((s,r)=>s+(r.hours||0),0);
+
+    // 5) ¿El email existe en el directorio?
+    const dirList = out.directory?.directory || out.directory?.employees || out.directory?.rows || [];
+    out.dirMatch = Array.isArray(dirList) ? dirList.find(r=> (r.email||"").toLowerCase()===String(email).toLowerCase()) : null;
+
+    // 6) Reporte en consola
+    console.log("ACW DIAG →", out);
+    console.table(out.normalized.map(r=>({day:r.name, shift:r.shift, hours:r.hours})));
+    const red = m=>console.log("%c"+m,"color:#e60000;font-weight:700");
+    const green = m=>console.log("%c"+m,"color:#00a651;font-weight:700");
+
+    if (!out.dirMatch) red("⚠️ El EMAIL no está en el Directorio (Employees).");
+    else green("✅ Email encontrado en Directorio.");
+    if (!Array.isArray(rawDays) || rawDays.length===0) red("⚠️ getSmartSchedule devolvió días vacíos o con forma distinta.");
+    else green("✅ getSmartSchedule devolvió días.");
+    if (out.alias?.alias) green(`✅ Alias resuelto: ${out.alias.alias} (via ${out.alias.foundBy})`);
+    else red("⚠️ No se pudo resolver alias (send/update pueden fallar).");
+    green(`Total (normalizado): ${out.total.toFixed(1)}h`);
+    return out;
+  }
+};
+
+// Limpieza rápida de sesión/caché del app (por si cambiaste de usuario)
+window.ACW_RESET = async () => {
+  try{ localStorage.removeItem("acwUser"); }catch{}
+  try{ if ("caches" in window) caches.keys().then(keys=>keys.forEach(k=>caches.delete(k))); }catch{}
+  console.log("✅ ACW session reset. Vuelve a iniciar sesión.");
+};
 
