@@ -86,29 +86,30 @@ const API = {
   },
 
   // Resolver alias SOLO con el directorio (evita recursión)
-async resolveAlias({email, phone}={}, controller){
-  const key = (email || phone || "").toLowerCase();
-  if (this._aliasCache.has(key)) return this._aliasCache.get(key);
+  async resolveAlias({email, phone}={}, controller){
+    const key = (email || phone || "").toLowerCase();
+    if (this._aliasCache.has(key)) return this._aliasCache.get(key);
 
-  const d = await this.getDirectory(controller);
-  const list = d?.directory || d?.employees || d?.rows || (Array.isArray(d)? d : []);
-  const norm = v => (v||"").toString().trim();
-  const nPhone = v => norm(v).replace(/\D/g,"");
+    const d = await this.getDirectory(controller);
+    const list = d?.directory || d?.employees || d?.rows || (Array.isArray(d)? d : []);
+    const norm = v => (v||"").toString().trim();
+    const nPhone = v => norm(v).replace(/\D/g,"");
 
-  const rec = list.find(x =>
-    (email && norm(x.email).toLowerCase() === norm(email).toLowerCase()) ||
-    (phone && nPhone(x.phone) && nPhone(x.phone) === nPhone(phone))
-  );
-  if (!rec) throw new Error("ALIAS_NOT_FOUND_IN_DIRECTORY");
+    const rec = list.find(x =>
+      (email && norm(x.email).toLowerCase() === norm(email).toLowerCase()) ||
+      (phone && nPhone(x.phone) && nPhone(x.phone) === nPhone(phone))
+    );
+    if (!rec) throw new Error("ALIAS_NOT_FOUND_IN_DIRECTORY");
 
-  const full = norm(rec.name || rec.employee || rec.fullname || "");
-  const alias = deriveAliasFromFullName(full);
-  const candidates = deriveAliasCandidates(full);
+    const full = norm(rec.name || rec.employee || rec.fullname || "");
+    const alias = deriveAliasFromFullName(full);
+    const candidates = deriveAliasCandidates(full);
 
-  const res = { alias, candidates, foundBy: "directory" };
-  this._aliasCache.set(key, res);
-  return res;
-},
+    const res = { alias, candidates, foundBy: "directory" };
+    this._aliasCache.set(key, res);
+    return res;
+  },
+};
    
 /* ===== Utilidades ===== */
 function deriveAliasFromFullName(full){
