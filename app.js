@@ -1099,6 +1099,74 @@ function renderHistoryDetailCentered(week, email, name, offset, root){
   };
 })();
 
+// === ACW v5.6.3 — getSchedule robusto (email -> alias) ===
+API.getSchedule = async function(identifier, offset = 0, controller){
+  const base = CONFIG.BASE_URL;
+  const ttl = offset === 0 ? (API.schedTTL0 || 60_000) : (API.schedTTLOld || 300_000);
+  const signal = controller?.signal;
+
+  function toMin(s){
+    s = String(s||"").trim().toUpperCase();
+    let ap = (s.match(/\b(AM|PM)\b/)||[])[1]||"";
+    s = s.replace(/\s*(AM|PM)\s*$/,'');
+    let [h,m] = s.split(":"); h = +h; m = +(m||0);
+    if (ap==="AM" && h===12) h=0;
+    if (ap==="PM" && h!==12) h+=12;
+    return h*60+m;
+  }
+  function _parseHours(cell){
+    if (!cell) return 0;
+    const t = String(cell).trim().toUpperCase();
+    if (/^(OFF|OFFR|CERRADO|N\/A|APP)$/.test(t)) return 0;
+    const core  = t.split(/\s+(DONE|READY|SENT|UPDATE|UPDATED)\b/i)[0].trim();
+    const clean = core.replace(/\.+\s*$/,"").replace(/[–—]|to/gi,"-").replace(/\s*-\s*/,"-");
+    const m = clean.match(/^([0-9]{1,2}(?::[0-9]{2})?\s*(?:AM|PM)?)\s*-\s*([0-9]{1,2}(?::[0-9]{2})?\s*(?:AM|PM)?)$/i);
+    if (!m) return 0;
+    let a = toMin(m[1]), b = toMin(m[2]);
+    if (!/[AP]M/i.test(m[1]) && !/[AP]M/i.test(m[2]) && b<a) b+=720;
+    return Math.max(0, b-a)/60;
+  }
+  function normalize(j){
+    if (!j) return { ok:false, days:[], total:0 };
+    let daysArr = j.days || j.week?.days || j.schedule || j.rows;
+    if (!Array.isArray(daysArr)) {
+      const keys = ["mon","tue","wed","thu","fri","sat","sun","Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+      if (keys.some(k => j && k in j)) {
+        daysArr = keys.filter(k=>k in j).map(k=>({ name:k, shift:j[k] }));
+      }
+    }
+    const days = Array.isArray(daysArr)
+      ? daysArr.map(x=>{
+          const name  = x?.name || x?.day || "";
+          const shift = x?.shift ?? x?.text ?? x ?? "";
+          const hours = Number(x?.hours ?? 0) || _parseHours(shift);
+          return { name, shift, hours };
+        })
+      : [];
+    const total = (typeof j.total === "number") ? j.total : days.reduce((s,r)=>s+(Number(r.hours)||0),0);
+    return { ok: days.length>0, days, total, rowAlias: j.rowAlias||j.alias||null, weekLabel: j.weekLabel||j.label };
+  }
+  async function fetchN(u){
+    try{ const raw = await fetchJSON(u, { ttl, signal }); const n = normalize(raw); return { ...n, raw }; }
+    catch{ return { ok:false, days:[], total:0 }; }
+  }
+
+  // 1) por email
+  let res = await fetchN(`${base}?action=getSmartSchedule&email=${encodeURIComponent(identifier)}&offset=${offset}`);
+  if (res.ok) return res;
+
+  // 2) fallback por alias (desde Directory)
+  let alias = null;
+  try { alias = (await API.resolveAlias({ email: identifier }, controller))?.alias; } catch {}
+  if (alias){
+    for (const action of ["getSmartSchedule","getScheduleByAlias","getSchedule"]){
+      res = await fetchN(`${base}?action=${action}&alias=${encodeURIComponent(alias)}&offset=${offset}`);
+      if (res.ok) return res;
+    }
+  }
+  return res; // ok:false
+};
+
 /* =================== GLOBAL BINDS =================== */
 window.loginUser = loginUser;
 window.openSettings = openSettings;
