@@ -91,7 +91,7 @@ const API = {
     if (this._aliasCache.has(key)) return this._aliasCache.get(key);
 
     const d = await this.getDirectory(controller);
-    const list = d?.directory || d?.employees || d?.rows || (Array.isArray(d)? d : []);
+    const list = d?.directory || d?.employees || d?.rows || (Array.isArray(d) ? d : []);
     const norm = v => (v||"").toString().trim();
     const nPhone = v => norm(v).replace(/\D/g,"");
 
@@ -109,7 +109,7 @@ const API = {
     this._aliasCache.set(key, res);
     return res;
   },
- }
+}; 
 /* ===== Utilidades ===== */
 function deriveAliasFromFullName(full){
   if (!full) return "";
