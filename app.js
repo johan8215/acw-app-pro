@@ -147,6 +147,46 @@ function runLimited(items, limit, iteratee){
     next();
   });
 }
+function deriveAliasCandidates(full){
+  full = (full||"").replace(/\s+/g," ").trim();
+
+  // Detecta apellido (maneja conectores tipo "DE", "DEL", etc.)
+  const JOINERS = new Set(["DE","DEL","LA","DE LA","DELA","DE LAS","DE LOS","DA","DOS","VON","VAN","DI","DAL"]);
+  let parts = full.split(" ").filter(Boolean);
+  if (parts.length < 2) return [];
+
+  // último (y posible conector)
+  let last = parts[parts.length-1];
+  const prev = (parts[parts.length-2]||"");
+  if (JOINERS.has(prev.toUpperCase())) {
+    last = `${prev} ${last}`;
+    parts = parts.slice(0, -2);
+  } else {
+    parts = parts.slice(0, -1);
+  }
+  const LAST = last.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ ]/g,"").trim();
+
+  // iniciales de nombres (J, A, H, E, …)
+  const initials = parts
+    .map(p => (p.replace(/[^A-Za-zÁÉÍÓÚÜÑ]/g,"").charAt(0) || "").toUpperCase())
+    .filter(Boolean);
+
+  const F  = initials[0] || "";
+  const FI = (initials[0]||"") + (initials[1]||"");
+
+  // Construye variantes comunes
+  const variants = new Set([
+    LAST,
+    F && `${F}. ${LAST}`,
+    F && `${F} ${LAST}`,
+    FI && `${FI}. ${LAST}`,        // "HE. GONZALES"
+    FI && `${FI} ${LAST}`,         // "HE GONZALES"
+    (initials[1] ? `${initials[0]}.${initials[1]}. ${LAST}` : null), // "H.E. GONZALES"
+    (initials[1] ? `${initials[0]}. ${initials[1]}. ${LAST}` : null),
+  ].filter(Boolean));
+
+  return Array.from(variants);
+}
 
 /* =================== LOGIN =================== */
 async function loginUser() {
