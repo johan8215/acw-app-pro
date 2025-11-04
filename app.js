@@ -1131,22 +1131,25 @@ async function resolveAlias({email, phone}={}, controller){
   this._aliasCache.set(key, res);
   return res;
 }
+   // 1) por email
+let res = await fetchN(`${base}?action=getSmartSchedule&email=${encodeURIComponent(identifier)}&offset=${offset}`);
+if (res.ok) return res;
 
-  // 1) por email
-  let res = await fetchN(`${base}?action=getSmartSchedule&email=${encodeURIComponent(identifier)}&offset=${offset}`);
-  if (res.ok) return res;
+// 2) fallback por alias (desde Directory) — PROBAR TODOS LOS CANDIDATOS
+let aliasInfo = null;
+try { aliasInfo = await API.resolveAlias({ email: identifier }, controller); } catch {}
+const candidates = [];
+if (aliasInfo?.candidates) candidates.push(...aliasInfo.candidates);
+if (aliasInfo?.alias) candidates.push(aliasInfo.alias);
 
-  // 2) fallback por alias (desde Directory)
-  let alias = null;
-  try { alias = (await API.resolveAlias({ email: identifier }, controller))?.alias; } catch {}
-  if (alias){
-    for (const action of ["getSmartSchedule","getScheduleByAlias","getSchedule"]){
-      res = await fetchN(`${base}?action=${action}&alias=${encodeURIComponent(alias)}&offset=${offset}`);
-      if (res.ok) return res;
-    }
+const unique = Array.from(new Set(candidates));
+for (const a of unique){
+  for (const action of ["getSmartSchedule","getScheduleByAlias","getSchedule"]){
+    res = await fetchN(`${base}?action=${action}&alias=${encodeURIComponent(a)}&offset=${offset}`);
+    if (res.ok) return res;
   }
-  return res; // ok:false
-};
+}
+return res; // ok:false
 
 /* =================== GLOBAL BINDS =================== */
 window.loginUser = loginUser;
