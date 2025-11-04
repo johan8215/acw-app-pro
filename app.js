@@ -109,7 +109,7 @@ const API = {
     this._aliasCache.set(key, res);
     return res;
   },
-
+ }
 /* ===== Utilidades ===== */
 function deriveAliasFromFullName(full){
   if (!full) return "";
