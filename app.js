@@ -1107,30 +1107,7 @@ API.getSchedule = async function(identifier, offset = 0, controller){
     try{ const raw = await fetchJSON(u, { ttl, signal }); const n = normalize(raw); return { ...n, raw }; }
     catch{ return { ok:false, days:[], total:0 }; }
   }
-   // dentro de tu objeto API (tal como lo tienes):
-async function resolveAlias({email, phone}={}, controller){
-  const key = (email || phone || "").toLowerCase();
-  if (this._aliasCache.has(key)) return this._aliasCache.get(key);
 
-  const d = await this.getDirectory(controller);
-  const list = d?.directory || d?.employees || d?.rows || (Array.isArray(d)? d : []);
-  const norm = v => (v||"").toString().trim();
-  const nPhone = v => norm(v).replace(/\D/g,"");
-
-  const rec = list.find(x =>
-    (email && norm(x.email).toLowerCase() === norm(email).toLowerCase()) ||
-    (phone && nPhone(x.phone) && nPhone(x.phone) === nPhone(phone))
-  );
-  if (!rec) throw new Error("ALIAS_NOT_FOUND_IN_DIRECTORY");
-
-  const full = norm(rec.name || rec.employee || rec.fullname || "");
-  const alias = deriveAliasFromFullName(full);          // tu función actual (apellido)
-  const candidates = deriveAliasCandidates(full);       // NUEVO
-
-  const res = { alias, candidates, foundBy: "directory" };
-  this._aliasCache.set(key, res);
-  return res;
-}
    // 1) por email
 let res = await fetchN(`${base}?action=getSmartSchedule&email=${encodeURIComponent(identifier)}&offset=${offset}`);
 if (res.ok) return res;
