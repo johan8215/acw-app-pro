@@ -110,42 +110,6 @@ const API = {
     return res;
   },
 
-  /* ------- Operaciones seguras (siempre con alias resuelto) ------- */
-  async sendTodayForUser({email, phone}={}, controller){
-    const {alias} = await this.resolveAlias({email, phone}, controller);
-    const u = `${CONFIG.BASE_URL}?action=sendtoday&alias=${encodeURIComponent(alias)}`;
-    const j = await fetchJSON(u, { ttl: 0, signal: controller?.signal });
-    if (j?.error === "row_not_found_for_alias") throw new Error(`NO_ROW_IN_WEEK:${alias}`);
-    return j;
-  },
-
-  async sendTomorrowForUser({email, phone}={}, controller){
-    const {alias} = await this.resolveAlias({email, phone}, controller);
-    const u = `${CONFIG.BASE_URL}?action=sendtomorrow&alias=${encodeURIComponent(alias)}`;
-    const j = await fetchJSON(u, { ttl: 0, signal: controller?.signal });
-    if (j?.error === "row_not_found_for_alias") throw new Error(`NO_ROW_IN_WEEK:${alias}`);
-    return j;
-  },
-
-  async updateShiftForUser({email, phone, dowIndex, text}={}, controller){
-    const {alias} = await this.resolveAlias({email, phone}, controller);
-    const day = ["mon","tue","wed","thu","fri","sat","sun"][dowIndex];
-    const urls = [
-      `${CONFIG.BASE_URL}?action=updateShift&alias=${encodeURIComponent(alias)}&day=${day}&text=${encodeURIComponent(text)}`,
-      `${CONFIG.BASE_URL}?action=updateShiftAPI&alias=${encodeURIComponent(alias)}&day=${day}&text=${encodeURIComponent(text)}`,
-      `${CONFIG.BASE_URL}?action=updateShiftAPI_v1&alias=${encodeURIComponent(alias)}&day=${day}&text=${encodeURIComponent(text)}`
-    ];
-    for (const u of urls){
-      try{
-        const j = await fetchJSON(u, { ttl: 0, signal: controller?.signal });
-        if (j?.ok) return j;
-        if (j?.error === "row_not_found_for_alias") throw new Error(`NO_ROW_IN_WEEK:${alias}`);
-      }catch{/* intenta siguiente */}
-    }
-    throw new Error("UPDATE_FAILED");
-  }
-}; // ← MUY IMPORTANTE cerrar el objeto aquí
-
 /* ===== Utilidades ===== */
 function deriveAliasFromFullName(full){
   if (!full) return "";
