@@ -80,57 +80,90 @@ const API = {
   schedTTLOld: 5*60*1000,   // semanas anteriores
   _aliasCache: new Map(),
 
-  /* ------- Lecturas con cache ------- */
-  getDirectory(controller){
-    const u = `${CONFIG.BASE_URL}?action=getEmployeesDirectory`;
-    return fetchJSON(u, { ttl: API.dirTTL, signal: controller?.signal });
-  },
+ // === ACW PATCH v5.6.3 — getSchedule robusto (override sin tocar tu objeto) ===
+(function patchGetSchedule(){
+  if (!window.API) { console.warn("API no existe para parchear"); return; }
 
-  getSchedule(email, offset=0, controller){
-    const ttl = offset===0 ? API.schedTTL0 : API.schedTTLOld;
-    const u = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${offset}`;
-    return fetchJSON(u, { ttl, signal: controller?.signal });
-  },
+  const base = CONFIG.BASE_URL;
+  const ttlOf = (off)=> off===0 ? (API.schedTTL0||60*1000) : (API.schedTTLOld||5*60*1000);
+  const origResolve = API.resolveAlias?.bind(API);
 
-  /* ------- Resolver de alias (email/teléfono -> alias exacto de la fila) ------- */
-  async resolveAlias({email, phone}={}, controller){
-    const key = (email || phone || "").toLowerCase();
-    if (this._aliasCache.has(key)) return this._aliasCache.get(key);
-
-    // 1) Intento rápido: a veces getSmartSchedule devuelve un identificador de fila
-    try{
-      if (email){
-        const s = await this.getSchedule(email, 0, controller);
-        const cand = s?.rowAlias || s?.row || s?.alias || s?.nameInSheet || s?.row_name || s?.header;
-        if (typeof cand === "string" && cand.trim()){
-          const res = { alias: cand.trim(), foundBy: "schedule" };
-          this._aliasCache.set(key, res);
-          return res;
-        }
+  function toMin(s){
+    s = String(s||"").trim().toUpperCase();
+    let ap=(s.match(/\b(AM|PM)\b/)||[])[1]||"";
+    s=s.replace(/\s*(AM|PM)\s*$/,'');
+    let [h,m]=s.split(":"); h=+h; m=+(m||0);
+    if (ap==="AM" && h===12) h=0;
+    if (ap==="PM" && h!==12) h+=12;
+    return h*60+m;
+  }
+  function parseHours(cell){
+    if (!cell) return 0;
+    const t = String(cell).trim().toUpperCase();
+    if (/^(OFF|OFFR|CERRADO|N\/A|APP)$/.test(t)) return 0;
+    const core  = t.split(/\s+(DONE|READY|SENT|UPDATE|UPDATED)\b/i)[0].trim();
+    const clean = core.replace(/\.+\s*$/,"").replace(/[–—]|to/gi,"-").replace(/\s*-\s*/,"-");
+    const m = clean.match(/^([0-9]{1,2}(?::[0-9]{2})?\s*(?:AM|PM)?)\s*-\s*([0-9]{1,2}(?::[0-9]{2})?\s*(?:AM|PM)?)$/i);
+    if (!m) return 0;
+    let a=toMin(m[1]), b=toMin(m[2]);
+    if (!/[AP]M/i.test(m[1]) && !/[AP]M/i.test(m[2]) && b<a) b+=720;
+    return Math.max(0, b-a)/60;
+  }
+  function normDay(x){
+    if (typeof x === "string") return { name:"", shift:x, hours:parseHours(x) };
+    const name  = x?.name || x?.day || x?.dow || "";
+    const shift = x?.shift ?? x?.text ?? x?.value ?? "";
+    const hours = Number(x?.hours ?? 0) || parseHours(shift);
+    return { name, shift, hours };
+  }
+  function normalize(j){
+    if (!j) return { ok:false, days:[], total:0 };
+    let daysArr = j.days || j.week?.days || j.schedule || j.rows;
+    if (!Array.isArray(daysArr)) {
+      const keys = ["mon","tue","wed","thu","fri","sat","sun","Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+      if (keys.some(k => j && k in j)) {
+        daysArr = keys.filter(k=>k in j).map(k=>({ name:k, shift:j[k] }));
       }
-    }catch{/* continua con directorio */}
+    }
+    const days = Array.isArray(daysArr) ? daysArr.map(normDay) : [];
+    const total = (typeof j.total==="number")
+      ? j.total
+      : days.reduce((s,r)=> s + (Number(r.hours)||0), 0);
+    const rowAlias = j.rowAlias || j.row || j.alias || j.nameInSheet || j.header || null;
+    return { ok: days.length>0, days, total, rowAlias, weekLabel: j.weekLabel || j.label };
+  }
+  async function fetchN(u, ttl, signal){
+    try{ const raw = await fetchJSON(u, { ttl, signal }); const n=normalize(raw); return { ...n, raw }; }
+    catch{ return { ok:false, days:[], total:0 }; }
+  }
 
-    // 2) Directorio: localizar registro y derivar alias a partir del nombre
-    const d = await this.getDirectory(controller);
-    const list = d?.employees || d?.rows || d?.data || Array.isArray(d)? d : [];
-    const norm = v => (v||"").toString().trim();
-    const nPhone = v => norm(v).replace(/\D/g,"");
+  API.getSchedule = async function(identifier, offset=0, controller){
+    const ttl = ttlOf(offset);
+    const signal = controller?.signal;
+    const email = identifier;
 
-    const rec = list.find(x =>
-      (email && norm(x.email).toLowerCase() === norm(email).toLowerCase()) ||
-      (phone && nPhone(x.phone) && nPhone(x.phone) === nPhone(phone))
-    );
-    if (!rec) throw new Error("ALIAS_NOT_FOUND_IN_DIRECTORY");
+    // 1) por email
+    let res = await fetchN(`${base}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${offset}`, ttl, signal);
+    if (res.ok) return res;
 
-    const full = norm(rec.name || rec.employee || rec.fullname || "");
-    const alias = deriveAliasFromFullName(full);
-    if (!alias) throw new Error("ALIAS_EMPTY");
-
-    const res = { alias, foundBy: "directory" };
-    this._aliasCache.set(key, res);
-    return res;
-  },
-
+    // 2) fallback por alias (si existe resolveAlias)
+    let alias = null;
+    if (origResolve){
+      try { alias = (await origResolve({ email }, controller))?.alias; } catch {}
+    }
+    const tries = [];
+    if (alias){
+      tries.push(`${base}?action=getSmartSchedule&alias=${encodeURIComponent(alias)}&offset=${offset}`);
+      tries.push(`${base}?action=getScheduleByAlias&alias=${encodeURIComponent(alias)}&offset=${offset}`);
+      tries.push(`${base}?action=getSchedule&alias=${encodeURIComponent(alias)}&offset=${offset}`);
+    }
+    for (const u of tries){
+      res = await fetchN(u, ttl, signal);
+      if (res.ok) return res;
+    }
+    return res; // ok:false pero normalizado
+  };
+})();
   /* ------- Operaciones seguras (siempre con alias resuelto) ------- */
   async sendTodayForUser({email, phone}={}, controller){
     const {alias} = await this.resolveAlias({email, phone}, controller);
