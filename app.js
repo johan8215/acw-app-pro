@@ -1071,7 +1071,7 @@ function renderHistoryDetailCentered(week, email, name, offset, root){
     catch{ return { ok:false, days:[], total:0 }; }
   }
 
-Ok me quedo asi API.getSchedule = async function(identifier, offset=0, controller){
+API.getSchedule = async function(identifier, offset=0, controller){
     const ttl = ttlOf(offset);
     const signal = controller?.signal;
     const email = identifier;
