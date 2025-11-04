@@ -80,7 +80,74 @@ const API = {
   schedTTLOld: 5*60*1000,   // semanas anteriores
   _aliasCache: new Map(),
 
- // === ACW PATCH v5.6.3 — getSchedule robusto (override sin tocar tu objeto) ===
+  /* ------- Lecturas con cache ------- */
+  getDirectory(controller){
+    const u = `${CONFIG.BASE_URL}?action=getEmployeesDirectory`;
+    return fetchJSON(u, { ttl: API.dirTTL, signal: controller?.signal });
+  },
+
+  // Resolver alias SOLO con el directorio (evita recursión)
+  async resolveAlias({email, phone}={}, controller){
+    const key = (email || phone || "").toLowerCase();
+    if (this._aliasCache.has(key)) return this._aliasCache.get(key);
+
+    const d = await this.getDirectory(controller);
+    const list = d?.directory || d?.employees || d?.rows || (Array.isArray(d)? d : []);
+    const norm = v => (v||"").toString().trim();
+    const nPhone = v => norm(v).replace(/\D/g,"");
+
+    const rec = list.find(x =>
+      (email && norm(x.email).toLowerCase() === norm(email).toLowerCase()) ||
+      (phone && nPhone(x.phone) && nPhone(x.phone) === nPhone(phone))
+    );
+    if (!rec) throw new Error("ALIAS_NOT_FOUND_IN_DIRECTORY");
+
+    const full = norm(rec.name || rec.employee || rec.fullname || "");
+    const alias = deriveAliasFromFullName(full);
+    if (!alias) throw new Error("ALIAS_EMPTY");
+
+    const res = { alias, foundBy: "directory" };
+    this._aliasCache.set(key, res);
+    return res;
+  },
+
+  /* ------- Operaciones seguras (siempre con alias resuelto) ------- */
+  async sendTodayForUser({email, phone}={}, controller){
+    const {alias} = await this.resolveAlias({email, phone}, controller);
+    const u = `${CONFIG.BASE_URL}?action=sendtoday&alias=${encodeURIComponent(alias)}`;
+    const j = await fetchJSON(u, { ttl: 0, signal: controller?.signal });
+    if (j?.error === "row_not_found_for_alias") throw new Error(`NO_ROW_IN_WEEK:${alias}`);
+    return j;
+  },
+
+  async sendTomorrowForUser({email, phone}={}, controller){
+    const {alias} = await this.resolveAlias({email, phone}, controller);
+    const u = `${CONFIG.BASE_URL}?action=sendtomorrow&alias=${encodeURIComponent(alias)}`;
+    const j = await fetchJSON(u, { ttl: 0, signal: controller?.signal });
+    if (j?.error === "row_not_found_for_alias") throw new Error(`NO_ROW_IN_WEEK:${alias}`);
+    return j;
+  },
+
+  async updateShiftForUser({email, phone, dowIndex, text}={}, controller){
+    const {alias} = await this.resolveAlias({email, phone}, controller);
+    const day = ["mon","tue","wed","thu","fri","sat","sun"][dowIndex];
+    const urls = [
+      `${CONFIG.BASE_URL}?action=updateShift&alias=${encodeURIComponent(alias)}&day=${day}&text=${encodeURIComponent(text)}`,
+      `${CONFIG.BASE_URL}?action=updateShiftAPI&alias=${encodeURIComponent(alias)}&day=${day}&text=${encodeURIComponent(text)}`,
+      `${CONFIG.BASE_URL}?action=updateShiftAPI_v1&alias=${encodeURIComponent(alias)}&day=${day}&text=${encodeURIComponent(text)}`
+    ];
+    for (const u of urls){
+      try{
+        const j = await fetchJSON(u, { ttl: 0, signal: controller?.signal });
+        if (j?.ok) return j;
+        if (j?.error === "row_not_found_for_alias") throw new Error(`NO_ROW_IN_WEEK:${alias}`);
+      }catch{/* intenta siguiente */}
+    }
+    throw new Error("UPDATE_FAILED");
+  }
+}; // <<--- IMPORTANTE: cerrar el objeto aquí
+
+// === ACW PATCH v5.6.3 — getSchedule robusto (IIFE fuera del objeto) ===
 (function patchGetSchedule(){
   if (!window.API) { console.warn("API no existe para parchear"); return; }
 
@@ -146,7 +213,7 @@ const API = {
     let res = await fetchN(`${base}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${offset}`, ttl, signal);
     if (res.ok) return res;
 
-    // 2) fallback por alias (si existe resolveAlias)
+    // 2) fallback por alias
     let alias = null;
     if (origResolve){
       try { alias = (await origResolve({ email }, controller))?.alias; } catch {}
