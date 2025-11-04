@@ -85,31 +85,52 @@ const API = {
     return fetchJSON(u, { ttl: API.dirTTL, signal: controller?.signal });
   },
 
-  // Resolver alias SOLO con el directorio (evita recursión)
-  async resolveAlias({email, phone}={}, controller){
-    const key = (email || phone || "").toLowerCase();
-    if (this._aliasCache.has(key)) return this._aliasCache.get(key);
+ // 🔁 Resolver alias robusto: genera candidatos y valida contra el backend
+async resolveAlias({ email, phone } = {}, controller){
+  const key = (email || phone || "").toLowerCase();
+  if (this._aliasCache.has(key)) return this._aliasCache.get(key);
 
-    const d = await this.getDirectory(controller);
-    const list = d?.directory || d?.employees || d?.rows || (Array.isArray(d)? d : []);
-    const norm = v => (v||"").toString().trim();
-    const nPhone = v => norm(v).replace(/\D/g,"");
+  // 1) Buscar en directorio
+  const d = await this.getDirectory(controller);
+  const list = d?.directory || d?.employees || d?.rows || (Array.isArray(d) ? d : []);
+  const norm   = v => (v||"").toString().trim();
+  const nPhone = v => norm(v).replace(/\D/g,"");
+  const rec = list.find(x =>
+    (email && norm(x.email).toLowerCase() === norm(email).toLowerCase()) ||
+    (phone && nPhone(x.phone) && nPhone(x.phone) === nPhone(phone))
+  );
+  if (!rec) throw new Error("ALIAS_NOT_FOUND_IN_DIRECTORY");
 
-    const rec = list.find(x =>
-      (email && norm(x.email).toLowerCase() === norm(email).toLowerCase()) ||
-      (phone && nPhone(x.phone) && nPhone(x.phone) === nPhone(phone))
-    );
-    if (!rec) throw new Error("ALIAS_NOT_FOUND_IN_DIRECTORY");
+  // 2) Generar candidatos (apellido + iniciales)
+  const full       = norm(rec.name || rec.employee || rec.fullname || "");
+  const primary    = deriveAliasFromFullName(full);   // p.ej. "GIRALDO"
+  const extra      = (typeof deriveAliasCandidates === "function") ? deriveAliasCandidates(full) : [];
+  const candidates = Array.from(new Set([primary, ...extra].filter(Boolean)));
 
-    const full = norm(rec.name || rec.employee || rec.fullname || "");
-    const alias = deriveAliasFromFullName(full);
-    const candidates = deriveAliasCandidates(full);
+  // 3) Validar candidatos contra el backend y elegir el que tenga días
+  const base   = CONFIG.BASE_URL;
+  const signal = controller?.signal;
+  const check = async (a) => {
+    for (const action of ["getSmartSchedule","getScheduleByAlias","getSchedule"]) {
+      try{
+        const r = await fetchJSON(`${base}?action=${action}&alias=${encodeURIComponent(a)}&offset=0`,
+                                  { ttl: API.schedTTL0, signal });
+        const days = r?.days || r?.week?.days || r?.schedule || [];
+        if (Array.isArray(days) && days.length) return true;
+      }catch{}
+    }
+    return false;
+  };
 
-    const res = { alias, candidates, foundBy: "directory" };
-    this._aliasCache.set(key, res);
-    return res;
-  },
-};
+  let matched = null;
+  for (const a of candidates) {
+    if (await check(a)) { matched = a; break; }
+  }
+
+  const result = { alias: matched || primary, candidates, foundBy: "directory", matched: !!matched };
+  this._aliasCache.set(key, result);
+  return result;
+},
    
 /* ===== Utilidades ===== */
 function deriveAliasFromFullName(full){
