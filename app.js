@@ -71,7 +71,6 @@ async function fetchJSON(url, { ttl=0, signal } = {}){
     if (ttl>0) Net.clearInflight(url);
   }
 }
-
 /* =====================  API helpers + Alias Resolver  ===================== */
 const API = {
   // TTLs
@@ -145,9 +144,9 @@ const API = {
     }
     throw new Error("UPDATE_FAILED");
   }
-}; // <<--- IMPORTANTE: cerrar el objeto aquí
+}; // ← MUY IMPORTANTE cerrar el objeto aquí
 
-// === ACW PATCH v5.6.3 — getSchedule robusto (IIFE fuera del objeto) ===
+// === ACW PATCH v5.6.3 — getSchedule robusto (IIFE FUERA del objeto) ===
 (function patchGetSchedule(){
   if (!window.API) { console.warn("API no existe para parchear"); return; }
 
@@ -231,6 +230,7 @@ const API = {
     return res; // ok:false pero normalizado
   };
 })();
+
   /* ------- Operaciones seguras (siempre con alias resuelto) ------- */
   async sendTodayForUser({email, phone}={}, controller){
     const {alias} = await this.resolveAlias({email, phone}, controller);
