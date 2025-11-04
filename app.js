@@ -1057,7 +1057,7 @@ function renderHistoryDetailCentered(week, email, name, offset, root){
   document.head.appendChild(s);
 })();
 
-// === ACW v5.6.3 — getSchedule robusto (email -> alias) ===
+// === ACW v5.6.3 — getSchedule robusto (email -> alias[candidates]) ===
 API.getSchedule = async function(identifier, offset = 0, controller){
   const base = CONFIG.BASE_URL;
   const ttl = offset === 0 ? (API.schedTTL0 || 60_000) : (API.schedTTLOld || 300_000);
@@ -1109,25 +1109,26 @@ API.getSchedule = async function(identifier, offset = 0, controller){
     catch{ return { ok:false, days:[], total:0 }; }
   }
 
-   // 1) por email
-let res = await fetchN(`${base}?action=getSmartSchedule&email=${encodeURIComponent(identifier)}&offset=${offset}`);
-if (res.ok) return res;
+  // 1) por email directo
+  let res = await fetchN(`${base}?action=getSmartSchedule&email=${encodeURIComponent(identifier)}&offset=${offset}`);
+  if (res.ok) return res;
 
-// 2) fallback por alias (desde Directory) — PROBAR TODOS LOS CANDIDATOS
-let aliasInfo = null;
-try { aliasInfo = await API.resolveAlias({ email: identifier }, controller); } catch {}
-const candidates = [];
-if (aliasInfo?.candidates) candidates.push(...aliasInfo.candidates);
-if (aliasInfo?.alias) candidates.push(aliasInfo.alias);
+  // 2) por alias (probar todos los candidatos)
+  let aliasInfo = null;
+  try { aliasInfo = await API.resolveAlias({ email: identifier }, controller); } catch {}
+  const candidates = [];
+  if (aliasInfo?.candidates) candidates.push(...aliasInfo.candidates);
+  if (aliasInfo?.alias)      candidates.push(aliasInfo.alias);
 
-const unique = Array.from(new Set(candidates));
-for (const a of unique){
-  for (const action of ["getSmartSchedule","getScheduleByAlias","getSchedule"]){
-    res = await fetchN(`${base}?action=${action}&alias=${encodeURIComponent(a)}&offset=${offset}`);
-    if (res.ok) return res;
+  const unique = Array.from(new Set(candidates));
+  for (const a of unique){
+    for (const action of ["getSmartSchedule","getScheduleByAlias","getSchedule"]){
+      res = await fetchN(`${base}?action=${action}&alias=${encodeURIComponent(a)}&offset=${offset}`);
+      if (res.ok) return res;
+    }
   }
-}
-return res; // ok:false
+  return res; // ok:false
+};
 
 /* =================== GLOBAL BINDS =================== */
 window.loginUser = loginUser;
