@@ -1071,6 +1071,34 @@ function renderHistoryDetailCentered(week, email, name, offset, root){
     catch{ return { ok:false, days:[], total:0 }; }
   }
 
+Ok me quedo asi API.getSchedule = async function(identifier, offset=0, controller){
+    const ttl = ttlOf(offset);
+    const signal = controller?.signal;
+    const email = identifier;
+
+    // 1) por email
+    let res = await fetchN(`${base}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${offset}`, ttl, signal);
+    if (res.ok) return res;
+
+    // 2) fallback por alias
+    let alias = null;
+    if (API.resolveAlias){
+      try { alias = (await API.resolveAlias({ email }, controller))?.alias; } catch {}
+    }
+    const tries = [];
+    if (alias){
+      tries.push(`${base}?action=getSmartSchedule&alias=${encodeURIComponent(alias)}&offset=${offset}`);
+      tries.push(`${base}?action=getScheduleByAlias&alias=${encodeURIComponent(alias)}&offset=${offset}`);
+      tries.push(`${base}?action=getSchedule&alias=${encodeURIComponent(alias)}&offset=${offset}`);
+    }
+    for (const u of tries){
+      res = await fetchN(u, ttl, signal);
+      if (res.ok) return res;
+    }
+    return res; // ok:false pero normalizado
+  };
+})();
+
 // === ACW v5.6.3 — getSchedule robusto (email -> alias) ===
 API.getSchedule = async function(identifier, offset = 0, controller){
   const base = CONFIG.BASE_URL;
