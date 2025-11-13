@@ -127,9 +127,10 @@ async resolveAlias({ email, phone } = {}, controller){
     if (await check(a)) { matched = a; break; }
   }
 
-  const result = { alias: matched || primary, candidates, foundBy: "directory", matched: !!matched }
+  const result = { alias: matched || primary, candidates, foundBy: "directory", matched: !!matched };
   this._aliasCache.set(key, result);
   return result;
+}
 };
    
 /* ===== Utilidades ===== */
