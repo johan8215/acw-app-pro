@@ -85,7 +85,7 @@ const API = {
     return fetchJSON(u, { ttl: API.dirTTL, signal: controller?.signal });
   },
 
- // 🔁 Resolver alias robusto: genera candidatos y valida contra el backend
+// 🔁 Resolver alias robusto: genera candidatos y valida contra el backend
 async resolveAlias({ email, phone } = {}, controller){
   const key = (email || phone || "").toLowerCase();
   if (this._aliasCache.has(key)) return this._aliasCache.get(key);
