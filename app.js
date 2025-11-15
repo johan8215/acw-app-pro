@@ -796,33 +796,76 @@ function enableModalLiveShift(modal, days){
   }catch(e){ console.warn("modal live err:", e); }
 }
 
+// Intenta varias URLs hasta que alguna responda {ok:true}
+async function tryFetchSeq(urls){
+  let last = null;
+  for (const u of urls){
+    try{
+      const r = await fetch(u, { cache: "no-store" });
+      const j = await r.json();
+      if (j?.ok) return { ok:true, data:j, url:u };
+      last = j;
+    }catch(e){
+      last = { error: String(e) };
+    }
+  }
+  return { ok:false, data:last };
+}
+
 /* =================== MANAGER ACTIONS =================== */
+// 🔁 REEMPLAZA COMPLETO
 async function updateShiftFromModal(targetEmail, modalEl){
+  const enc = encodeURIComponent;
   const msg = $(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || $(".emp-status-msg", modalEl);
   const actor = currentUser?.email;
   if (!actor) { msg && (msg.textContent="⚠️ Session expired. Login again."); return; }
 
   const rows = $all(".schedule-mini tr[data-day]", modalEl);
   const changes = rows.map(r=>{
-    const day = r.dataset.day; const newShift = r.cells[1].innerText.trim();
-    const original = (r.getAttribute("data-original")||"").trim();
-    return (newShift !== original) ? { day, newShift } : null;
+    const day  = r.dataset.day;                      // "Mon","Tue",...
+    const val  = r.cells[1].innerText.trim();
+    const orig = (r.getAttribute("data-original")||"").trim();
+    return (val !== orig) ? { day, newShift: val } : null;
   }).filter(Boolean);
 
-  if (!changes.length){ msg && (msg.textContent="No changes to save."); toast("ℹ️ No changes", "info"); return; }
+  if (!changes.length){ msg && (msg.textContent="No changes to save."); toast("ℹ️ No changes","info"); return; }
 
-  msg && (msg.textContent="✏️ Saving to Sheets...");
-  let ok=0;
+  msg && (msg.textContent="✏️ Saving to Sheets…");
+  let ok=0, fails=[];
+  let alias = "";
+  try{ alias = (await API.resolveAlias({ email: targetEmail }))?.alias || ""; }catch{}
+
   for (const c of changes){
-    try{
-      const u = `${CONFIG.BASE_URL}?action=updateShift&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}&day=${encodeURIComponent(c.day)}&shift=${encodeURIComponent(c.newShift)}`;
-      const r = await fetch(u, {cache:"no-store"}); const j = await r.json();
-      if (j?.ok) ok++;
-    }catch{}
+    const base = CONFIG.BASE_URL;
+
+    // Diferentes rutas + parámetros alternativos que tu backend conoce
+    const urlSet = [
+      // RUTA moderna
+      `${base}?action=updateShift&actor=${enc(actor)}&alias=${enc(alias)}&day=${enc(c.day)}&shift=${enc(c.newShift)}`,
+      `${base}?action=updateShift&actor=${enc(actor)}&target=${enc(targetEmail)}&day=${enc(c.day)}&shift=${enc(c.newShift)}`,
+      // Aliases históricos
+      `${base}?action=updateShiftAPI&actor=${enc(actor)}&alias=${enc(alias)}&col=${enc(c.day)}&shift=${enc(c.newShift)}`,
+      `${base}?action=updateShiftAPI_v1&row=${enc(alias)}&col=${enc(c.day)}&value=${enc(c.newShift)}&actor=${enc(actor)}`
+    ];
+
+    const res = await tryFetchSeq(urlSet);
+    if (res.ok) ok++; else fails.push({ day: c.day, err: res.data?.error || "failed" });
   }
-  if (ok===changes.length){ msg.textContent="✅ Updated on Sheets!"; toast("✅ Shifts updated","success"); rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim())); }
-  else if (ok>0){ msg.textContent=`⚠️ Partial save: ${ok}/${changes.length}`; toast("⚠️ Some shifts failed","error"); }
-  else { msg.textContent="❌ Could not update."; toast("❌ Update failed","error"); }
+
+  if (ok===changes.length){
+    msg && (msg.textContent="✅ Updated on Sheets!");
+    toast("✅ Shifts updated","success");
+    // Congelar “original” para no volver a enviar sin cambios
+    rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim()));
+  } else if (ok>0){
+    msg && (msg.textContent=`⚠️ Partial save: ${ok}/${changes.length}`);
+    toast("⚠️ Some shifts failed","error");
+    console.warn("updateShift fails:", fails);
+  } else {
+    msg && (msg.textContent="❌ Could not update.");
+    toast("❌ Update failed","error");
+    console.warn("updateShift all failed:", fails);
+  }
 }
 
 /* =================== SEND SHIFT MESSAGE =================== */
