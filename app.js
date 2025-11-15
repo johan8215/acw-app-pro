@@ -824,144 +824,143 @@ function mapDayKey(d){
   const k = String(d).slice(0,3).toUpperCase();
   return M[k] || '';
 }
-async function ensureAliasFor(email){
-  // Intenta: resolveAlias → rowAlias de getSchedule
-  try{
-    const a = await API.resolveAlias({ email });
-    if (a?.alias) return a.alias;
-  }catch{}
-  try{
-    const g = await API.getSchedule(email, 0);
-    if (g?.rowAlias) return g.rowAlias;
-  }catch{}
-  return '';
-}
-async function tryFetchSeq(urls){
-  let last=null;
-  for (const u of urls){
+
+/* === HARD FIX — Alias obligatorio (columna A) === */
+/* 1) pide/guarda el alias exacto de la columna A para el email */
+async function ensureRowAlias(email){
+  // override guardado
+  const storeKey = 'acwAliasOverrides';
+  const getOv = e => { try{ return (JSON.parse(localStorage.getItem(storeKey)||'{}')[(e||'').toLowerCase()]||''); }catch{return'';} };
+  const setOv = (e,a)=>{ try{ const m=JSON.parse(localStorage.getItem(storeKey)||'{}'); m[(e||'').toLowerCase()] = String(a||'').trim(); localStorage.setItem(storeKey, JSON.stringify(m)); }catch{} };
+
+  let alias = getOv(email);
+
+  // sugerencia desde Directorio
+  if (!alias){
     try{
-      const r = await fetch(u, { cache:"no-store" });
-      const j = await r.json();
-      if (j?.ok) return { ok:true, data:j, url:u };
-      last = j;
-    }catch(e){ last = { error:String(e) }; }
+      const d = await API.getDirectory();
+      const list = d?.directory || d?.employees || d?.rows || [];
+      const rec  = list.find(x => String(x.email||'').toLowerCase()===String(email||'').toLowerCase());
+      if (rec?.name){
+        // variantes útiles (J. APELLIDO / JA APELLIDO / APELLIDO, J.)
+        const n = String(rec.name).trim();
+        const last = n.split(/\s+/).slice(-1)[0]||'';
+        const ini  = n.split(/\s+/).slice(0,-1).map(w=>w.replace(/[^A-Za-zÁÉÍÓÚÜÑ]/g,'').charAt(0).toUpperCase()).join('');
+        alias = (ini? `${ini[0]}. ${last.toUpperCase()}` : last.toUpperCase());
+      }
+    }catch{}
   }
-  return { ok:false, data:last };
+
+  // pedirlo SIEMPRE para confirmarlo
+  const typed = prompt('Fila en Weekly (columna A). Escribe EXACTO el texto (ej: "J. GIRALDO" o "GIRALDO, J."):', alias||'');
+  if (!typed) throw new Error('ALIAS_REQUIRED');
+  alias = typed.trim();
+  setOv(email, alias);
+  return alias;
 }
 
-/* =================== MANAGER ACTIONS =================== */
-// =================== UPDATE SHIFT (usa alias override y combos de params) ===================
+/* 2) reintentos sólo con alias (sin email) */
+async function sendShiftMessage(targetEmail, action){
+  const msgBox = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || null;
+  if (msgBox){ msgBox.textContent = "📤 Sending..."; msgBox.style.color=""; }
+
+  const A = encodeURIComponent, base = CONFIG.BASE_URL;
+  const actor = currentUser?.email ? `&actor=${A(currentUser.email)}` : "";
+
+  const trySend = async (alias) => {
+    const urls = [
+      `${base}?action=${action}&alias=${A(alias)}${actor}`,
+      `${base}?action=${action}&row=${A(alias)}${actor}`
+    ];
+    return await tryFetchSeq(urls);
+  };
+
+  try{
+    let alias = await ensureRowAlias(targetEmail);
+    let res   = await trySend(alias);
+
+    // si falla por alias, forzamos a re-capturar y reintentamos 1 vez
+    if (!res.ok && /row_not_found_for_alias|missing_parameters/i.test(String(res.data?.error||""))){
+      localStorage.removeItem('acwAliasOverrides'); // limpia mapa para reingresar
+      alias = await ensureRowAlias(targetEmail);
+      res   = await trySend(alias);
+    }
+
+    if (res.ok){
+      const data = res.data, name = data.sent?.name || alias;
+      const shift = data.sent?.shift || "-";
+      const mode = (data.sent?.mode || action).toUpperCase();
+      if (msgBox){ msgBox.textContent = `✅ ${name} (${mode}) → ${shift}`; msgBox.style.color="#00b341"; }
+      toast(`✅ Message sent to ${name}`, "success");
+    } else {
+      const err = res.data?.error || "send_failed";
+      if (msgBox){ msgBox.textContent = `⚠️ ${err}`; msgBox.style.color="#ff4444"; }
+      toast(`⚠️ Send failed (${err})`, "error");
+    }
+  }catch(e){
+    if (msgBox){ msgBox.textContent = `⚠️ ${e.message||e}`; msgBox.style.color="#ff4444"; }
+    toast(`⚠️ ${e.message||e}`, "error");
+  }
+}
+
 async function updateShiftFromModal(targetEmail, modalEl){
   const msg = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || $(".emp-status-msg", modalEl);
   const actor = currentUser?.email;
-  if (!actor) { if (msg) msg.textContent = "⚠️ Session expired. Login again."; return; }
+  if (!actor){ if (msg) msg.textContent = "⚠️ Session expired. Login again."; return; }
 
-  let alias = await ensureAliasFor(targetEmail);
-  const rows = $all(".schedule-mini tr[data-day]", modalEl);
+  const rows = Array.from(modalEl.querySelectorAll(".schedule-mini tr[data-day]"));
+  const toKey = d => ({MON:'Mon',TUE:'Tue',WED:'Wed',THU:'Thu',FRI:'Fri',SAT:'Sat',SUN:'Sun'})[String(d).slice(0,3).toUpperCase()]||'';
   const changes = rows.map(r=>{
-    const dayLabel = r.dataset.day;                      // Mon/Tue/...
-    const day3     = mapDayKey(dayLabel);
-    const val      = r.cells[1].innerText.trim();
-    const orig     = (r.getAttribute("data-original")||"").trim();
-    return (val !== orig) ? { day3, val } : null;
+    const day3 = toKey(r.dataset.day);
+    const val  = r.cells[1].innerText.trim();
+    const orig = (r.getAttribute("data-original")||"").trim();
+    return (val!==orig) ? { day3, val } : null;
   }).filter(Boolean);
-
   if (!changes.length){ if (msg) msg.textContent="No changes to save."; toast("ℹ️ No changes","info"); return; }
   if (msg) msg.textContent = "✏️ Saving to Sheets...";
 
-  const base = CONFIG.BASE_URL, A = encodeURIComponent;
-  let ok = 0;
+  const A = encodeURIComponent, base = CONFIG.BASE_URL;
 
-  async function attempt(one){
+  const pushOne = async (alias, c) => {
     const urls = [
-      `${base}?action=updateShift&actor=${A(actor)}&alias=${A(alias)}&day=${A(one.day3)}&shift=${A(one.val)}`,
-      `${base}?action=updateShift&actor=${A(actor)}&target=${A(targetEmail)}&day=${A(one.day3)}&shift=${A(one.val)}`,
-      `${base}?action=updateShiftAPI&alias=${A(alias)}&day=${A(one.day3)}&shift=${A(one.val)}&actor=${A(actor)}`,
-      `${base}?action=updateShiftAPI_v1&alias=${A(alias)}&which=${A(one.day3)}&shift=${A(one.val)}&actor=${A(actor)}`,
-      `${base}?action=updateShiftAPI_v1&email=${A(targetEmail)}&which=${A(one.day3)}&shift=${A(one.val)}&actor=${A(actor)}`
-    ].filter(u => !/alias=&/i.test(u));
+      `${base}?action=updateShift&actor=${A(actor)}&alias=${A(alias)}&day=${A(c.day3)}&shift=${A(c.val)}`,
+      `${base}?action=updateShiftAPI&alias=${A(alias)}&day=${A(c.day3)}&shift=${A(c.val)}&actor=${A(actor)}`,
+      `${base}?action=updateShiftAPI_v1&alias=${A(alias)}&which=${A(c.day3)}&shift=${A(c.val)}&actor=${A(actor)}`
+    ];
     return await tryFetchSeq(urls);
-  }
+  };
 
-  for (const c of changes){
-    let res = await attempt(c);
-    if (!res.ok && /row_not_found_for_alias/i.test(String(res.data?.error||""))) {
-      const fix = prompt('No encuentro la fila (columna A) para esta persona.\nEscribe EXACTO el texto (ej: "J. GIRALDO" o "GIRALDO, J."):',
-                         alias || '');
-      if (fix && fix.trim()){
-        AliasOverrides.set(targetEmail, fix.trim());
-        alias = fix.trim();
-        res = await attempt(c); // reintenta
+  try{
+    let alias = await ensureRowAlias(targetEmail);
+    let ok = 0;
+
+    for (const c of changes){
+      let res = await pushOne(alias, c);
+      if (!res.ok && /row_not_found_for_alias|missing_parameters/i.test(String(res.data?.error||""))){
+        // volvemos a pedir alias una sola vez
+        localStorage.removeItem('acwAliasOverrides');
+        alias = await ensureRowAlias(targetEmail);
+        res   = await pushOne(alias, c);
       }
+      if (res.ok) ok++;
     }
-    if (res.ok) ok++;
-  }
 
-  if (ok === changes.length){
-    if (msg) msg.textContent = "✅ Updated on Sheets!";
-    toast("✅ Shifts updated","success");
-    rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim()));
-  } else if (ok > 0){
-    if (msg) msg.textContent = `⚠️ Partial save: ${ok}/${changes.length}`;
-    toast("⚠️ Some shifts failed","error");
-  } else {
-    if (msg) msg.textContent = "❌ Could not update.";
-    toast("❌ Update failed","error");
+    if (ok === changes.length){
+      if (msg) msg.textContent = "✅ Updated on Sheets!";
+      toast("✅ Shifts updated","success");
+      rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim()));
+    } else if (ok>0){
+      if (msg) msg.textContent = `⚠️ Partial save: ${ok}/${changes.length}`;
+      toast("⚠️ Some shifts failed","error");
+    } else {
+      if (msg) msg.textContent = "❌ Could not update.";
+      toast("❌ Update failed","error");
+    }
+  }catch(e){
+    if (msg) msg.textContent = `⚠️ ${e.message||e}`;
+    toast(`⚠️ ${e.message||e}`, "error");
   }
 }
-
-// =================== SEND SHIFT MESSAGE (con override y autocorrección) ===================
-async function sendShiftMessage(targetEmail, action) {
-  const msgBox = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g, "_")}`) || null;
-  if (msgBox){ msgBox.textContent = "📤 Sending..."; msgBox.style.color = ""; }
-
-  const base  = CONFIG.BASE_URL;
-  const actor = currentUser?.email || "";
-  let alias   = await ensureAliasFor(targetEmail);  // usa override si existe
-  const A = encodeURIComponent, act = actor ? `&actor=${A(actor)}` : "";
-
-  async function attempt(aliasToUse){
-    const urls = [
-      `${base}?action=${action}&alias=${A(aliasToUse)}${act}`,
-      `${base}?action=${action}&row=${A(aliasToUse)}${act}`,
-      `${base}?action=${action}&target=${A(aliasToUse)}${act}`,
-      `${base}?action=${action}&email=${A(targetEmail)}${act}`,
-      `${base}?action=${action}&target=${A(targetEmail)}${act}`
-    ].filter(u => !/alias=&|row=&|target=&/i.test(u));
-    return await tryFetchSeq(urls);
-  }
-
-  // 1) Primer intento con alias conocido/override
-  let res = await attempt(alias || targetEmail);
-
-  // 2) Si la hoja devuelve row_not_found_for_alias, proponemos fijar alias
-  if (!res.ok && /row_not_found_for_alias/i.test(String(res.data?.error||""))) {
-    // Pide exacto y guarda
-    const fix = prompt('No encuentro la fila para este empleado.\nEscribe EXACTO el texto de la columna A (ej: "J. GIRALDO" o "GIRALDO, J."):',
-                       alias || '');
-    if (fix && fix.trim()){
-      AliasOverrides.set(targetEmail, fix.trim());
-      alias = fix.trim();
-      res = await attempt(alias);   // reintenta con el nuevo alias
-    }
-  }
-
-  // 3) Resultado
-  if (res.ok){
-    const data = res.data;
-    const name  = data.sent?.name  || alias || targetEmail;
-    const shift = data.sent?.shift || "-";
-    const mode  = (data.sent?.mode || action).toUpperCase();
-    if (msgBox){ msgBox.textContent = `✅ ${name} (${mode}) → ${shift}`; msgBox.style.color = "#00b341"; }
-    toast(`✅ Message sent to ${name}`, "success");
-    if (navigator.vibrate) navigator.vibrate(60);
-  } else {
-    const err = res.data?.error || "unknown_error";
-    if (msgBox){ msgBox.textContent = `⚠️ ${err}`; msgBox.style.color = "#ff4444"; }
-    toast(`⚠️ Send failed (${err})`, "error");
-  }
-}
-
 /* =================== TOASTS =================== */
 (function ensureToast(){
   if ($("#toastContainer")) return;
