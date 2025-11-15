@@ -812,105 +812,141 @@ async function tryFetchSeq(urls){
   return { ok:false, data:last };
 }
 
+// ===== Helpers (añadir una vez) =====
+function mapDayKey(d){
+  const M = { MON:'Mon', TUE:'Tue', WED:'Wed', THU:'Thu', FRI:'Fri', SAT:'Sat', SUN:'Sun' };
+  if (!d) return '';
+  const k = String(d).slice(0,3).toUpperCase();
+  return M[k] || '';
+}
+async function ensureAliasFor(email){
+  // Intenta: resolveAlias → rowAlias de getSchedule
+  try{
+    const a = await API.resolveAlias({ email });
+    if (a?.alias) return a.alias;
+  }catch{}
+  try{
+    const g = await API.getSchedule(email, 0);
+    if (g?.rowAlias) return g.rowAlias;
+  }catch{}
+  return '';
+}
+async function tryFetchSeq(urls){
+  let last=null;
+  for (const u of urls){
+    try{
+      const r = await fetch(u, { cache:"no-store" });
+      const j = await r.json();
+      if (j?.ok) return { ok:true, data:j, url:u };
+      last = j;
+    }catch(e){ last = { error:String(e) }; }
+  }
+  return { ok:false, data:last };
+}
+
 /* =================== MANAGER ACTIONS =================== */
-// 🔁 REEMPLAZA COMPLETO
+// ===== REEMPLAZA COMPLETO =====
 async function updateShiftFromModal(targetEmail, modalEl){
   const enc = encodeURIComponent;
   const msg = $(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || $(".emp-status-msg", modalEl);
-  const actor = currentUser?.email;
-  if (!actor) { msg && (msg.textContent="⚠️ Session expired. Login again."); return; }
+  const actor = currentUser?.email || "";
+  if (!actor){ msg && (msg.textContent="⚠️ Session expired. Login again."); return; }
 
   const rows = $all(".schedule-mini tr[data-day]", modalEl);
   const changes = rows.map(r=>{
-    const day  = r.dataset.day;                      // "Mon","Tue",...
-    const val  = r.cells[1].innerText.trim();
-    const orig = (r.getAttribute("data-original")||"").trim();
-    return (val !== orig) ? { day, newShift: val } : null;
+    const dayRaw   = r.dataset.day;                // e.g. "Mon"
+    const day      = mapDayKey(dayRaw);            // fuerza Mon..Sun
+    let   newShift = r.cells[1].innerText.trim();
+    const original = (r.getAttribute("data-original")||"").trim();
+    // normaliza guiones, quita sufijos DONE/READY...
+    newShift = newShift.replace(/[–—]| to /gi,"-").replace(/\s*-\s*/,"-")
+                       .split(/\s+(DONE|READY|SENT|UPDATE|UPDATED)\b/i)[0].trim();
+    return (day && newShift !== original) ? { day, newShift } : null;
   }).filter(Boolean);
 
   if (!changes.length){ msg && (msg.textContent="No changes to save."); toast("ℹ️ No changes","info"); return; }
 
+  const alias = await ensureAliasFor(targetEmail);
+  if (!alias){
+    msg && (msg.textContent="⚠️ No alias found for this user");
+    toast("⚠️ No alias found","error"); return;
+  }
+
   msg && (msg.textContent="✏️ Saving to Sheets…");
   let ok=0, fails=[];
-  let alias = "";
-  try{ alias = (await API.resolveAlias({ email: targetEmail }))?.alias || ""; }catch{}
+  const base = CONFIG.BASE_URL;
 
   for (const c of changes){
-    const base = CONFIG.BASE_URL;
-
-    // Diferentes rutas + parámetros alternativos que tu backend conoce
-    const urlSet = [
-      // RUTA moderna
+    const urls = [
+      // Handler principal v4.6.9 R1
       `${base}?action=updateShift&actor=${enc(actor)}&alias=${enc(alias)}&day=${enc(c.day)}&shift=${enc(c.newShift)}`,
+      // Variantes conocidas
       `${base}?action=updateShift&actor=${enc(actor)}&target=${enc(targetEmail)}&day=${enc(c.day)}&shift=${enc(c.newShift)}`,
-      // Aliases históricos
-      `${base}?action=updateShiftAPI&actor=${enc(actor)}&alias=${enc(alias)}&col=${enc(c.day)}&shift=${enc(c.newShift)}`,
+      `${base}?action=updateShiftAPI&actor=${enc(actor)}&row=${enc(alias)}&col=${enc(c.day)}&value=${enc(c.newShift)}`,
       `${base}?action=updateShiftAPI_v1&row=${enc(alias)}&col=${enc(c.day)}&value=${enc(c.newShift)}&actor=${enc(actor)}`
     ];
-
-    const res = await tryFetchSeq(urlSet);
-    if (res.ok) ok++; else fails.push({ day: c.day, err: res.data?.error || "failed" });
+    const res = await tryFetchSeq(urls);
+    if (res.ok) ok++; else fails.push({ day:c.day, err: res.data?.error || "missing/invalid params" });
   }
 
   if (ok===changes.length){
     msg && (msg.textContent="✅ Updated on Sheets!");
     toast("✅ Shifts updated","success");
-    // Congelar “original” para no volver a enviar sin cambios
     rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim()));
-  } else if (ok>0){
+  }else if (ok>0){
     msg && (msg.textContent=`⚠️ Partial save: ${ok}/${changes.length}`);
     toast("⚠️ Some shifts failed","error");
-    console.warn("updateShift fails:", fails);
-  } else {
+    console.warn("updateShift partial fails:", fails);
+  }else{
     msg && (msg.textContent="❌ Could not update.");
     toast("❌ Update failed","error");
     console.warn("updateShift all failed:", fails);
   }
 }
-
 /* =================== SEND SHIFT MESSAGE =================== */
-// 🔁 REEMPLAZA COMPLETO
-async function sendShiftMessage(targetEmail, action) {
+// ===== REEMPLAZA COMPLETO =====
+async function sendShiftMessage(targetEmail, action){
   const enc = encodeURIComponent;
-  const msgBox = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g, "_")}`);
-  if (msgBox){ msgBox.style.color = ""; msgBox.textContent = "📤 Sending..."; }
+  const msgBox = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`);
+  if (msgBox){ msgBox.textContent = "📤 Sending..."; msgBox.style.color=""; }
   const actor = currentUser?.email || "";
 
-  try {
-    // 1) Alias sólido (y, si se puede, rowAlias del schedule)
-    const aliasInfo = await API.resolveAlias({ email: targetEmail });
-    const alias = aliasInfo?.alias || "";
-    let rowAlias = "";
-    try { rowAlias = (await API.getSchedule(targetEmail, 0))?.rowAlias || ""; } catch{}
+  try{
+    const alias = await ensureAliasFor(targetEmail);
+    if (!alias){
+      const m = "No alias found for this user";
+      if (msgBox){ msgBox.textContent = `⚠️ ${m}`; msgBox.style.color="#ff4444"; }
+      toast(`⚠️ ${m}`, "error");
+      return;
+    }
 
-    // 2) Intentos con distintas combinaciones de parámetros (el backend elige)
     const base = CONFIG.BASE_URL;
-    const attempts = [
+    // Prioriza el nombre que el backend usa para mensajes: alias
+    const urls = [
       `${base}?action=${action}&alias=${enc(alias)}${actor?`&actor=${enc(actor)}`:""}`,
+      // Backups por si el handler acepta otros
       `${base}?action=${action}&row=${enc(alias)}${actor?`&actor=${enc(actor)}`:""}`,
-      rowAlias && `${base}?action=${action}&row=${enc(rowAlias)}${actor?`&actor=${enc(actor)}`:""}`,
-      `${base}?action=${action}&target=${enc(targetEmail)}${actor?`&actor=${enc(actor)}`:""}`,
       `${base}?action=${action}&email=${enc(targetEmail)}${actor?`&actor=${enc(actor)}`:""}`
-    ].filter(Boolean);
+    ];
 
-    const res = await tryFetchSeq(attempts);
+    const res = await tryFetchSeq(urls);
 
-    if (res.ok) {
-      const data = res.data || {};
-      const name  = data.sent?.name  || alias || targetEmail;
-      const shift = data.sent?.shift || "-";
-      const mode  = (data.sent?.mode || action).toUpperCase();
-      if (msgBox){ msgBox.textContent = `✅ ${name} (${mode}) → ${shift}`; msgBox.style.color = "#00b341"; }
+    if (res.ok){
+      const d = res.data || {};
+      const name  = d.sent?.name  || alias;
+      const shift = d.sent?.shift || "-";
+      const mode  = (d.sent?.mode || action).toUpperCase();
+      if (msgBox){ msgBox.textContent = `✅ ${name} (${mode}) → ${shift}`; msgBox.style.color="#00b341"; }
       toast(`✅ Message sent to ${name}`, "success");
       if (navigator.vibrate) navigator.vibrate(60);
-    } else {
+    }else{
       const err = res.data?.error || "unknown_error";
-      if (msgBox){ msgBox.textContent = `⚠️ ${err}`; msgBox.style.color = "#ff4444"; }
+      if (msgBox){ msgBox.textContent = `⚠️ ${err}`; msgBox.style.color="#ff4444"; }
       toast(`⚠️ Send failed (${err})`, "error");
     }
-  } catch (err) {
-    console.error("sendShiftMessage error:", err);
-    if (msgBox){ msgBox.textContent = `❌ ${err.message || "Network error"}`; msgBox.style.color = "#ff4444"; }
+  }catch(e){
+    console.error(e);
+    if (msgBox){ msgBox.textContent = `❌ ${e.message||"Network error"}`; msgBox.style.color="#ff4444"; }
   }
 }
 /* =================== TOASTS =================== */
