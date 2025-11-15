@@ -845,49 +845,56 @@ async function tryFetchSeq(urls){
 }
 
 /* =================== MANAGER ACTIONS =================== */
-// =================== UPDATE SHIFT (robusto multi-endpoint) ===================
+// =================== UPDATE SHIFT (usa alias override y combos de params) ===================
 async function updateShiftFromModal(targetEmail, modalEl){
   const msg = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || $(".emp-status-msg", modalEl);
   const actor = currentUser?.email;
   if (!actor) { if (msg) msg.textContent = "⚠️ Session expired. Login again."; return; }
 
-  const alias = await ensureAliasFor(targetEmail);
-  const rows  = $all(".schedule-mini tr[data-day]", modalEl);
-
+  let alias = await ensureAliasFor(targetEmail);
+  const rows = $all(".schedule-mini tr[data-day]", modalEl);
   const changes = rows.map(r=>{
-    const day3 = mapDayKey(r.dataset.day);               // "Mon" / "Tue"...
-    const val  = r.cells[1].innerText.trim();
-    const orig = (r.getAttribute("data-original")||"").trim();
+    const dayLabel = r.dataset.day;                      // Mon/Tue/...
+    const day3     = mapDayKey(dayLabel);
+    const val      = r.cells[1].innerText.trim();
+    const orig     = (r.getAttribute("data-original")||"").trim();
     return (val !== orig) ? { day3, val } : null;
   }).filter(Boolean);
 
-  if (!changes.length){ if (msg) msg.textContent = "No changes to save."; toast("ℹ️ No changes","info"); return; }
-
+  if (!changes.length){ if (msg) msg.textContent="No changes to save."; toast("ℹ️ No changes","info"); return; }
   if (msg) msg.textContent = "✏️ Saving to Sheets...";
 
   const base = CONFIG.BASE_URL, A = encodeURIComponent;
   let ok = 0;
 
-  for (const c of changes){
+  async function attempt(one){
     const urls = [
-      // v4.6.9 R1 (target=email)
-      `${base}?action=updateShift&actor=${A(actor)}&target=${A(targetEmail)}&day=${A(c.day3)}&shift=${A(c.val)}`,
-      // v4.6.9 R1 (alias)
-      `${base}?action=updateShift&actor=${A(actor)}&alias=${A(alias)}&day=${A(c.day3)}&shift=${A(c.val)}`,
-      // APIs alternativas conocidas
-      `${base}?action=updateShiftAPI&alias=${A(alias)}&day=${A(c.day3)}&shift=${A(c.val)}&actor=${A(actor)}`,
-      `${base}?action=updateShiftAPI_v1&alias=${A(alias)}&which=${A(c.day3)}&shift=${A(c.val)}&actor=${A(actor)}`,
-      `${base}?action=updateShiftAPI_v1&email=${A(targetEmail)}&which=${A(c.day3)}&shift=${A(c.val)}&actor=${A(actor)}`
-    ].filter(u => !/alias=&/i.test(u)); // evita alias vacío
+      `${base}?action=updateShift&actor=${A(actor)}&alias=${A(alias)}&day=${A(one.day3)}&shift=${A(one.val)}`,
+      `${base}?action=updateShift&actor=${A(actor)}&target=${A(targetEmail)}&day=${A(one.day3)}&shift=${A(one.val)}`,
+      `${base}?action=updateShiftAPI&alias=${A(alias)}&day=${A(one.day3)}&shift=${A(one.val)}&actor=${A(actor)}`,
+      `${base}?action=updateShiftAPI_v1&alias=${A(alias)}&which=${A(one.day3)}&shift=${A(one.val)}&actor=${A(actor)}`,
+      `${base}?action=updateShiftAPI_v1&email=${A(targetEmail)}&which=${A(one.day3)}&shift=${A(one.val)}&actor=${A(actor)}`
+    ].filter(u => !/alias=&/i.test(u));
+    return await tryFetchSeq(urls);
+  }
 
-    const res = await tryFetchSeq(urls);
+  for (const c of changes){
+    let res = await attempt(c);
+    if (!res.ok && /row_not_found_for_alias/i.test(String(res.data?.error||""))) {
+      const fix = prompt('No encuentro la fila (columna A) para esta persona.\nEscribe EXACTO el texto (ej: "J. GIRALDO" o "GIRALDO, J."):',
+                         alias || '');
+      if (fix && fix.trim()){
+        AliasOverrides.set(targetEmail, fix.trim());
+        alias = fix.trim();
+        res = await attempt(c); // reintenta
+      }
+    }
     if (res.ok) ok++;
   }
 
   if (ok === changes.length){
     if (msg) msg.textContent = "✅ Updated on Sheets!";
     toast("✅ Shifts updated","success");
-    // Actualiza baseline para evitar falsos cambios
     rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim()));
   } else if (ok > 0){
     if (msg) msg.textContent = `⚠️ Partial save: ${ok}/${changes.length}`;
@@ -898,45 +905,55 @@ async function updateShiftFromModal(targetEmail, modalEl){
   }
 }
 
-// =================== SEND SHIFT MESSAGE (robusto) ===================
+// =================== SEND SHIFT MESSAGE (con override y autocorrección) ===================
 async function sendShiftMessage(targetEmail, action) {
-  const idSafe = targetEmail.replace(/[@.]/g, "_");
-  const msgBox = document.querySelector(`#empStatusMsg-${idSafe}`) || null;
-  if (msgBox) { msgBox.textContent = "📤 Sending..."; msgBox.style.color = ""; }
+  const msgBox = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g, "_")}`) || null;
+  if (msgBox){ msgBox.textContent = "📤 Sending..."; msgBox.style.color = ""; }
 
   const base  = CONFIG.BASE_URL;
   const actor = currentUser?.email || "";
-  const alias = await ensureAliasFor(targetEmail);
+  let alias   = await ensureAliasFor(targetEmail);  // usa override si existe
   const A = encodeURIComponent, act = actor ? `&actor=${A(actor)}` : "";
 
-  // Probar todas las variantes que entiende el backend
-  const urls = [
-    `${base}?action=${action}&alias=${A(alias)}${act}`,
-    `${base}?action=${action}&target=${A(alias)}${act}`,
-    `${base}?action=${action}&row=${A(alias)}${act}`,
-    `${base}?action=${action}&email=${A(targetEmail)}${act}`,
-    `${base}?action=${action}&target=${A(targetEmail)}${act}`,
-  ].filter(u => !/alias=&|target=&|row=&/i.test(u)); // evita vacíos
+  async function attempt(aliasToUse){
+    const urls = [
+      `${base}?action=${action}&alias=${A(aliasToUse)}${act}`,
+      `${base}?action=${action}&row=${A(aliasToUse)}${act}`,
+      `${base}?action=${action}&target=${A(aliasToUse)}${act}`,
+      `${base}?action=${action}&email=${A(targetEmail)}${act}`,
+      `${base}?action=${action}&target=${A(targetEmail)}${act}`
+    ].filter(u => !/alias=&|row=&|target=&/i.test(u));
+    return await tryFetchSeq(urls);
+  }
 
-  try{
-    const res = await tryFetchSeq(urls);
-    if (res.ok) {
-      const data = res.data;
-      const name  = data.sent?.name  || alias || targetEmail;
-      const shift = data.sent?.shift || "-";
-      const mode  = (data.sent?.mode || action).toUpperCase();
+  // 1) Primer intento con alias conocido/override
+  let res = await attempt(alias || targetEmail);
 
-      if (msgBox){ msgBox.textContent = `✅ ${name} (${mode}) → ${shift}`; msgBox.style.color = "#00b341"; }
-      toast(`✅ Message sent to ${name}`, "success");
-      if (navigator.vibrate) navigator.vibrate(60);
-    } else {
-      const err = res.data?.error || "unknown_error";
-      if (msgBox){ msgBox.textContent = `⚠️ ${err}`; msgBox.style.color = "#ff4444"; }
-      toast(`⚠️ Send failed (${err})`, "error");
+  // 2) Si la hoja devuelve row_not_found_for_alias, proponemos fijar alias
+  if (!res.ok && /row_not_found_for_alias/i.test(String(res.data?.error||""))) {
+    // Pide exacto y guarda
+    const fix = prompt('No encuentro la fila para este empleado.\nEscribe EXACTO el texto de la columna A (ej: "J. GIRALDO" o "GIRALDO, J."):',
+                       alias || '');
+    if (fix && fix.trim()){
+      AliasOverrides.set(targetEmail, fix.trim());
+      alias = fix.trim();
+      res = await attempt(alias);   // reintenta con el nuevo alias
     }
-  } catch (e){
-    if (msgBox){ msgBox.textContent = `❌ ${e.message || "Network error"}`; msgBox.style.color = "#ff4444"; }
-    toast("❌ Send failed", "error");
+  }
+
+  // 3) Resultado
+  if (res.ok){
+    const data = res.data;
+    const name  = data.sent?.name  || alias || targetEmail;
+    const shift = data.sent?.shift || "-";
+    const mode  = (data.sent?.mode || action).toUpperCase();
+    if (msgBox){ msgBox.textContent = `✅ ${name} (${mode}) → ${shift}`; msgBox.style.color = "#00b341"; }
+    toast(`✅ Message sent to ${name}`, "success");
+    if (navigator.vibrate) navigator.vibrate(60);
+  } else {
+    const err = res.data?.error || "unknown_error";
+    if (msgBox){ msgBox.textContent = `⚠️ ${err}`; msgBox.style.color = "#ff4444"; }
+    toast(`⚠️ Send failed (${err})`, "error");
   }
 }
 
