@@ -1949,3 +1949,232 @@ function attachFixRowUI(modalEl, email, aliasNow){
   };
 })();
 
+<script>
+/* === ACW — Patch Consolidado (Alias + Row Fix + Mensajería) v1.3 — JAG & Sky === */
+(() => {
+  if (window.__ACW_ALIAS_PATCH__) return;
+  window.__ACW_ALIAS_PATCH__ = 1;
+
+  // 0) Helpers seguros (solo si faltan)
+  window.tryFetchSeq = window.tryFetchSeq || (async function(urls){
+    let last = null;
+    for (const u of urls){
+      try{
+        const r = await fetch(u, { cache:"no-store" });
+        const j = await r.json();
+        if (j?.ok) return { ok:true, data:j, url:u };
+        last = j;
+      }catch(e){
+        last = { error:String(e) };
+      }
+    }
+    return { ok:false, data:last };
+  });
+
+  // 1) AliasOverrides (único y global)
+  window.AliasOverrides = window.AliasOverrides || {
+    _key: 'acwAliasOverrides',
+    get(email){
+      try{
+        const m = JSON.parse(localStorage.getItem(this._key)||'{}');
+        return m[(email||'').toLowerCase()] || '';
+      }catch{ return ''; }
+    },
+    set(email, alias){
+      try{
+        const k = (email||'').toLowerCase();
+        const m = JSON.parse(localStorage.getItem(this._key)||'{}');
+        m[k] = String(alias||'').trim();
+        localStorage.setItem(this._key, JSON.stringify(m));
+      }catch{}
+    }
+  };
+
+  // 2) Generador de variantes de alias (coma/sin puntos), en global para reutilizar
+  window.expandAliasCandidates = window.expandAliasCandidates || function(full){
+    full = String(full||'').trim();
+    const base = (typeof window.deriveAliasCandidates==='function') ? window.deriveAliasCandidates(full) : [];
+    const LAST = (typeof window.deriveAliasFromFullName==='function') ? window.deriveAliasFromFullName(full) : '';
+    const initials = full.split(/\s+/).slice(0,-1)
+      .map(w=>w.replace(/[^A-Za-zÁÉÍÓÚÜÑ]/g,'').charAt(0).toUpperCase()).filter(Boolean);
+    const F  = initials[0]||''; const FI = (initials[0]||'')+(initials[1]||'');
+    const withComma = [
+      (LAST&&F ) ? `${LAST}, ${F}.`  : null,
+      (LAST&&F ) ? `${LAST}, ${F}`   : null,
+      (LAST&&FI) ? `${LAST}, ${FI}.` : null,
+      (LAST&&FI) ? `${LAST}, ${FI}`  : null
+    ].filter(Boolean);
+    const noDot = base.map(v=>v.replace(/\./g,'').replace(/\s{2,}/g,' ').trim());
+    return Array.from(new Set([...(base||[]), ...withComma, ...noDot].filter(Boolean)));
+  };
+
+  // 3) ensureAliasFor (override > resolver > directorio > rowAlias)
+  window.ensureAliasFor = window.ensureAliasFor || (async function(email){
+    const over = window.AliasOverrides.get(email);
+    if (over) return over;
+
+    try{
+      const a = await window.API?.resolveAlias?.({ email });
+      if (a?.alias) return a.alias;
+    }catch{}
+
+    // intenta derivar desde el Directorio
+    try{
+      const d = await window.API?.getDirectory();
+      const list = d?.directory || d?.employees || d?.rows || [];
+      const rec  = list.find(x => (x.email||'').toLowerCase() === String(email||'').toLowerCase());
+      if (rec?.name){
+        const c = window.expandAliasCandidates(rec.name);
+        if (c[0]) return c[0];
+      }
+    }catch{}
+
+    // último recurso: rowAlias del propio getSchedule
+    try{
+      const g = await window.API?.getSchedule?.(email, 0);
+      if (g?.rowAlias) return g.rowAlias;
+    }catch{}
+
+    return '';
+  });
+
+  // 4) Botón “🧩 Fix Row” (solo si falta)
+  window.attachFixRowUI = window.attachFixRowUI || (function(){
+    return function(modalEl, email, aliasNow){
+      if (!modalEl || modalEl.querySelector('.alias-fix')) return;
+      const slot = modalEl.querySelector('.emp-actions') || modalEl.querySelector('.emp-header');
+      if (!slot) return;
+      const btn = document.createElement('button');
+      btn.className = 'alias-fix';
+      btn.textContent = `🧩 Fix Row (${aliasNow || '—'})`;
+      btn.style.marginLeft = '8px';
+      btn.onclick = async ()=>{
+        let hint = aliasNow || '';
+        try{
+          const d = await window.API?.getDirectory();
+          const list = d?.directory || d?.employees || d?.rows || [];
+          const rec  = list.find(x => (x.email||'').toLowerCase() === (email||'').toLowerCase());
+          if (rec?.name){
+            const sug = window.expandAliasCandidates(rec.name);
+            if (sug.length) hint = sug[0];
+          }
+        }catch{}
+        const val = prompt('Texto EXACTO de la columna A (fila del Weekly):', hint);
+        if (!val) return;
+        window.AliasOverrides.set(email, val.trim());
+        btn.textContent = `🧩 Fix Row (${val.trim()})`;
+        (window.toast||console.log)('✅ Row guardado para este email', 'success');
+      };
+      slot.appendChild(btn);
+    };
+  })();
+
+  // 5) Mensajería robusta (reemplaza de forma segura)
+  window.sendShiftMessage = async function(targetEmail, action){
+    const msgBox = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || null;
+    if (msgBox){ msgBox.textContent = "📤 Sending..."; msgBox.style.color=""; }
+
+    const base  = window.CONFIG?.BASE_URL || "";
+    const actor = window.currentUser?.email || "";
+    let alias   = await window.ensureAliasFor(targetEmail);
+    const A = encodeURIComponent, act = actor ? `&actor=${A(actor)}` : "";
+
+    const attempt = async (aliasOrEmail)=>{
+      const isEmail = /@/.test(aliasOrEmail);
+      const urls = [
+        !isEmail && `${base}?action=${action}&alias=${A(aliasOrEmail)}${act}`,
+        !isEmail && `${base}?action=${action}&row=${A(aliasOrEmail)}${act}`,
+        !isEmail && `${base}?action=${action}&target=${A(aliasOrEmail)}${act}`,
+        `${base}?action=${action}&email=${A(targetEmail)}${act}`,
+        `${base}?action=${action}&target=${A(targetEmail)}${act}`
+      ].filter(Boolean);
+      return await window.tryFetchSeq(urls);
+    };
+
+    let res = await attempt(alias || targetEmail);
+
+    if (!res.ok && /row_not_found_for_alias/i.test(String(res.data?.error||""))){
+      const fix = prompt('No encuentro la fila (columna A). Escribe EXACTO el texto (ej: "J. GIRALDO" / "GIRALDO, J."):', alias||'');
+      if (fix && fix.trim()){
+        window.AliasOverrides.set(targetEmail, fix.trim());
+        alias = fix.trim();
+        res = await attempt(alias);
+      }
+    }
+
+    if (res.ok){
+      const data  = res.data;
+      const name  = data.sent?.name  || alias || targetEmail;
+      const shift = data.sent?.shift || '-';
+      const mode  = (data.sent?.mode || action).toUpperCase();
+      if (msgBox){ msgBox.textContent = `✅ ${name} (${mode}) → ${shift}`; msgBox.style.color = "#00b341"; }
+      (window.toast||console.log)(`✅ Message sent to ${name}`, "success");
+      if (navigator.vibrate) navigator.vibrate(60);
+    } else {
+      const err = res.data?.error || "missing_parameters";
+      if (msgBox){ msgBox.textContent = `⚠️ ${err}`; msgBox.style.color = "#ff4444"; }
+      (window.toast||console.log)(`⚠️ Send failed (${err})`, "error");
+    }
+  };
+
+  // 6) Update Shift robusto (reemplaza de forma segura)
+  window.updateShiftFromModal = async function(targetEmail, modalEl){
+    const msg = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || modalEl?.querySelector(".emp-status-msg");
+    const actor = window.currentUser?.email;
+    if (!actor){ if (msg) msg.textContent = "⚠️ Session expired. Login again."; return; }
+
+    const mapDayKey = (d)=>({MON:'Mon',TUE:'Tue',WED:'Wed',THU:'Thu',FRI:'Fri',SAT:'Sat',SUN:'Sun'})[String(d||'').slice(0,3).toUpperCase()] || '';
+
+    let alias = await window.ensureAliasFor(targetEmail);
+    const rows = Array.from(modalEl?.querySelectorAll?.(".schedule-mini tr[data-day]")||[]);
+    const changes = rows.map(r=>{
+      const day3 = mapDayKey(r.dataset.day);
+      const val  = r.cells[1].innerText.trim();
+      const orig = (r.getAttribute("data-original")||"").trim();
+      return (val !== orig) ? { day3, val } : null;
+    }).filter(Boolean);
+
+    if (!changes.length){ if (msg) msg.textContent="No changes to save."; (window.toast||console.log)("ℹ️ No changes","info"); return; }
+    if (msg) msg.textContent = "✏️ Saving to Sheets...";
+
+    const base = window.CONFIG?.BASE_URL || "";
+    const A = encodeURIComponent;
+    const attempt = async (one)=>{
+      const urls = [
+        alias && `${base}?action=updateShift&actor=${A(actor)}&alias=${A(alias)}&day=${A(one.day3)}&shift=${A(one.val)}`,
+        `${base}?action=updateShift&actor=${A(actor)}&target=${A(targetEmail)}&day=${A(one.day3)}&shift=${A(one.val)}`,
+        alias && `${base}?action=updateShiftAPI&alias=${A(alias)}&day=${A(one.day3)}&shift=${A(one.val)}&actor=${A(actor)}`,
+        alias && `${base}?action=updateShiftAPI_v1&alias=${A(alias)}&which=${A(one.day3)}&shift=${A(one.val)}&actor=${A(actor)}`,
+        `${base}?action=updateShiftAPI_v1&email=${A(targetEmail)}&which=${A(one.day3)}&shift=${A(one.val)}&actor=${A(actor)}`
+      ].filter(Boolean);
+      return await window.tryFetchSeq(urls);
+    };
+
+    let ok = 0;
+    for (const c of changes){
+      let res = await attempt(c);
+      if (!res.ok && /row_not_found_for_alias/i.test(String(res.data?.error||""))){
+        const fix = prompt('No encuentro la fila (columna A). Escribe EXACTO el texto (ej: "J. GIRALDO" / "GIRALDO, J."):', alias||'');
+        if (fix && fix.trim()){
+          window.AliasOverrides.set(targetEmail, fix.trim());
+          alias = fix.trim();
+          res = await attempt(c);
+        }
+      }
+      if (res.ok) ok++;
+    }
+
+    if (ok === changes.length){
+      if (msg) msg.textContent = "✅ Updated on Sheets!";
+      (window.toast||console.log)("✅ Shifts updated","success");
+      rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim()));
+    } else if (ok > 0){
+      if (msg) msg.textContent = `⚠️ Partial save: ${ok}/${changes.length}`;
+      (window.toast||console.log)("⚠️ Some shifts failed","error");
+    } else {
+      if (msg) msg.textContent = "❌ Could not update.";
+      (window.toast||console.log)("❌ Update failed","error");
+    }
+  };
+})();
+</script>
