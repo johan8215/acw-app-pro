@@ -1621,3 +1621,99 @@ console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3 Turbo"} | Base: $
   document.head.appendChild(s);
 })();
 
+// ===== Alias overrides (persisten en localStorage) =====
+const AliasOverrides = {
+  _key: 'acwAliasOverrides',
+  get(email){
+    try{ const m = JSON.parse(localStorage.getItem(this._key)||'{}'); return m[(email||'').toLowerCase()] || ''; }catch{ return ''; }
+  },
+  set(email, alias){
+    try{
+      const k = (email||'').toLowerCase();
+      const m = JSON.parse(localStorage.getItem(this._key)||'{}'); 
+      m[k] = String(alias||'').trim();
+      localStorage.setItem(this._key, JSON.stringify(m));
+    }catch{}
+  }
+};
+
+// ===== Candidatos de alias (agrega variantes con coma y sin puntos) =====
+function expandAliasCandidates(full){
+  const base = deriveAliasCandidates(full || "") || [];
+  // Intenta LAST, F.   y   LAST, F
+  const LAST = (full||"").split(/\s+/).slice(-1)[0] ? deriveAliasFromFullName(full) : "";
+  const initials = (full||"").trim().split(/\s+/).slice(0,-1).map(w=>w.replace(/[^A-Za-zÁÉÍÓÚÜÑ]/g,'').charAt(0).toUpperCase()).filter(Boolean);
+  const F  = initials[0] || "";
+  const FI = (initials[0]||"") + (initials[1]||"");
+
+  const withComma = new Set([
+    LAST && F  ? `${LAST}, ${F}.` : null,
+    LAST && F  ? `${LAST}, ${F}`  : null,
+    LAST && FI ? `${LAST}, ${FI}.` : null,
+    LAST && FI ? `${LAST}, ${FI}`  : null
+  ].filter(Boolean));
+
+  // Versión sin puntos “J GIRALDO / JA GIRALDO”
+  const noDot = new Set(
+    base.map(v => v.replace(/\./g,'').replace(/\s{2,}/g,' ').trim())
+  );
+
+  return Array.from(new Set([...(base||[]), ...withComma, ...noDot].filter(Boolean)));
+}
+
+// ===== Asegura alias (override > resolver > rowAlias) =====
+async function ensureAliasFor(email){
+  const over = AliasOverrides.get(email);
+  if (over) return over;
+  try{
+    const a = await API.resolveAlias({ email });
+    if (a?.alias) return a.alias;
+    // Si tenemos nombre en el directorio, expande candidatos
+    try{
+      const d = await API.getDirectory();
+      const list = d?.directory || d?.employees || d?.rows || [];
+      const rec = list.find(x => String(x.email||'').toLowerCase() === String(email||'').toLowerCase());
+      if (rec?.name) {
+        const extra = expandAliasCandidates(rec.name);
+        if (extra?.length) return extra[0];
+      }
+    }catch{}
+  }catch{}
+  try{
+    const g = await API.getSchedule(email, 0);
+    if (g?.rowAlias) return g.rowAlias;
+  }catch{}
+  return '';
+}
+
+// ===== UI: botón "Fix Row" dentro del modal (una vez por modal) =====
+function attachFixRowUI(modalEl, email, aliasNow){
+  if (!modalEl || modalEl.querySelector('.alias-fix')) return;
+  const slot = modalEl.querySelector('.emp-actions') || modalEl.querySelector('.emp-header');
+  if (!slot) return;
+
+  const btn = document.createElement('button');
+  btn.className = 'alias-fix';
+  btn.textContent = `🧩 Fix Row (${aliasNow || '—'})`;
+  btn.style.marginLeft = '8px';
+  btn.onclick = async ()=>{
+    // Sugerencias
+    let hint = aliasNow || '';
+    try{
+      const d = await API.getDirectory();
+      const list = d?.directory || d?.employees || d?.rows || [];
+      const rec = list.find(x => (x.email||'').toLowerCase() === (email||'').toLowerCase());
+      if (rec?.name){
+        const sugg = expandAliasCandidates(rec.name);
+        if (sugg.length) hint = sugg[0];
+      }
+    }catch{}
+    const val = prompt('Escribe EXACTO el texto de columna A (fila del Weekly) para esta persona:', hint || '');
+    if (!val) return;
+    AliasOverrides.set(email, val.trim());
+    toast('✅ Row guardado para este email', 'success');
+    btn.textContent = `🧩 Fix Row (${val.trim()})`;
+  };
+  slot.appendChild(btn);
+}
+
