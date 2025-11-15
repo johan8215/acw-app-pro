@@ -755,6 +755,11 @@ async function openEmployeePanel(btnEl){
     const hb = m.querySelector(".btn-history");
     if (hb) hb.onclick = () => openHistoryFor(email, name);
   }
+   // Mostrar botón Fix Row con el alias que vamos a usar
+try {
+  const aliasNow = await ensureAliasFor(email);
+  attachFixRowUI(m, email, aliasNow);
+} catch {}
 
   enableModalLiveShift(m, data.days||[]);
 }
