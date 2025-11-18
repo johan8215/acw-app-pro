@@ -71,23 +71,58 @@ async function fetchJSON(url, { ttl=0, signal } = {}){
     if (ttl>0) Net.clearInflight(url);
   }
 }
-
-/* API helpers con TTL inteligentes */
+/* =====================  API helpers + Alias Resolver  ===================== */
 const API = {
-  dirTTL: 5*60*1000,         // 5 min
-  schedTTL0: 60*1000,        // semana actual 60s (para live y TeamView)
-  schedTTLOld: 5*60*1000,    // semanas -1..-4 más relajado
+  // TTLs
+  dirTTL: 5*60*1000,        // 5 min
+  schedTTL0: 60*1000,       // semana actual
+  schedTTLOld: 5*60*1000,   // semanas anteriores
+  _aliasCache: new Map(),
 
+  /* ------- Lecturas con cache ------- */
   getDirectory(controller){
     const u = `${CONFIG.BASE_URL}?action=getEmployeesDirectory`;
     return fetchJSON(u, { ttl: API.dirTTL, signal: controller?.signal });
   },
-  getSchedule(email, offset=0, controller){
-    const ttl = offset===0 ? API.schedTTL0 : API.schedTTLOld;
-    const u = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}&offset=${offset}`;
-    return fetchJSON(u, { ttl, signal: controller?.signal });
-  }
-};
+
+  // Resolver alias SOLO con el directorio (evita recursión)
+  async resolveAlias({email, phone}={}, controller){
+    const key = (email || phone || "").toLowerCase();
+    if (this._aliasCache.has(key)) return this._aliasCache.get(key);
+
+    const d = await this.getDirectory(controller);
+    const list = d?.directory || d?.employees || d?.rows || (Array.isArray(d) ? d : []);
+    const norm = v => (v||"").toString().trim();
+    const nPhone = v => norm(v).replace(/\D/g,"");
+
+    const rec = list.find(x =>
+      (email && norm(x.email).toLowerCase() === norm(email).toLowerCase()) ||
+      (phone && nPhone(x.phone) && nPhone(x.phone) === nPhone(phone))
+    );
+    if (!rec) throw new Error("ALIAS_NOT_FOUND_IN_DIRECTORY");
+
+    const full = norm(rec.name || rec.employee || rec.fullname || "");
+    const alias = deriveAliasFromFullName(full);
+    if (!alias) throw new Error("ALIAS_EMPTY");
+
+    const res = { alias, foundBy: "directory" };
+    this._aliasCache.set(key, res);
+    return res;
+  },
+}; 
+/* ===== Utilidades ===== */
+function deriveAliasFromFullName(full){
+  if (!full) return "";
+  full = full.replace(/\s+/g," ").trim();
+  // quitar iniciales tipo "J." al final del nombre
+  let parts = full.split(" ").filter(p => !/^[A-ZÁÉÍÓÚÜÑ]\.?$/.test(p));
+  if (parts.length === 0) return "";
+  const JOINERS = new Set(["DE","DEL","DE","LA","DELA","DE LAS","DE LOS","DA","DOS","VON","VAN","DI","DAL"]);
+  let last = parts[parts.length-1];
+  let prev = (parts[parts.length-2] || "");
+  if (JOINERS.has(prev.toUpperCase())) last = `${prev} ${last}`;
+  return last.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ ]/g,"").trim(); // alias como en la columna A
+}
 
 /* Concurrencia limitada simple (p-limit) */
 function runLimited(items, limit, iteratee){
@@ -166,6 +201,28 @@ async function showWelcome(name, role) {
     }
   } catch {}
 }
+/* ===== Helpers de horas (ponlos una sola vez, fuera de la función) ===== */
+function parseHours(cell){
+  if (!cell) return 0;
+  const t = String(cell).trim().toUpperCase();
+  if (/^(OFF|OFFR|CERRADO|N\/A|APP)$/.test(t)) return 0;
+  const core = t.split(/\s+(DONE|READY|SENT|UPDATE|UPDATED)\b/i)[0].trim();
+  const clean = core.replace(/\.+\s*$/,"").replace(/[–—]|to/gi,"-").replace(/\s*-\s*/,"-");
+  const m = clean.match(/^([0-9]{1,2}(?::[0-9]{2})?\s*(?:AM|PM)?)\s*-\s*([0-9]{1,2}(?::[0-9]{2})?\s*(?:AM|PM)?)$/i);
+  if (!m) return 0;
+  const start = toMin(m[1]), end0 = toMin(m[2]); let end=end0;
+  if (!/[AP]M/i.test(m[1]) && !/[AP]M/i.test(m[2]) && end < start) end += 12*60; // cruza mediodía
+  return Math.max(0, end - start) / 60;
+}
+function toMin(s){
+  s = s.trim().toUpperCase();
+  let ampm = (s.match(/\b(AM|PM)\b/)||[])[1]||"";
+  s = s.replace(/\s*(AM|PM)\s*$/,'');
+  let [h,m] = s.split(":"); h=+h; m=+(m||0);
+  if (ampm==="AM" && h===12) h=0;
+  if (ampm==="PM" && h!==12) h+=12;
+  return h*60+m;
+}
 
 /* =================== LOAD SCHEDULE + LIVE =================== */
 async function loadSchedule(email) {
@@ -174,24 +231,43 @@ async function loadSchedule(email) {
 
   try {
     const d = await API.getSchedule(email, 0);
-    if (!d?.ok || !Array.isArray(d.days)) {
+
+    // 🔧 Soporta distintas formas de JSON
+    const daysArr = d?.days || d?.week?.days || d?.schedule || [];
+    if (!Array.isArray(daysArr) || daysArr.length === 0) {
       schedDiv.innerHTML = `<p style="color:#c00;">No schedule found for this week.</p>`;
       return;
     }
 
-    let html = `<table><tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
-    const todayKey = Today.key;
-    d.days.forEach(day=>{
-      const isToday = todayKey === day.name.slice(0,3).toLowerCase();
-      html += `<tr class="${isToday?"today":""}"><td>${day.name}</td><td>${day.shift||"-"}</td><td>${day.hours||"0"}</td></tr>`;
+    // Normaliza
+    const normDays = daysArr.map(x => {
+      const name  = x?.name || x?.day || "";
+      const shift = x?.shift ?? x?.text ?? x ?? "";
+      const hours = Number(x?.hours ?? 0) || parseHours(String(shift));
+      return { name, shift, hours };
     });
-    const totalFmt = (d.total??0);
-    html += `</table><p class="total">Total Hours: <b>${Number(totalFmt).toFixed(1)}</b></p>`;
+
+    const total = (typeof d?.total === "number")
+      ? d.total
+      : normDays.reduce((a,b)=> a + (Number(b.hours)||0), 0);
+
+    // Render
+    const todayKey = Today.key;
+    let html = `<table><tr><th>Day</th><th>Shift</th><th>Hours</th></tr>`;
+    normDays.forEach(day=>{
+      const isToday = todayKey === String(day.name||"").slice(0,3).toLowerCase();
+      html += `<tr class="${isToday?"today":""}">
+        <td>${day.name||""}</td>
+        <td>${day.shift||"-"}</td>
+        <td>${Number(day.hours||0).toFixed(1)}</td>
+      </tr>`;
+    });
+    html += `</table><p class="total">Total Hours: <b>${(Math.round(total*10)/10).toFixed(1)}</b></p>`;
     schedDiv.innerHTML = html;
 
-    // Arranca live tras DOM listo
-    clearInterval(window.__acwLiveTick__); // evita duplicados
-    setTimeout(()=> startLiveTimer(d.days, Number(d.total||0)), 300);
+    // Live: usar la lista normalizada y el total calculado
+    clearInterval(window.__acwLiveTick__);
+    setTimeout(()=> startLiveTimer(normDays, Number(total||0)), 300);
 
   } catch (e) {
     console.warn(e);
@@ -687,33 +763,43 @@ async function updateShiftFromModal(targetEmail, modalEl){
 }
 
 /* =================== SEND SHIFT MESSAGE =================== */
+// 🔁 REEMPLAZA COMPLETO
 async function sendShiftMessage(targetEmail, action) {
   const msgBox = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g, "_")}`);
   if (msgBox) msgBox.textContent = "📤 Sending...";
-  const actor = currentUser?.email;
-  if (!actor) { if (msgBox) msgBox.textContent = "⚠️ Session expired"; return; }
+  const actor = currentUser?.email || "";
 
   try {
-    const url = `${CONFIG.BASE_URL}?action=${action}&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}`;
+    // ✅ Resolver alias desde Directory / Schedule
+    const { alias } = await API.resolveAlias({ email: targetEmail });
+
+    // ✅ Backend 4.6.9 R1 acepta alias; actor es opcional
+    const url = `${CONFIG.BASE_URL}?action=${action}`
+              + `&alias=${encodeURIComponent(alias)}`
+              + (actor ? `&actor=${encodeURIComponent(actor)}` : "");
+
     const r = await fetch(url, { cache: "no-store" });
     const data = await r.json();
 
-    if (data.ok) {
-      const name = data.sent?.name || "Employee";
-      const shift = data.sent?.shift || "-";
-      const mode = data.sent?.mode?.toUpperCase?.() || action.toUpperCase();
+    if (data?.error === "row_not_found_for_alias") {
+      throw new Error(`No encuentro la fila "${alias}" en la semana activa`);
+    }
 
+    if (data.ok) {
+      const name = data.sent?.name || alias;
+      const shift = data.sent?.shift || "-";
+      const mode = (data.sent?.mode || action).toUpperCase();
       if (msgBox){ msgBox.textContent = `✅ ${name} (${mode}) → ${shift}`; msgBox.style.color = "#00b341"; }
       toast(`✅ WhatsApp sent to ${name}`, "success");
-      if (window.navigator.vibrate) window.navigator.vibrate(100);
+      if (navigator.vibrate) navigator.vibrate(60);
     } else {
-      const err = data.error || "unknown_error";
+      const err = data?.error || "unknown_error";
       if (msgBox){ msgBox.textContent = `⚠️ ${err}`; msgBox.style.color = "#ff4444"; }
       toast(`⚠️ Send failed (${err})`, "error");
     }
   } catch (err) {
     console.error("sendShiftMessage error:", err);
-    if (msgBox){ msgBox.textContent = "❌ Network error"; msgBox.style.color = "#ff4444"; }
+    if (msgBox){ msgBox.textContent = `❌ ${err.message || "Network error"}`; msgBox.style.color = "#ff4444"; }
   }
 }
 
@@ -930,6 +1016,74 @@ function renderHistoryDetailCentered(week, email, name, offset, root){
   document.head.appendChild(s);
 })();
 
+// === ACW v5.6.3 — getSchedule robusto (email -> alias) ===
+API.getSchedule = async function(identifier, offset = 0, controller){
+  const base = CONFIG.BASE_URL;
+  const ttl = offset === 0 ? (API.schedTTL0 || 60_000) : (API.schedTTLOld || 300_000);
+  const signal = controller?.signal;
+
+  function toMin(s){
+    s = String(s||"").trim().toUpperCase();
+    let ap = (s.match(/\b(AM|PM)\b/)||[])[1]||"";
+    s = s.replace(/\s*(AM|PM)\s*$/,'');
+    let [h,m] = s.split(":"); h = +h; m = +(m||0);
+    if (ap==="AM" && h===12) h=0;
+    if (ap==="PM" && h!==12) h+=12;
+    return h*60+m;
+  }
+  function _parseHours(cell){
+    if (!cell) return 0;
+    const t = String(cell).trim().toUpperCase();
+    if (/^(OFF|OFFR|CERRADO|N\/A|APP)$/.test(t)) return 0;
+    const core  = t.split(/\s+(DONE|READY|SENT|UPDATE|UPDATED)\b/i)[0].trim();
+    const clean = core.replace(/\.+\s*$/,"").replace(/[–—]|to/gi,"-").replace(/\s*-\s*/,"-");
+    const m = clean.match(/^([0-9]{1,2}(?::[0-9]{2})?\s*(?:AM|PM)?)\s*-\s*([0-9]{1,2}(?::[0-9]{2})?\s*(?:AM|PM)?)$/i);
+    if (!m) return 0;
+    let a = toMin(m[1]), b = toMin(m[2]);
+    if (!/[AP]M/i.test(m[1]) && !/[AP]M/i.test(m[2]) && b<a) b+=720;
+    return Math.max(0, b-a)/60;
+  }
+  function normalize(j){
+    if (!j) return { ok:false, days:[], total:0 };
+    let daysArr = j.days || j.week?.days || j.schedule || j.rows;
+    if (!Array.isArray(daysArr)) {
+      const keys = ["mon","tue","wed","thu","fri","sat","sun","Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+      if (keys.some(k => j && k in j)) {
+        daysArr = keys.filter(k=>k in j).map(k=>({ name:k, shift:j[k] }));
+      }
+    }
+    const days = Array.isArray(daysArr)
+      ? daysArr.map(x=>{
+          const name  = x?.name || x?.day || "";
+          const shift = x?.shift ?? x?.text ?? x ?? "";
+          const hours = Number(x?.hours ?? 0) || _parseHours(shift);
+          return { name, shift, hours };
+        })
+      : [];
+    const total = (typeof j.total === "number") ? j.total : days.reduce((s,r)=>s+(Number(r.hours)||0),0);
+    return { ok: days.length>0, days, total, rowAlias: j.rowAlias||j.alias||null, weekLabel: j.weekLabel||j.label };
+  }
+  async function fetchN(u){
+    try{ const raw = await fetchJSON(u, { ttl, signal }); const n = normalize(raw); return { ...n, raw }; }
+    catch{ return { ok:false, days:[], total:0 }; }
+  }
+
+  // 1) por email
+  let res = await fetchN(`${base}?action=getSmartSchedule&email=${encodeURIComponent(identifier)}&offset=${offset}`);
+  if (res.ok) return res;
+
+  // 2) fallback por alias (desde Directory)
+  let alias = null;
+  try { alias = (await API.resolveAlias({ email: identifier }, controller))?.alias; } catch {}
+  if (alias){
+    for (const action of ["getSmartSchedule","getScheduleByAlias","getSchedule"]){
+      res = await fetchN(`${base}?action=${action}&alias=${encodeURIComponent(alias)}&offset=${offset}`);
+      if (res.ok) return res;
+    }
+  }
+  return res; // ok:false
+};
+
 /* =================== GLOBAL BINDS =================== */
 window.loginUser = loginUser;
 window.openSettings = openSettings;
@@ -994,41 +1148,7 @@ console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3 Turbo"} | Base: $
   // Exporta open actualizado
   window.openSettings = openSettingsFix;
 })();
-// === HOTFIX Settings modal (v5.6.3) ===
-(function () {
-  function openSettingsFix() {
-    const modal = document.getElementById("settingsModal");
-    if (!modal) { console.warn("⚠️ Settings modal not found"); return; }
 
-    // Cierra overlays que podrían taparlo
-    document.getElementById("acwhOverlay")?.remove();      // History
-    document.getElementById("directoryWrapper")?.remove(); // Team View
-
-    // Mostrar por encima de todo
-    modal.style.display = "flex";         // <- sobrescribe .modal{display:none}
-    modal.style.alignItems = "center";
-    modal.style.justifyContent = "center";
-    modal.style.zIndex = 12000;           // por encima de history/team view
-    requestAnimationFrame(() => modal.classList.add("show"));
-
-    // Cerrar al click fuera
-    const onClick = (e) => { if (e.target === modal) closeSettingsFix(); };
-    modal.addEventListener("click", onClick, { once: true });
-
-    // Cerrar con ESC
-    const onKey = (ev) => { if (ev.key === "Escape") closeSettingsFix(); };
-    document.addEventListener("keydown", onKey, { once: true });
-
-    function closeSettingsFix() {
-      modal.classList.remove("show");
-      setTimeout(() => (modal.style.display = "none"), 150);
-    }
-    // Exporta close actualizado
-    window.closeSettings = closeSettingsFix;
-  }
-  // Exporta open actualizado
-  window.openSettings = openSettingsFix;
-})();
 // === ACW v5.6.3 — Change Password hard-fix (pegar al FINAL) ===
 (function () {
   function injectStyleOnce(id, css){
@@ -1358,3 +1478,105 @@ console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3 Turbo"} | Base: $
   `;
   document.head.appendChild(s);
 })();
+
+/* ============== ACW Quick DIAG (sin consola) ============== */
+(function(){
+  if (window.__acwDiagInjected__) return; window.__acwDiagInjected__ = 1;
+
+  async function runDiag(email){
+    const BASE = CONFIG.BASE_URL;
+    const out = { email, today: Today?.key, version: CONFIG?.VERSION };
+
+    // Directory (sin cache)
+    try{
+      out.directory = await (await fetch(`${BASE}?action=getEmployeesDirectory`, {cache:"no-store"})).json();
+    }catch(e){ out.directoryErr = String(e); }
+
+    // Schedule (sin cache)
+    try{
+      out.schedule = await (await fetch(`${BASE}?action=getSmartSchedule&email=${encodeURIComponent(email)}`, {cache:"no-store"})).json();
+    }catch(e){ out.scheduleErr = String(e); }
+
+    // Alias que usará el app
+    try{
+      out.alias = await API.resolveAlias({email});
+    }catch(e){ out.aliasErr = String(e); }
+
+    // Normalización días
+    const d = out.schedule || {};
+    const rawDays = d.days || d.week?.days || d.schedule || [];
+    const parseHours = (cell)=>{
+      if (!cell) return 0;
+      const t = String(cell).trim().toUpperCase();
+      if (/^(OFF|OFFR|CERRADO|N\/A|APP)$/.test(t)) return 0;
+      const core  = t.split(/\s+(DONE|READY|SENT|UPDATE|UPDATED)\b/i)[0].trim();
+      const clean = core.replace(/\.+\s*$/,"").replace(/[–—]|to/gi,"-").replace(/\s*-\s*/,"-");
+      const m = clean.match(/^([0-9]{1,2}(?::[0-9]{2})?\s*(?:AM|PM)?)\s*-\s*([0-9]{1,2}(?::[0-9]{2})?\s*(?:AM|PM)?)$/i);
+      if (!m) return 0;
+      const toMin = (s)=>{ s=s.trim().toUpperCase(); let ap=(s.match(/\b(AM|PM)\b/)||[])[1]||""; s=s.replace(/\s*(AM|PM)\s*$/,''); let [h,m]=s.split(":"); h=+h; m=+(m||0); if(ap==="AM"&&h===12)h=0; if(ap==="PM"&&h!==12)h+=12; return h*60+m; };
+      let a=toMin(m[1]), b=toMin(m[2]); if (!/[AP]M/i.test(m[1]) && !/[AP]M/i.test(m[2]) && b<a) b+=720;
+      return Math.max(0, b-a)/60;
+    };
+    out.normalized = Array.isArray(rawDays)
+      ? rawDays.map(x=>({ name: x?.name||x?.day||"", shift: x?.shift ?? x?.text ?? x ?? "", hours: Number(x?.hours ?? 0) || parseHours(x?.shift ?? x?.text ?? x ?? "") }))
+      : [];
+    out.total = (typeof d.total==="number") ? d.total : out.normalized.reduce((s,r)=>s+(r.hours||0),0);
+
+    // ¿Email existe en directorio?
+    const dirList = out.directory?.directory || out.directory?.employees || out.directory?.rows || [];
+    out.dirMatch = Array.isArray(dirList) ? dirList.find(r=> (r.email||"").toLowerCase()===String(email).toLowerCase()) : null;
+
+    // Log completo en consola (por si luego abres en desktop)
+    try{ console.log("ACW DIAG →", out); console.table(out.normalized.map(r=>({day:r.name, shift:r.shift, hours:r.hours}))); }catch{}
+
+    return out;
+  }
+
+  function showPopup(out){
+    const ok = (b)=> b? "✅" : "⚠️";
+    const aliasTxt = out?.alias?.alias ? `${out.alias.alias} (via ${out.alias.foundBy})` : "—";
+    const daysOk = Array.isArray(out?.normalized) && out.normalized.length>0;
+    const msg = [
+      `DIAG for: ${out.email}`,
+      `${ok(!!out.dirMatch)} Directory: ${out.dirMatch ? "found" : "NOT FOUND"}`,
+      `${ok(daysOk)} Schedule days: ${daysOk ? out.normalized.length : 0}`,
+      `${ok(!!out.alias?.alias)} Alias: ${aliasTxt}`,
+      `Total (normalized): ${Number(out.total||0).toFixed(1)}h`
+    ].join("\n");
+    alert(msg);
+    toast(daysOk ? "✅ DIAG listo (detalle en consola)" : "⚠️ DIAG: sin días", daysOk ? "success":"error");
+  }
+
+  function addDiagBtn(){
+    if (document.getElementById("acwDiagBtn")) return;
+    if (!isManagerRole?.(currentUser?.role)) return;
+    const b = document.createElement("button");
+    b.id="acwDiagBtn"; b.textContent="Diag";
+    b.className="team-btn";
+    Object.assign(b.style, { position:"fixed", bottom:"18px", right:"120px", zIndex:9999 });
+    b.onclick = async ()=>{
+      const email = prompt("Email to diagnose:", currentUser?.email || "");
+      if (!email) return;
+      try{ const out = await runDiag(email); showPopup(out); }
+      catch(e){ alert("Diag error: "+(e.message||e)); }
+    };
+    document.body.appendChild(b);
+  }
+
+  // Inserta el botón después del welcome
+  const prev = window.showWelcome;
+  window.showWelcome = async function(name, role){
+    try{ await prev?.(name, role); }finally{ setTimeout(addDiagBtn, 150); }
+  };
+
+  // util: limpiar sesión/caché cuando cambies de usuario
+  window.ACW_RESET = async () => {
+    try{ localStorage.removeItem("acwUser"); }catch{}
+    try{ if ("caches" in window) caches.keys().then(keys=>keys.forEach(k=>caches.delete(k))); }catch{}
+    toast("🔄 Session cleared. Please sign in again.","info");
+  };
+
+  // Exponer por si quieres llamarlo manual: runDiag("mail@...")
+  window.runDiag = runDiag;
+})();
+
