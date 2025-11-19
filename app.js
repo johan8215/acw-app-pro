@@ -187,7 +187,38 @@ function deriveAliasFromFullName(full){
   if (JOINERS.has(prev.toUpperCase())) last = `${prev} ${last}`;
   return last.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ ]/g,"").trim(); // alias como en la columna A
 }
+// === Alias helpers ===
+function buildAliasVariants(fullName){
+  if (!fullName) return [];
+  const JOINERS = new Set(["DE","DEL","DE LA","DE LOS","DE LAS","DA","VON","VAN","DI","DAL"]);
+  const parts = fullName.replace(/\s+/g," ").trim()
+    .split(" ").filter(p => !/^[A-ZÁÉÍÓÚÜÑ]\.?$/.test(p)); // quita "J."
+  const first = (parts[0]||"").toUpperCase();
+  let last   = (parts[parts.length-1]||"").toUpperCase();
+  const prev = (parts[parts.length-2]||"").toUpperCase();
+  if (JOINERS.has(prev)) last = `${prev} ${last}`;
 
+  const fi = first[0] || "";
+  const lastU = last.toUpperCase();
+  const firstU= first.toUpperCase();
+
+  // variantes típicas que vemos en tu Weekly
+  return Array.from(new Set([
+    lastU,
+    `${fi}. ${lastU}`,
+    `${fi} ${lastU}`,
+    `${firstU} ${lastU}`,
+    parts.join(" ").toUpperCase()
+  ]));
+}
+
+async function getDirRecordByEmail(email){
+  try{
+    const d = await API.getDirectory();
+    const list = d?.directory || d?.employees || [];
+    return list.find(r => (r.email||"").toLowerCase() === String(email).toLowerCase()) || null;
+  }catch{ return null; }
+}
 /* Concurrencia limitada simple (p-limit) */
 function runLimited(items, limit, iteratee){
   const queue = [...items];
