@@ -1735,7 +1735,11 @@ function dayKeyOf(s){
 async function _try(u){ try{const r=await fetch(u,{cache:"no-store"}); return await r.json();}catch(e){return {ok:false,error:String(e)};} }
 const _qs = o => Object.entries(o).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join("&");
 
-// =================== SEND TODAY / TOMORROW (robusto) ===================
+/* =================== SEND SHIFT MESSAGE =================== */
+```)
+por esta versión:
+
+```js
 async function sendShiftMessage(targetEmail, action){
   const box = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`);
   if (box){ box.textContent = "📤 Sending..."; box.style.color = "#333"; }
@@ -1745,19 +1749,17 @@ async function sendShiftMessage(targetEmail, action){
   const aliases = await getAliasCandidates(targetEmail);
 
   const tries = [];
-  // primero: todas las variantes de alias
   for (const a of aliases){
     tries.push(`${base}?action=${action}&alias=${encodeURIComponent(a)}${actor?`&actor=${encodeURIComponent(actor)}`:""}`);
   }
-  // fallback por email (si tu GAS lo acepta)
+  // fallback por email si tu GAS lo acepta
   tries.push(`${base}?action=${action}&target=${encodeURIComponent(targetEmail)}${actor?`&actor=${encodeURIComponent(actor)}`:""}`);
 
   let last=null, ok=false, used="";
   for (const u of tries){
     try{
       const r = await fetch(u, {cache:"no-store"}); last = await r.json();
-      if (last?.ok){ ok=true; used = u; break; }
-      // Si el error es "row_not_found_for_alias" seguimos probando; para otros, salimos.
+      if (last?.ok){ ok=true; used=u; break; }
       if (last?.error && !/row_not_found_for_alias|missing/i.test(String(last.error))) break;
     }catch{}
   }
