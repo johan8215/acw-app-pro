@@ -187,6 +187,54 @@ function deriveAliasFromFullName(full){
   if (JOINERS.has(prev.toUpperCase())) last = `${prev} ${last}`;
   return last.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ ]/g,"").trim(); // alias como en la columna A
 }
+function buildAliasVariants(fullName){
+  if (!fullName) return [];
+  const raw = fullName.replace(/\s+/g, " ").trim();
+  const parts = raw.split(" ").filter(p => !/^[A-ZÁÉÍÓÚÜÑ]\.?$/.test(p));
+  const first = (parts[0]||"").toUpperCase();
+  let last   = (parts[parts.length-1]||"").toUpperCase();
+
+  const JOINERS = new Set(["DE","DEL","DE LA","DE LOS","DE LAS","DA","VON","VAN","DI","DAL"]);
+  const prev = (parts[parts.length-2]||"").toUpperCase();
+  if (JOINERS.has(prev)) last = `${prev} ${last}`;
+
+  const fi = first[0] || "";
+  const NBSP = "\u00A0";
+
+  const base = [
+    last,
+    `${fi}. ${last}`,
+    `${fi}.${last}`,
+    `${fi}${NBSP}.${NBSP}${last}`,
+    `${fi}${NBSP}${last}`,
+    `${fi} ${last}`,
+    `${first} ${last}`,
+    parts.join(" ").toUpperCase()
+  ];
+  return Array.from(new Set(base.filter(Boolean).map(s => s.trim())));
+}
+
+async function getAliasCandidates(targetEmail){
+  const [sched, dirRec] = await Promise.all([
+    API.getSchedule(targetEmail, 0).catch(()=>({})),
+    (async ()=> {
+      try{
+        const d = await API.getDirectory();
+        const list = d?.directory || d?.employees || [];
+        return list.find(r => (r.email||"").toLowerCase() === String(targetEmail).toLowerCase()) || null;
+      }catch{ return null; }
+    })()
+  ]);
+
+  const set = new Set();
+  if (sched?.rowAlias) set.add(String(sched.rowAlias).trim());
+  if (dirRec?.name) buildAliasVariants(dirRec.name).forEach(a => set.add(a));
+  if (dirRec?.name){
+    const last = (dirRec.name.split(" ").pop()||"").toUpperCase();
+    if (last) set.add(last);
+  }
+  return Array.from(set).filter(Boolean);
+}
 // === Alias helpers ===
 function buildAliasVariants(fullName){
   if (!fullName) return [];
