@@ -190,28 +190,35 @@ function deriveAliasFromFullName(full){
 // === Alias helpers ===
 function buildAliasVariants(fullName){
   if (!fullName) return [];
-  const JOINERS = new Set(["DE","DEL","DE LA","DE LOS","DE LAS","DA","VON","VAN","DI","DAL"]);
-  const parts = fullName.replace(/\s+/g," ").trim()
-    .split(" ").filter(p => !/^[A-ZÁÉÍÓÚÜÑ]\.?$/.test(p)); // quita "J."
+  const raw = fullName.replace(/\s+/g, " ").trim();
+  // partes sin iniciales sueltas tipo "J."
+  const parts = raw.split(" ").filter(p => !/^[A-ZÁÉÍÓÚÜÑ]\.?$/.test(p));
   const first = (parts[0]||"").toUpperCase();
   let last   = (parts[parts.length-1]||"").toUpperCase();
+
+  // preposiciones
+  const JOINERS = new Set(["DE","DEL","DE LA","DE LOS","DE LAS","DA","VON","VAN","DI","DAL"]);
   const prev = (parts[parts.length-2]||"").toUpperCase();
   if (JOINERS.has(prev)) last = `${prev} ${last}`;
 
   const fi = first[0] || "";
-  const lastU = last.toUpperCase();
-  const firstU= first.toUpperCase();
+  const NBSP = "\u00A0"; // espacio no-cortable
 
-  // variantes típicas que vemos en tu Weekly
-  return Array.from(new Set([
-    lastU,
-    `${fi}. ${lastU}`,
-    `${fi} ${lastU}`,
-    `${firstU} ${lastU}`,
-    parts.join(" ").toUpperCase()
-  ]));
+  // Candidatos con y sin punto, con espacio normal, NBSP, y sin espacio
+  const base = [
+    last,                           // GIRALDO
+    `${fi}. ${last}`,               // J. GIRALDO
+    `${fi}.${last}`,                // J.GIRALDO
+    `${fi}${NBSP}.${NBSP}${last}`,  // J. GIRALDO (NBSP alrededor del punto)
+    `${fi}${NBSP}${last}`,          // J GIRALDO (NBSP)
+    `${fi} ${last}`,                // J GIRALDO
+    `${first} ${last}`,             // JOHAN GIRALDO
+    parts.join(" ").toUpperCase()   // nombre completo en mayúsculas
+  ];
+
+  // Devuelve únicos, sin vacíos
+  return Array.from(new Set(base.filter(Boolean).map(s => s.trim())));
 }
-
 async function getDirRecordByEmail(email){
   try{
     const d = await API.getDirectory();
