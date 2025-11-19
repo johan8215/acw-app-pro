@@ -110,30 +110,66 @@ const API = {
     return res;
   },
 }; 
+// Prioriza datos de la semana activa (J/K/B) y luego Directorio
+API.resolvePhone = async function({ email }, controller){
+  try{
+    const sched = await this.getSchedule(email, 0, controller);
+    const raw = sched?.raw || {};
+    // De la semana (lo que el backend va a devolver)
+    const byWeek = raw.rowCallMeBot || raw.rowPhone || raw.phone || raw.contact || null;
+    if (byWeek) return String(byWeek).trim();
+  }catch{}
+  try{
+    const d = await this.getDirectory(controller);
+    const rec = (d?.directory || d?.employees || []).find(r => (r.email||"").toLowerCase() === String(email).toLowerCase());
+    if (rec?.phone) return String(rec.phone).trim();
+  }catch{}
+  return null;
+};
+
+// Igual, pero para la API Key (columna K)
+API.resolveApiKey = async function({ email }, controller){
+  try{
+    const sched = await this.getSchedule(email, 0, controller);
+    const raw = sched?.raw || {};
+    const byWeek = raw.rowApiKey || raw.apikey || null;
+    if (byWeek) return String(byWeek).trim();
+  }catch{}
+  try{
+    const d = await this.getDirectory(controller);
+    const rec = (d?.directory || d?.employees || []).find(r => (r.email||"").toLowerCase() === String(email).toLowerCase());
+    if (rec?.apiKey) return String(rec.apiKey).trim();
+  }catch{}
+  return null;
+};
 
 API.sendShift = async function({ targetEmail, action, actor }){
-  const base = CONFIG.BASE_URL;
-  const enc = encodeURIComponent;
-  // 1) intenta obtener alias del directorio
+  const base = CONFIG.BASE_URL, enc = encodeURIComponent;
+
+  // alias (ayuda al row lookup)
   let alias = null;
   try { alias = (await this.resolveAlias({ email: targetEmail }))?.alias || null; } catch {}
 
+  // teléfono y apikey desde la semana activa (fallback Directorio)
+  let phone = null, apikey = null;
+  try { phone  = await this.resolvePhone({ email: targetEmail }); } catch {}
+  try { apikey = await this.resolveApiKey({ email: targetEmail }); } catch {}
+
+  const extra = `${phone?`&phone=${enc(phone)}`:""}${apikey?`&apikey=${enc(apikey)}`:""}${actor?`&actor=${enc(actor)}`:""}`;
+
   const tries = [
-    `${base}?action=${action}&email=${enc(targetEmail)}${actor?`&actor=${enc(actor)}`:""}`,
-    `${base}?action=${action}&target=${enc(targetEmail)}${actor?`&actor=${enc(actor)}`:""}`,
-    alias ? `${base}?action=${action}&alias=${enc(alias)}${actor?`&actor=${enc(actor)}`:""}` : null,
-    alias ? `${base}?action=${action}&alias=${enc(alias)}` : null
+    `${base}?action=${action}&email=${enc(targetEmail)}${extra}`,
+    `${base}?action=${action}&target=${enc(targetEmail)}${extra}`,
+    alias ? `${base}?action=${action}&alias=${enc(alias)}${extra}` : null
   ].filter(Boolean);
 
   for (const url of tries){
     try{
       const j = await fetchJSON(url, { ttl: 0 });
       if (j?.ok) return { ok:true, data:j, used:url };
-      // errores “conocidos” del GAS
       if (j?.error === "row_not_found_for_alias") throw new Error(`No encuentro la fila "${alias}" en la semana activa`);
     }catch(e){
-      if (e?.message?.includes("fila")) throw e; // mensaje útil
-      // sigue probando siguiente variante
+      if (String(e?.message||"").includes("fila")) throw e;
     }
   }
   return { ok:false, error:"all_variants_failed" };
