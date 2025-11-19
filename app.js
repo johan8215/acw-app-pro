@@ -1681,55 +1681,60 @@ async function _try(u){ try{const r=await fetch(u,{cache:"no-store"}); return aw
 const _qs = o => Object.entries(o).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join("&");
 
 // =================== SEND TODAY / TOMORROW (robusto) ===================
-// === SEND SHIFT (robusto) ===
 async function sendShiftMessage(targetEmail, action) {
   const msgBox = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g, "_")}`);
-  if (msgBox) { msgBox.textContent = "📤 Sending..."; msgBox.style.color = "#333"; }
-  const actor = currentUser?.email || "";
+  if (msgBox){ msgBox.textContent = "📤 Sending..."; msgBox.style.color="#333"; }
+
   const base  = CONFIG.BASE_URL;
+  const actor = currentUser?.email || "";
 
-  // 1) saca alias, phone y apiKey del Directorio
-  let alias = null, phone = null, apiKey = null, nameSafe = "";
-  try {
-    const dir = await API.getDirectory();
-    const rows = dir?.directory || dir?.employees || [];
-    const rec  = rows.find(r => (r.email||"").toLowerCase() === targetEmail.toLowerCase());
-    if (rec){
-      nameSafe = rec.name || "";
-      alias  = deriveAliasFromFullName(rec.name || "");
-      phone  = (rec.phone || "").replace(/\D/g,"") || null;
-      apiKey = rec.apiKey || rec.apikey || rec.APIKey || rec["API Key"] || null;
-    }
-    // si no vino del directorio, intenta con resolver de API
-    if (!alias) alias = (await API.resolveAlias({ email: targetEmail })).alias;
-  } catch {}
+  // 1) intenta capturar rowAlias real de la semana activa + datos del directorio
+  const [sched, rec] = await Promise.all([
+    API.getSchedule(targetEmail, 0).catch(()=>({})),
+    getDirRecordByEmail(targetEmail)
+  ]);
 
-  // 2) intenta varias combinaciones hasta que una responda ok
+  const variants = new Set();
+  if (sched?.rowAlias) variants.add(String(sched.rowAlias).trim().toUpperCase());
+  if (rec?.name) buildAliasVariants(rec.name).forEach(a=>variants.add(a));
+  // último recurso: apellido “crudo”
+  variants.add(deriveAliasFromFullName(rec?.name||"") || "");
+
+  const phone  = (rec?.phone||"").replace(/\D/g,"") || null;
+  const apiKey = rec?.apiKey || rec?.APIKey || rec?.apikey || null;
+  const aliasList = Array.from(variants).filter(Boolean);
+
+  // 2) arma intentos
   const tries = [];
-  // alias + actor (ideal en backend 4.6.9 R1)
-  tries.push(`${base}?action=${action}&alias=${encodeURIComponent(alias||"")}${actor?`&actor=${encodeURIComponent(actor)}`:""}`);
-  // target=email (algunos handlers viejos usan "target")
+  // por alias (probando todas las variantes)
+  aliasList.forEach(a=>{
+    tries.push(`${base}?action=${action}&alias=${encodeURIComponent(a)}${actor?`&actor=${encodeURIComponent(actor)}`:""}`);
+  });
+  // por email (por si tu GAS acepta target)
   tries.push(`${base}?action=${action}&target=${encodeURIComponent(targetEmail)}${actor?`&actor=${encodeURIComponent(actor)}`:""}`);
-  // phone + apiKey (cuando el GAS envía directo vía CallMeBot/SMS)
-  if (phone && apiKey) tries.push(`${base}?action=${action}&phone=${encodeURIComponent(phone)}&apikey=${encodeURIComponent(apiKey)}${alias?`&alias=${encodeURIComponent(alias)}`:""}`);
+  // por phone+apikey (envío directo desde GAS)
+  if (phone && apiKey) {
+    const a0 = aliasList[0] || "";
+    tries.push(`${base}?action=${action}&phone=${encodeURIComponent(phone)}&apikey=${encodeURIComponent(apiKey)}${a0?`&alias=${encodeURIComponent(a0)}`:""}`);
+  }
 
-  let last = null, ok = false;
+  // 3) ejecuta en cascada
+  let last=null, ok=false;
   for (const u of tries){
-    const r = await fetch(u, { cache:"no-store" }).then(x=>x.json()).catch(()=>null);
-    last = r;
-    if (r && r.ok){ ok = true; break; }
-    if (r && r.error && !/missing|row_not_found/i.test(String(r.error))) break; // error real
+    last = await fetch(u, {cache:"no-store"}).then(r=>r.json()).catch(()=>null);
+    if (last?.ok){ ok=true; break; }
+    if (last?.error && !/row_not_found_for_alias|missing/i.test(String(last.error))) break;
   }
 
   if (ok){
-    const who  = last?.sent?.name || nameSafe || alias || targetEmail;
+    const who  = last?.sent?.name || (rec?.name || aliasList[0] || targetEmail);
     const what = last?.sent?.shift || (action==="sendtomorrow"?"tomorrow":"today");
-    if (msgBox){ msgBox.textContent = `✅ ${who} (${action.toUpperCase()}) → ${what}`; msgBox.style.color = "#00b341"; }
+    if (msgBox){ msgBox.textContent = `✅ ${who} (${action.toUpperCase()}) → ${what}`; msgBox.style.color="#00b341"; }
     toast(`✅ Message sent to ${who}`, "success");
     navigator.vibrate?.(50);
   } else {
-    const err = last?.error || "missing_parameters";
-    if (msgBox){ msgBox.textContent = `❌ ${err}`; msgBox.style.color = "#e53935"; }
+    const err = last?.error || "row_not_found_for_alias";
+    if (msgBox){ msgBox.textContent = `❌ ${err}`; msgBox.style.color="#e53935"; }
     toast(`⚠️ Send failed (${err})`, "error");
   }
 }
