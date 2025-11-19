@@ -1735,11 +1735,7 @@ function dayKeyOf(s){
 async function _try(u){ try{const r=await fetch(u,{cache:"no-store"}); return await r.json();}catch(e){return {ok:false,error:String(e)};} }
 const _qs = o => Object.entries(o).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join("&");
 
-/* =================== SEND SHIFT MESSAGE =================== */
-```)
-por esta versión:
-
-```js
+// === SEND SHIFT (robusto con alias) ===
 async function sendShiftMessage(targetEmail, action){
   const box = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`);
   if (box){ box.textContent = "📤 Sending..."; box.style.color = "#333"; }
@@ -1777,7 +1773,8 @@ async function sendShiftMessage(targetEmail, action){
     console.warn("SEND_FAIL tried aliases:", aliases);
   }
 }
-// === UPDATE SHIFT (robusto) ===
+
+// === UPDATE SHIFT (robusto con alias) ===
 async function updateShiftFromModal(targetEmail, modalEl){
   const msg = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || modalEl.querySelector(".emp-status-msg");
   const actor = currentUser?.email;
@@ -1785,17 +1782,18 @@ async function updateShiftFromModal(targetEmail, modalEl){
 
   const rows = Array.from(modalEl.querySelectorAll(".schedule-mini tr[data-day]"));
   const changes = rows.map(r=>{
-    const d3 = r.dataset.day;                         // Mon/Tue...
-    const newS = r.cells[1].innerText.trim();
-    const oldS = (r.getAttribute("data-original")||"").trim();
+    const d3 = r.dataset.day;
+    const newS = r.cells[1].innerText.replace(/\s+/g," ").trim();
+    const oldS = (r.getAttribute("data-original")||"").replace(/\s+/g," ").trim();
     return (newS!==oldS) ? { d3, newS } : null;
   }).filter(Boolean);
+
   if (!changes.length){ msg && (msg.textContent="No changes to save."); toast("ℹ️ No changes","info"); return; }
 
   const MAP_FULL = { Mon:"MONDAY", Tue:"TUESDAY", Wed:"WEDNESDAY", Thu:"THURSDAY", Fri:"FRIDAY", Sat:"SATURDAY", Sun:"SUNDAY" };
   const base = CONFIG.BASE_URL;
 
-  // alias exactos (rowAlias + variantes)
+  // alias exactos (rowAlias + variantes de Directorio)
   const [sched, rec] = await Promise.all([
     API.getSchedule(targetEmail, 0).catch(()=>({})),
     getDirRecordByEmail(targetEmail)
@@ -1833,7 +1831,7 @@ async function updateShiftFromModal(targetEmail, modalEl){
   if (ok===changes.length){
     msg && (msg.textContent="✅ Updated on Sheets!");
     toast("✅ Shifts updated","success");
-    rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim()));
+    rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.replace(/\s+/g," ").trim()));
   } else if (ok>0){
     msg && (msg.textContent=`⚠️ Partial save: ${ok}/${changes.length}`);
     toast("⚠️ Some shifts failed","error");
@@ -1842,6 +1840,30 @@ async function updateShiftFromModal(targetEmail, modalEl){
     toast("❌ Update failed","error");
   }
 }
+
+// === BOTÓN: Open in Sheets ===
+function ensureOpenInSheetsBtn(modalEl){
+  if (modalEl.querySelector('.btn-open-sheets')) return;
+  const btn = document.createElement('button');
+  btn.className = 'btn-open-sheets';
+  btn.textContent = '📄 Open in Sheets';
+  btn.onclick = ()=> window.open(`https://docs.google.com/spreadsheets/d/${WEEKLY_ID}/edit`,'_blank');
+  modalEl.querySelector('.emp-actions')?.appendChild(btn);
+}
+
+// engancha el botón cuando abras el panel del empleado
+(()=> {
+  const prev = window.openEmployeePanel;
+  window.openEmployeePanel = async function(btnEl){
+    await prev.call(this, btnEl);
+    const modal = document.querySelector('.employee-modal .emp-box')?.parentElement;
+    if (modal) ensureOpenInSheetsBtn(modal);
+  };
+})();
+
+// por si usas handlers globales
+window.sendShiftMessage = sendShiftMessage;
+window.updateShiftFromModal = updateShiftFromModal;
 // =================== BOTÓN: Open in Sheets ===================
 function ensureOpenInSheetsBtn(modalEl){
   if (modalEl.querySelector('.btn-open-sheets')) return;
