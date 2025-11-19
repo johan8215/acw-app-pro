@@ -1633,3 +1633,113 @@ console.log(`✅ ACW-App loaded → ${CONFIG?.VERSION||"v5.6.3 Turbo"} | Base: $
   window.runDiag = runDiag;
 })();
 
+// === Constante de tu Weekly estable (R1)
+const WEEKLY_ID = "1HjPzkLLts7NlCou_94QSqwXezizc8MGQfob24RTdE9A";
+
+// --- Helpers comunes
+function dayKeyOf(s){
+  const k = String(s||"").trim().toLowerCase();
+  const M = {
+    monday:"Mon", tuesday:"Tue", wednesday:"Wed", thursday:"Thu", friday:"Fri", saturday:"Sat", sunday:"Sun",
+    lunes:"Mon", martes:"Tue", miércoles:"Wed", miercoles:"Wed", jueves:"Thu", viernes:"Fri", sábado:"Sat", sabado:"Sat", domingo:"Sun",
+    mon:"Mon", tue:"Tue", wed:"Wed", thu:"Thu", fri:"Fri", sat:"Sat", sun:"Sun"
+  };
+  return M[k] || (k.slice(0,3).charAt(0).toUpperCase()+k.slice(1,3));
+}
+async function _try(u){ try{const r=await fetch(u,{cache:"no-store"}); return await r.json();}catch(e){return {ok:false,error:String(e)};} }
+const _qs = o => Object.entries(o).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join("&");
+
+// =================== SEND TODAY / TOMORROW (robusto) ===================
+async function sendShiftMessage(targetEmail, action){
+  const msgBox = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`);
+  if (msgBox){ msgBox.textContent="📤 Sending…"; msgBox.style.color="#333"; }
+  const actor = currentUser?.email || "";
+
+  try{
+    // alias desde directorio y fallback al schedule
+    let alias=null;
+    try{ alias = (await API.resolveAlias({ email: targetEmail }))?.alias; }catch{}
+    if (!alias){
+      const s = await API.getSchedule(targetEmail, 0);
+      alias = s?.rowAlias || deriveAliasFromFullName(s?.raw?.name || currentUser?.name || "");
+    }
+    if (!alias) throw new Error("Alias not found");
+
+    const base = CONFIG.BASE_URL;
+    const tries = [
+      `${base}?action=${action}&target=${encodeURIComponent(targetEmail)}&actor=${encodeURIComponent(actor)}`,      // servidor antiguo
+      `${base}?action=${action}&alias=${encodeURIComponent(alias)}&actor=${encodeURIComponent(actor)}`,           // servidor por alias
+      `${base}?action=${action}&rowAlias=${encodeURIComponent(alias)}&actor=${encodeURIComponent(actor)}`         // key alterna
+    ];
+
+    let res=null, last=null;
+    for (const u of tries){ res = await _try(u); if (res?.ok) break; last = res; }
+    if (!(res?.ok)) throw new Error(last?.error || "send_failed");
+
+    const name = res.sent?.name || alias;
+    if (msgBox){ msgBox.textContent=`✅ ${name} (${action.toUpperCase()})`; msgBox.style.color="#00b341"; }
+    toast(`✅ Message sent to ${name}`,"success");
+    navigator.vibrate?.(60);
+  }catch(err){
+    if (msgBox){ msgBox.textContent=`❌ ${err.message}`; msgBox.style.color="#e11"; }
+    toast(`⚠️ Send failed (${err.message})`,"error");
+  }
+}
+
+// =================== UPDATE SHIFT (guarda en Sheets con fallback) ===================
+async function updateShiftFromModal(targetEmail, modalEl){
+  const msg = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || $(".emp-status-msg", modalEl);
+  const actor = currentUser?.email;
+  if (!actor){ msg && (msg.textContent="⚠️ Session expired. Login again."); return; }
+
+  const rows = Array.from(modalEl.querySelectorAll(".schedule-mini tr[data-day]"));
+  const changes = rows.map(r=>{
+    const dayTxt = r.cells[0].textContent || r.dataset.day || "";
+    const day = dayKeyOf(dayTxt);
+    const newShift = r.cells[1].innerText.trim();
+    const original = (r.getAttribute("data-original")||"").trim();
+    return (newShift !== original) ? { day, newShift, row:r } : null;
+  }).filter(Boolean);
+
+  if (!changes.length){ msg && (msg.textContent="No changes to save."); toast("ℹ️ No changes","info"); return; }
+
+  let alias=null; try{ alias = (await API.resolveAlias({ email: targetEmail }))?.alias; }catch{}
+  msg && (msg.textContent="✏️ Saving to Sheets…");
+
+  let ok=0;
+  for (const c of changes){
+    const base = CONFIG.BASE_URL;
+    const tries = [
+      `${base}?action=updateShift&${_qs({actor, target:targetEmail, day:c.day, shift:c.newShift})}`,
+      `${base}?action=updateShiftAPI&${_qs({actor, alias:alias||"", day:c.day, shift:c.newShift})}`,
+      `${base}?action=updateShiftAPI_v1&${_qs({actor, alias:alias||"", day:c.day, shift:c.newShift})}`
+    ];
+    let good=false;
+    for (const u of tries){ const j=await _try(u); if (j?.ok){ good=true; break; } }
+    if (good){ ok++; c.row.setAttribute("data-original", c.newShift); }
+  }
+
+  if (ok===changes.length){ msg.textContent="✅ Updated on Sheets"; toast("✅ Shifts updated","success"); }
+  else if (ok>0){ msg.textContent=`⚠️ Partial save: ${ok}/${changes.length}`; toast("⚠️ Some shifts failed","error"); }
+  else { msg.textContent="❌ Could not update"; toast("❌ Update failed","error"); }
+}
+
+// =================== BOTÓN: Open in Sheets ===================
+function ensureOpenInSheetsBtn(modalEl){
+  if (modalEl.querySelector('.btn-open-sheets')) return;
+  const btn = document.createElement('button');
+  btn.className = 'btn-open-sheets';
+  btn.textContent = '📄 Open in Sheets';
+  btn.onclick = ()=> window.open(`https://docs.google.com/spreadsheets/d/${WEEKLY_ID}/edit`,'_blank');
+  modalEl.querySelector('.emp-actions')?.appendChild(btn);
+}
+
+// engancha el botón cuando abras el panel del empleado
+(() => {
+  const prev = window.openEmployeePanel;
+  window.openEmployeePanel = async function(btnEl){
+    await prev.call(this, btnEl);
+    const modal = document.querySelector('.employee-modal .emp-box')?.parentElement;
+    if (modal) ensureOpenInSheetsBtn(modal);
+  };
+})();
