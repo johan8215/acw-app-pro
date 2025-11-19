@@ -110,6 +110,70 @@ const API = {
     return res;
   },
 }; 
+
+API.sendShift = async function({ targetEmail, action, actor }){
+  const base = CONFIG.BASE_URL;
+  const enc = encodeURIComponent;
+  // 1) intenta obtener alias del directorio
+  let alias = null;
+  try { alias = (await this.resolveAlias({ email: targetEmail }))?.alias || null; } catch {}
+
+  const tries = [
+    `${base}?action=${action}&email=${enc(targetEmail)}${actor?`&actor=${enc(actor)}`:""}`,
+    `${base}?action=${action}&target=${enc(targetEmail)}${actor?`&actor=${enc(actor)}`:""}`,
+    alias ? `${base}?action=${action}&alias=${enc(alias)}${actor?`&actor=${enc(actor)}`:""}` : null,
+    alias ? `${base}?action=${action}&alias=${enc(alias)}` : null
+  ].filter(Boolean);
+
+  for (const url of tries){
+    try{
+      const j = await fetchJSON(url, { ttl: 0 });
+      if (j?.ok) return { ok:true, data:j, used:url };
+      // errores “conocidos” del GAS
+      if (j?.error === "row_not_found_for_alias") throw new Error(`No encuentro la fila "${alias}" en la semana activa`);
+    }catch(e){
+      if (e?.message?.includes("fila")) throw e; // mensaje útil
+      // sigue probando siguiente variante
+    }
+  }
+  return { ok:false, error:"all_variants_failed" };
+};
+
+// Normaliza “Mon/Tue/…/Sun” y también “Lun/Mar/Mié/…/Dom”
+API._dayFix = function(d){
+  const k = String(d||"").slice(0,3).toLowerCase();
+  const map = {
+    mon:"Mon", tue:"Tue", wed:"Wed", thu:"Thu", fri:"Fri", sat:"Sat", sun:"Sun",
+    lun:"Mon", mar:"Tue", mié:"Wed", mie:"Wed", jue:"Thu", vie:"Fri", sáb:"Sat", sab:"Sat", dom:"Sun"
+  };
+  return map[k] || (String(d||"").slice(0,3)||"Mon");
+};
+
+API.updateShift = async function({ targetEmail, day, newShift, actor }){
+  const base = CONFIG.BASE_URL; const enc = encodeURIComponent;
+  const day3 = this._dayFix(day);
+  // limpia texto de contenteditable
+  const shift = String(newShift||"").replace(/\s+/g," ").trim();
+
+  // alias (si existe ayuda a “row lookup”)
+  let alias = null;
+  try { alias = (await this.resolveAlias({ email: targetEmail }))?.alias || null; } catch {}
+
+  const tries = [
+    `${base}?action=updateShift&actor=${enc(actor)}&target=${enc(targetEmail)}&day=${enc(day3)}&shift=${enc(shift)}`,
+    alias ? `${base}?action=updateShift&actor=${enc(actor)}&alias=${enc(alias)}&day=${enc(day3)}&shift=${enc(shift)}` : null,
+    alias ? `${base}?action=updateShiftAPI&actor=${enc(actor)}&alias=${enc(alias)}&day=${enc(day3)}&shift=${enc(shift)}` : null,
+    alias ? `${base}?action=updateShiftAPI_v1&actor=${enc(actor)}&alias=${enc(alias)}&day=${enc(day3)}&shift=${enc(shift)}` : null
+  ].filter(Boolean);
+
+  for (const url of tries){
+    try{
+      const j = await fetchJSON(url, { ttl: 0 });
+      if (j?.ok) return { ok:true, data:j, used:url };
+    }catch{}
+  }
+  return { ok:false, error:"all_variants_failed" };
+};
 /* ===== Utilidades ===== */
 function deriveAliasFromFullName(full){
   if (!full) return "";
