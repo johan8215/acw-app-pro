@@ -827,46 +827,29 @@ async function updateShiftFromModal(targetEmail, modalEl){
 }
 
 /* =================== SEND SHIFT MESSAGE =================== */
-// 🔁 REEMPLAZA COMPLETO
-async function sendShiftMessage(targetEmail, action) {
-  const msgBox = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g, "_")}`);
-  if (msgBox) msgBox.textContent = "📤 Sending...";
-  const actor = currentUser?.email || "";
+async function sendShiftMessage(targetEmail, action){
+  const msgBox = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`);
+  if (msgBox) { msgBox.style.color=""; msgBox.textContent="📤 Sending..."; }
 
-  try {
-    // ✅ Resolver alias desde Directory / Schedule
-    const { alias } = await API.resolveAlias({ email: targetEmail });
-
-    // ✅ Backend 4.6.9 R1 acepta alias; actor es opcional
-    const url = `${CONFIG.BASE_URL}?action=${action}`
-              + `&alias=${encodeURIComponent(alias)}`
-              + (actor ? `&actor=${encodeURIComponent(actor)}` : "");
-
-    const r = await fetch(url, { cache: "no-store" });
-    const data = await r.json();
-
-    if (data?.error === "row_not_found_for_alias") {
-      throw new Error(`No encuentro la fila "${alias}" en la semana activa`);
+  try{
+    const res = await API.sendShift({ targetEmail, action, actor: currentUser?.email||"" });
+    if (res.ok){
+      const j = res.data;
+      const name = j.sent?.name || j.name || targetEmail;
+      const shift = j.sent?.shift || j.shift || "-";
+      const mode = (j.sent?.mode || action).toUpperCase();
+      if (msgBox){ msgBox.style.color="#00b341"; msgBox.textContent=`✅ ${name} (${mode}) → ${shift}`; }
+      toast(`✅ Sent (${mode}) to ${name}`, "success");
+      if (navigator.vibrate) navigator.vibrate(50);
+    }else{
+      if (msgBox){ msgBox.style.color="#ff4444"; msgBox.textContent="❌ Send failed (variants)"; }
+      toast("❌ Send failed", "error");
     }
-
-    if (data.ok) {
-      const name = data.sent?.name || alias;
-      const shift = data.sent?.shift || "-";
-      const mode = (data.sent?.mode || action).toUpperCase();
-      if (msgBox){ msgBox.textContent = `✅ ${name} (${mode}) → ${shift}`; msgBox.style.color = "#00b341"; }
-      toast(`✅ WhatsApp sent to ${name}`, "success");
-      if (navigator.vibrate) navigator.vibrate(60);
-    } else {
-      const err = data?.error || "unknown_error";
-      if (msgBox){ msgBox.textContent = `⚠️ ${err}`; msgBox.style.color = "#ff4444"; }
-      toast(`⚠️ Send failed (${err})`, "error");
-    }
-  } catch (err) {
-    console.error("sendShiftMessage error:", err);
-    if (msgBox){ msgBox.textContent = `❌ ${err.message || "Network error"}`; msgBox.style.color = "#ff4444"; }
+  }catch(e){
+    if (msgBox){ msgBox.style.color="#ff4444"; msgBox.textContent=`❌ ${e.message||"Error"}`; }
+    toast("❌ Send error", "error");
   }
 }
-
 /* =================== TOASTS =================== */
 (function ensureToast(){
   if ($("#toastContainer")) return;
