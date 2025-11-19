@@ -1650,42 +1650,58 @@ async function _try(u){ try{const r=await fetch(u,{cache:"no-store"}); return aw
 const _qs = o => Object.entries(o).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join("&");
 
 // =================== SEND TODAY / TOMORROW (robusto) ===================
+// === SEND TODAY / TOMORROW — robusto con phone/apikey/book ===
 async function sendShiftMessage(targetEmail, action){
   const msgBox = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`);
-  if (msgBox){ msgBox.textContent="📤 Sending…"; msgBox.style.color="#333"; }
+  if (msgBox){ msgBox.textContent = "📤 Sending…"; msgBox.style.color="#333"; }
+
   const actor = currentUser?.email || "";
-
   try{
-    // alias desde directorio y fallback al schedule
-    let alias=null;
-    try{ alias = (await API.resolveAlias({ email: targetEmail }))?.alias; }catch{}
-    if (!alias){
-      const s = await API.getSchedule(targetEmail, 0);
-      alias = s?.rowAlias || deriveAliasFromFullName(s?.raw?.name || currentUser?.name || "");
-    }
-    if (!alias) throw new Error("Alias not found");
+    // 1) Alias desde Directory (fallback al nombre)
+    const { alias } = await API.resolveAlias({ email: targetEmail }).catch(()=>({alias:null}));
+    if (!alias) throw new Error("Alias not found for target");
 
+    // 2) Extra: phone + apikey desde el Directory
+    let phone = "", apikey = "";
+    try{
+      const dir = await API.getDirectory();
+      const row = (dir?.directory||dir?.employees||[]).find(
+        r => String(r.email||"").toLowerCase() === String(targetEmail).toLowerCase()
+      ) || {};
+      phone  = row.phone || row.whatsapp || row.callmebot || "";
+      apikey = row.apiKey || row.apikey || row.key || "";
+    }catch{}
+
+    // 3) Parámetros “todo incluido”
     const base = CONFIG.BASE_URL;
+    const add = s => s + (typeof WEEKLY_ID !== "undefined" ? `&book=${encodeURIComponent(WEEKLY_ID)}` : "");
+    const common = `actor=${encodeURIComponent(actor)}&alias=${encodeURIComponent(alias)}&target=${encodeURIComponent(targetEmail)}`
+                 + (phone  ? `&phone=${encodeURIComponent(phone)}`   : "")
+                 + (apikey ? `&apikey=${encodeURIComponent(apikey)}&key=${encodeURIComponent(apikey)}` : "");
+
+    // 4) Intentos compatibles (antiguo/alias/v1)
     const tries = [
-      `${base}?action=${action}&target=${encodeURIComponent(targetEmail)}&actor=${encodeURIComponent(actor)}`,      // servidor antiguo
-      `${base}?action=${action}&alias=${encodeURIComponent(alias)}&actor=${encodeURIComponent(actor)}`,           // servidor por alias
-      `${base}?action=${action}&rowAlias=${encodeURIComponent(alias)}&actor=${encodeURIComponent(actor)}`         // key alterna
+      add(`${base}?action=${action}&${common}`),
+      add(`${base}?action=${action}&rowAlias=${encodeURIComponent(alias)}&${common}`),
+      add(`${base}?action=${action}_v1&${common}`)
     ];
 
     let res=null, last=null;
-    for (const u of tries){ res = await _try(u); if (res?.ok) break; last = res; }
-    if (!(res?.ok)) throw new Error(last?.error || "send_failed");
+    for (const u of tries){
+      try{ const r = await fetch(u, {cache:"no-store"}); res = await r.json(); }catch(e){ res = {ok:false,error:String(e)}; }
+      if (res?.ok) break; last = res;
+    }
+    if (!res?.ok) throw new Error(last?.error || "send_failed");
 
     const name = res.sent?.name || alias;
-    if (msgBox){ msgBox.textContent=`✅ ${name} (${action.toUpperCase()})`; msgBox.style.color="#00b341"; }
-    toast(`✅ Message sent to ${name}`,"success");
+    if (msgBox){ msgBox.textContent = `✅ ${name} (${action.toUpperCase()})`; msgBox.style.color="#00b341"; }
+    toast(`✅ Message sent to ${name}`, "success");
     navigator.vibrate?.(60);
   }catch(err){
-    if (msgBox){ msgBox.textContent=`❌ ${err.message}`; msgBox.style.color="#e11"; }
-    toast(`⚠️ Send failed (${err.message})`,"error");
+    if (msgBox){ msgBox.textContent = `❌ ${err.message}`; msgBox.style.color="#e11"; }
+    toast(`⚠️ Send failed (${err.message})`, "error");
   }
 }
-
 // =================== UPDATE SHIFT (guarda en Sheets con fallback) ===================
 async function updateShiftFromModal(targetEmail, modalEl){
   const msg = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || $(".emp-status-msg", modalEl);
