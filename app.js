@@ -1864,6 +1864,7 @@ function ensureOpenInSheetsBtn(modalEl){
 // por si usas handlers globales
 window.sendShiftMessage = sendShiftMessage;
 window.updateShiftFromModal = updateShiftFromModal;
+
 // =================== BOTÓN: Open in Sheets ===================
 function ensureOpenInSheetsBtn(modalEl){
   if (modalEl.querySelector('.btn-open-sheets')) return;
