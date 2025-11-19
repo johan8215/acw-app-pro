@@ -1742,63 +1742,64 @@ async function sendShiftMessage(targetEmail, action) {
 async function updateShiftFromModal(targetEmail, modalEl){
   const msg = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || modalEl.querySelector(".emp-status-msg");
   const actor = currentUser?.email;
-  if (!actor){ msg && (msg.textContent = "⚠️ Session expired. Login again."); return; }
+  if (!actor){ msg && (msg.textContent="⚠️ Session expired. Login again."); return; }
 
   const rows = Array.from(modalEl.querySelectorAll(".schedule-mini tr[data-day]"));
-  const changes = rows.map(r => {
-    const d3  = (r.dataset.day||"").slice(0,3); // Mon/Tue...
+  const changes = rows.map(r=>{
+    const d3 = r.dataset.day;                         // Mon/Tue...
     const newS = r.cells[1].innerText.trim();
     const oldS = (r.getAttribute("data-original")||"").trim();
-    return (newS !== oldS) ? { d3, newS } : null;
+    return (newS!==oldS) ? { d3, newS } : null;
   }).filter(Boolean);
-
   if (!changes.length){ msg && (msg.textContent="No changes to save."); toast("ℹ️ No changes","info"); return; }
 
-  // Mapa de días a formatos habituales del GAS
   const MAP_FULL = { Mon:"MONDAY", Tue:"TUESDAY", Wed:"WEDNESDAY", Thu:"THURSDAY", Fri:"FRIDAY", Sat:"SATURDAY", Sun:"SUNDAY" };
   const base = CONFIG.BASE_URL;
 
-  msg && (msg.textContent = "✏️ Saving to Sheets...");
-  let ok = 0;
+  // alias exactos (rowAlias + variantes)
+  const [sched, rec] = await Promise.all([
+    API.getSchedule(targetEmail, 0).catch(()=>({})),
+    getDirRecordByEmail(targetEmail)
+  ]);
+  const aliasList = [];
+  if (sched?.rowAlias) aliasList.push(String(sched.rowAlias).trim().toUpperCase());
+  if (rec?.name) aliasList.push(...buildAliasVariants(rec.name));
+  const uniqAlias = Array.from(new Set(aliasList.filter(Boolean)));
 
-  // pre-calcula alias por si el backend lo necesita
-  let alias = null;
-  try { alias = (await API.resolveAlias({ email: targetEmail }))?.alias; } catch {}
+  msg && (msg.textContent="✏️ Saving to Sheets...");
 
+  let ok=0;
   for (const ch of changes){
-    const full = MAP_FULL[ch.d3] || ch.d3;
+    const dayFull = MAP_FULL[ch.d3] || ch.d3;
+    const urls = [];
 
-    const urls = [
-      // v4.6.9 R1 moderno
-      `${base}?action=updateShift&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}&day=${encodeURIComponent(ch.d3)}&shift=${encodeURIComponent(ch.newS)}`,
-      // día en FULL
-      `${base}?action=updateShift&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}&day=${encodeURIComponent(full)}&shift=${encodeURIComponent(ch.newS)}`,
-      // por alias
-      alias ? `${base}?action=updateShift&actor=${encodeURIComponent(actor)}&alias=${encodeURIComponent(alias)}&day=${encodeURIComponent(full)}&shift=${encodeURIComponent(ch.newS)}` : null,
-      // alias + clave antigua del endpoint
-      alias ? `${base}?action=updateShiftAPI_v1&actor=${encodeURIComponent(actor)}&alias=${encodeURIComponent(alias)}&day=${encodeURIComponent(full)}&shift=${encodeURIComponent(ch.newS)}` : null,
-    ].filter(Boolean);
+    // por email (target)
+    urls.push(`${base}?action=updateShift&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}&day=${encodeURIComponent(dayFull)}&shift=${encodeURIComponent(ch.newS)}`);
 
-    let saved = false, last = null;
+    // por alias (todas las variantes)
+    uniqAlias.forEach(a=>{
+      urls.push(`${base}?action=updateShift&actor=${encodeURIComponent(actor)}&alias=${encodeURIComponent(a)}&day=${encodeURIComponent(dayFull)}&shift=${encodeURIComponent(ch.newS)}`);
+      urls.push(`${base}?action=updateShiftAPI_v1&actor=${encodeURIComponent(actor)}&alias=${encodeURIComponent(a)}&day=${encodeURIComponent(dayFull)}&shift=${encodeURIComponent(ch.newS)}`);
+    });
+
+    let saved=false, last=null;
     for (const u of urls){
-      const r = await fetch(u, { cache:"no-store" }).then(x=>x.json()).catch(()=>null);
-      last = r;
-      if (r && r.ok){ saved = true; break; }
-      if (r && r.error && !/missing|param|alias|day/i.test(String(r.error))) break;
+      last = await fetch(u, {cache:"no-store"}).then(r=>r.json()).catch(()=>null);
+      if (last?.ok){ saved=true; break; }
+      if (last?.error && !/missing|alias|day/i.test(String(last.error))) break;
     }
-    if (saved) ok++; else console.warn("updateShift failed:", last);
+    if (saved) ok++;
   }
 
-  if (ok === changes.length){
-    msg && (msg.textContent = "✅ Updated on Sheets!");
+  if (ok===changes.length){
+    msg && (msg.textContent="✅ Updated on Sheets!");
     toast("✅ Shifts updated","success");
-    // refresca originales para no volver a enviarlos
-    rows.forEach(r => r.setAttribute("data-original", r.cells[1].innerText.trim()));
-  } else if (ok > 0){
-    msg && (msg.textContent = `⚠️ Partial save: ${ok}/${changes.length}`);
+    rows.forEach(r=> r.setAttribute("data-original", r.cells[1].innerText.trim()));
+  } else if (ok>0){
+    msg && (msg.textContent=`⚠️ Partial save: ${ok}/${changes.length}`);
     toast("⚠️ Some shifts failed","error");
   } else {
-    msg && (msg.textContent = "❌ Could not update.");
+    msg && (msg.textContent="❌ Could not update.");
     toast("❌ Update failed","error");
   }
 }
