@@ -1650,96 +1650,122 @@ async function _try(u){ try{const r=await fetch(u,{cache:"no-store"}); return aw
 const _qs = o => Object.entries(o).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join("&");
 
 // =================== SEND TODAY / TOMORROW (robusto) ===================
-// === SEND TODAY / TOMORROW — robusto con phone/apikey/book ===
-async function sendShiftMessage(targetEmail, action){
-  const msgBox = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`);
-  if (msgBox){ msgBox.textContent = "📤 Sending…"; msgBox.style.color="#333"; }
-
+// === SEND SHIFT (robusto) ===
+async function sendShiftMessage(targetEmail, action) {
+  const msgBox = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g, "_")}`);
+  if (msgBox) { msgBox.textContent = "📤 Sending..."; msgBox.style.color = "#333"; }
   const actor = currentUser?.email || "";
-  try{
-    // 1) Alias desde Directory (fallback al nombre)
-    const { alias } = await API.resolveAlias({ email: targetEmail }).catch(()=>({alias:null}));
-    if (!alias) throw new Error("Alias not found for target");
+  const base  = CONFIG.BASE_URL;
 
-    // 2) Extra: phone + apikey desde el Directory
-    let phone = "", apikey = "";
-    try{
-      const dir = await API.getDirectory();
-      const row = (dir?.directory||dir?.employees||[]).find(
-        r => String(r.email||"").toLowerCase() === String(targetEmail).toLowerCase()
-      ) || {};
-      phone  = row.phone || row.whatsapp || row.callmebot || "";
-      apikey = row.apiKey || row.apikey || row.key || "";
-    }catch{}
-
-    // 3) Parámetros “todo incluido”
-    const base = CONFIG.BASE_URL;
-    const add = s => s + (typeof WEEKLY_ID !== "undefined" ? `&book=${encodeURIComponent(WEEKLY_ID)}` : "");
-    const common = `actor=${encodeURIComponent(actor)}&alias=${encodeURIComponent(alias)}&target=${encodeURIComponent(targetEmail)}`
-                 + (phone  ? `&phone=${encodeURIComponent(phone)}`   : "")
-                 + (apikey ? `&apikey=${encodeURIComponent(apikey)}&key=${encodeURIComponent(apikey)}` : "");
-
-    // 4) Intentos compatibles (antiguo/alias/v1)
-    const tries = [
-      add(`${base}?action=${action}&${common}`),
-      add(`${base}?action=${action}&rowAlias=${encodeURIComponent(alias)}&${common}`),
-      add(`${base}?action=${action}_v1&${common}`)
-    ];
-
-    let res=null, last=null;
-    for (const u of tries){
-      try{ const r = await fetch(u, {cache:"no-store"}); res = await r.json(); }catch(e){ res = {ok:false,error:String(e)}; }
-      if (res?.ok) break; last = res;
+  // 1) saca alias, phone y apiKey del Directorio
+  let alias = null, phone = null, apiKey = null, nameSafe = "";
+  try {
+    const dir = await API.getDirectory();
+    const rows = dir?.directory || dir?.employees || [];
+    const rec  = rows.find(r => (r.email||"").toLowerCase() === targetEmail.toLowerCase());
+    if (rec){
+      nameSafe = rec.name || "";
+      alias  = deriveAliasFromFullName(rec.name || "");
+      phone  = (rec.phone || "").replace(/\D/g,"") || null;
+      apiKey = rec.apiKey || rec.apikey || rec.APIKey || rec["API Key"] || null;
     }
-    if (!res?.ok) throw new Error(last?.error || "send_failed");
+    // si no vino del directorio, intenta con resolver de API
+    if (!alias) alias = (await API.resolveAlias({ email: targetEmail })).alias;
+  } catch {}
 
-    const name = res.sent?.name || alias;
-    if (msgBox){ msgBox.textContent = `✅ ${name} (${action.toUpperCase()})`; msgBox.style.color="#00b341"; }
-    toast(`✅ Message sent to ${name}`, "success");
-    navigator.vibrate?.(60);
-  }catch(err){
-    if (msgBox){ msgBox.textContent = `❌ ${err.message}`; msgBox.style.color="#e11"; }
-    toast(`⚠️ Send failed (${err.message})`, "error");
+  // 2) intenta varias combinaciones hasta que una responda ok
+  const tries = [];
+  // alias + actor (ideal en backend 4.6.9 R1)
+  tries.push(`${base}?action=${action}&alias=${encodeURIComponent(alias||"")}${actor?`&actor=${encodeURIComponent(actor)}`:""}`);
+  // target=email (algunos handlers viejos usan "target")
+  tries.push(`${base}?action=${action}&target=${encodeURIComponent(targetEmail)}${actor?`&actor=${encodeURIComponent(actor)}`:""}`);
+  // phone + apiKey (cuando el GAS envía directo vía CallMeBot/SMS)
+  if (phone && apiKey) tries.push(`${base}?action=${action}&phone=${encodeURIComponent(phone)}&apikey=${encodeURIComponent(apiKey)}${alias?`&alias=${encodeURIComponent(alias)}`:""}`);
+
+  let last = null, ok = false;
+  for (const u of tries){
+    const r = await fetch(u, { cache:"no-store" }).then(x=>x.json()).catch(()=>null);
+    last = r;
+    if (r && r.ok){ ok = true; break; }
+    if (r && r.error && !/missing|row_not_found/i.test(String(r.error))) break; // error real
+  }
+
+  if (ok){
+    const who  = last?.sent?.name || nameSafe || alias || targetEmail;
+    const what = last?.sent?.shift || (action==="sendtomorrow"?"tomorrow":"today");
+    if (msgBox){ msgBox.textContent = `✅ ${who} (${action.toUpperCase()}) → ${what}`; msgBox.style.color = "#00b341"; }
+    toast(`✅ Message sent to ${who}`, "success");
+    navigator.vibrate?.(50);
+  } else {
+    const err = last?.error || "missing_parameters";
+    if (msgBox){ msgBox.textContent = `❌ ${err}`; msgBox.style.color = "#e53935"; }
+    toast(`⚠️ Send failed (${err})`, "error");
   }
 }
-// =================== UPDATE SHIFT (guarda en Sheets con fallback) ===================
+// === UPDATE SHIFT (robusto) ===
 async function updateShiftFromModal(targetEmail, modalEl){
-  const msg = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || $(".emp-status-msg", modalEl);
+  const msg = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`) || modalEl.querySelector(".emp-status-msg");
   const actor = currentUser?.email;
-  if (!actor){ msg && (msg.textContent="⚠️ Session expired. Login again."); return; }
+  if (!actor){ msg && (msg.textContent = "⚠️ Session expired. Login again."); return; }
 
   const rows = Array.from(modalEl.querySelectorAll(".schedule-mini tr[data-day]"));
-  const changes = rows.map(r=>{
-    const dayTxt = r.cells[0].textContent || r.dataset.day || "";
-    const day = dayKeyOf(dayTxt);
-    const newShift = r.cells[1].innerText.trim();
-    const original = (r.getAttribute("data-original")||"").trim();
-    return (newShift !== original) ? { day, newShift, row:r } : null;
+  const changes = rows.map(r => {
+    const d3  = (r.dataset.day||"").slice(0,3); // Mon/Tue...
+    const newS = r.cells[1].innerText.trim();
+    const oldS = (r.getAttribute("data-original")||"").trim();
+    return (newS !== oldS) ? { d3, newS } : null;
   }).filter(Boolean);
 
   if (!changes.length){ msg && (msg.textContent="No changes to save."); toast("ℹ️ No changes","info"); return; }
 
-  let alias=null; try{ alias = (await API.resolveAlias({ email: targetEmail }))?.alias; }catch{}
-  msg && (msg.textContent="✏️ Saving to Sheets…");
+  // Mapa de días a formatos habituales del GAS
+  const MAP_FULL = { Mon:"MONDAY", Tue:"TUESDAY", Wed:"WEDNESDAY", Thu:"THURSDAY", Fri:"FRIDAY", Sat:"SATURDAY", Sun:"SUNDAY" };
+  const base = CONFIG.BASE_URL;
 
-  let ok=0;
-  for (const c of changes){
-    const base = CONFIG.BASE_URL;
-    const tries = [
-      `${base}?action=updateShift&${_qs({actor, target:targetEmail, day:c.day, shift:c.newShift})}`,
-      `${base}?action=updateShiftAPI&${_qs({actor, alias:alias||"", day:c.day, shift:c.newShift})}`,
-      `${base}?action=updateShiftAPI_v1&${_qs({actor, alias:alias||"", day:c.day, shift:c.newShift})}`
-    ];
-    let good=false;
-    for (const u of tries){ const j=await _try(u); if (j?.ok){ good=true; break; } }
-    if (good){ ok++; c.row.setAttribute("data-original", c.newShift); }
+  msg && (msg.textContent = "✏️ Saving to Sheets...");
+  let ok = 0;
+
+  // pre-calcula alias por si el backend lo necesita
+  let alias = null;
+  try { alias = (await API.resolveAlias({ email: targetEmail }))?.alias; } catch {}
+
+  for (const ch of changes){
+    const full = MAP_FULL[ch.d3] || ch.d3;
+
+    const urls = [
+      // v4.6.9 R1 moderno
+      `${base}?action=updateShift&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}&day=${encodeURIComponent(ch.d3)}&shift=${encodeURIComponent(ch.newS)}`,
+      // día en FULL
+      `${base}?action=updateShift&actor=${encodeURIComponent(actor)}&target=${encodeURIComponent(targetEmail)}&day=${encodeURIComponent(full)}&shift=${encodeURIComponent(ch.newS)}`,
+      // por alias
+      alias ? `${base}?action=updateShift&actor=${encodeURIComponent(actor)}&alias=${encodeURIComponent(alias)}&day=${encodeURIComponent(full)}&shift=${encodeURIComponent(ch.newS)}` : null,
+      // alias + clave antigua del endpoint
+      alias ? `${base}?action=updateShiftAPI_v1&actor=${encodeURIComponent(actor)}&alias=${encodeURIComponent(alias)}&day=${encodeURIComponent(full)}&shift=${encodeURIComponent(ch.newS)}` : null,
+    ].filter(Boolean);
+
+    let saved = false, last = null;
+    for (const u of urls){
+      const r = await fetch(u, { cache:"no-store" }).then(x=>x.json()).catch(()=>null);
+      last = r;
+      if (r && r.ok){ saved = true; break; }
+      if (r && r.error && !/missing|param|alias|day/i.test(String(r.error))) break;
+    }
+    if (saved) ok++; else console.warn("updateShift failed:", last);
   }
 
-  if (ok===changes.length){ msg.textContent="✅ Updated on Sheets"; toast("✅ Shifts updated","success"); }
-  else if (ok>0){ msg.textContent=`⚠️ Partial save: ${ok}/${changes.length}`; toast("⚠️ Some shifts failed","error"); }
-  else { msg.textContent="❌ Could not update"; toast("❌ Update failed","error"); }
+  if (ok === changes.length){
+    msg && (msg.textContent = "✅ Updated on Sheets!");
+    toast("✅ Shifts updated","success");
+    // refresca originales para no volver a enviarlos
+    rows.forEach(r => r.setAttribute("data-original", r.cells[1].innerText.trim()));
+  } else if (ok > 0){
+    msg && (msg.textContent = `⚠️ Partial save: ${ok}/${changes.length}`);
+    toast("⚠️ Some shifts failed","error");
+  } else {
+    msg && (msg.textContent = "❌ Could not update.");
+    toast("❌ Update failed","error");
+  }
 }
-
 // =================== BOTÓN: Open in Sheets ===================
 function ensureOpenInSheetsBtn(modalEl){
   if (modalEl.querySelector('.btn-open-sheets')) return;
