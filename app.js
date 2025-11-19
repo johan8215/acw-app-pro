@@ -1688,61 +1688,43 @@ async function _try(u){ try{const r=await fetch(u,{cache:"no-store"}); return aw
 const _qs = o => Object.entries(o).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join("&");
 
 // =================== SEND TODAY / TOMORROW (robusto) ===================
-async function sendShiftMessage(targetEmail, action) {
-  const msgBox = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g, "_")}`);
-  if (msgBox){ msgBox.textContent = "📤 Sending..."; msgBox.style.color="#333"; }
+async function sendShiftMessage(targetEmail, action){
+  const box = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`);
+  if (box){ box.textContent = "📤 Sending..."; box.style.color = "#333"; }
 
   const base  = CONFIG.BASE_URL;
   const actor = currentUser?.email || "";
+  const aliases = await getAliasCandidates(targetEmail);
 
-  // 1) intenta capturar rowAlias real de la semana activa + datos del directorio
-  const [sched, rec] = await Promise.all([
-    API.getSchedule(targetEmail, 0).catch(()=>({})),
-    getDirRecordByEmail(targetEmail)
-  ]);
-
-  const variants = new Set();
-  if (sched?.rowAlias) variants.add(String(sched.rowAlias).trim().toUpperCase());
-  if (rec?.name) buildAliasVariants(rec.name).forEach(a=>variants.add(a));
-  // último recurso: apellido “crudo”
-  variants.add(deriveAliasFromFullName(rec?.name||"") || "");
-
-  const phone  = (rec?.phone||"").replace(/\D/g,"") || null;
-  const apiKey = rec?.apiKey || rec?.APIKey || rec?.apikey || null;
-  const aliasList = Array.from(variants).filter(Boolean);
-
-  // 2) arma intentos
   const tries = [];
-  // por alias (probando todas las variantes)
-  aliasList.forEach(a=>{
+  // primero: todas las variantes de alias
+  for (const a of aliases){
     tries.push(`${base}?action=${action}&alias=${encodeURIComponent(a)}${actor?`&actor=${encodeURIComponent(actor)}`:""}`);
-  });
-  // por email (por si tu GAS acepta target)
-  tries.push(`${base}?action=${action}&target=${encodeURIComponent(targetEmail)}${actor?`&actor=${encodeURIComponent(actor)}`:""}`);
-  // por phone+apikey (envío directo desde GAS)
-  if (phone && apiKey) {
-    const a0 = aliasList[0] || "";
-    tries.push(`${base}?action=${action}&phone=${encodeURIComponent(phone)}&apikey=${encodeURIComponent(apiKey)}${a0?`&alias=${encodeURIComponent(a0)}`:""}`);
   }
+  // fallback por email (si tu GAS lo acepta)
+  tries.push(`${base}?action=${action}&target=${encodeURIComponent(targetEmail)}${actor?`&actor=${encodeURIComponent(actor)}`:""}`);
 
-  // 3) ejecuta en cascada
-  let last=null, ok=false;
+  let last=null, ok=false, used="";
   for (const u of tries){
-    last = await fetch(u, {cache:"no-store"}).then(r=>r.json()).catch(()=>null);
-    if (last?.ok){ ok=true; break; }
-    if (last?.error && !/row_not_found_for_alias|missing/i.test(String(last.error))) break;
+    try{
+      const r = await fetch(u, {cache:"no-store"}); last = await r.json();
+      if (last?.ok){ ok=true; used = u; break; }
+      // Si el error es "row_not_found_for_alias" seguimos probando; para otros, salimos.
+      if (last?.error && !/row_not_found_for_alias|missing/i.test(String(last.error))) break;
+    }catch{}
   }
 
   if (ok){
-    const who  = last?.sent?.name || (rec?.name || aliasList[0] || targetEmail);
+    const who  = last?.sent?.name || aliases[0] || targetEmail;
     const what = last?.sent?.shift || (action==="sendtomorrow"?"tomorrow":"today");
-    if (msgBox){ msgBox.textContent = `✅ ${who} (${action.toUpperCase()}) → ${what}`; msgBox.style.color="#00b341"; }
+    if (box){ box.textContent = `✅ ${who} (${action.toUpperCase()}) → ${what}`; box.style.color = "#00b341"; }
     toast(`✅ Message sent to ${who}`, "success");
-    navigator.vibrate?.(50);
-  } else {
+    console.log("SEND_OK via:", used);
+  }else{
     const err = last?.error || "row_not_found_for_alias";
-    if (msgBox){ msgBox.textContent = `❌ ${err}`; msgBox.style.color="#e53935"; }
+    if (box){ box.textContent = `❌ ${err}`; box.style.color = "#e53935"; }
     toast(`⚠️ Send failed (${err})`, "error");
+    console.warn("SEND_FAIL tried aliases:", aliases);
   }
 }
 // === UPDATE SHIFT (robusto) ===
