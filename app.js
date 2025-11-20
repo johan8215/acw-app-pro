@@ -1819,3 +1819,68 @@ function ensureOpenInSheetsBtn(modalEl){
     if (modal) ensureOpenInSheetsBtn(modal);
   };
 })();
+
+/* =========================================================
+   PATCH v5.6.3 — Global API key + Send robust (Nov 18 2025)
+   - NO resuelve ni envía apikey por persona
+   - llama sendtoday/sendtomorrow con target/alias correctos
+   ========================================================= */
+(function(){
+  if (typeof API === "undefined") return;
+
+  // ya no usamos apiKey individual
+  API.resolveApiKey = async ()=> null;
+
+  // override sendShift limpio
+  API.sendShift = async function({ targetEmail, action, actor }){
+    const base = CONFIG.BASE_URL, enc = encodeURIComponent;
+
+    let alias = null;
+    try { alias = (await this.resolveAlias({ email: targetEmail }))?.alias || null; }
+    catch {}
+
+    const tries = [
+      `${base}?action=${action}&target=${enc(targetEmail)}${actor?`&actor=${enc(actor)}`:""}`,
+      alias ? `${base}?action=${action}&alias=${enc(alias)}${actor?`&actor=${enc(actor)}`:""}` : null,
+      // compatibilidad por si algún cache viejo manda email=
+      `${base}?action=${action}&email=${enc(targetEmail)}${actor?`&actor=${enc(actor)}`:""}`
+    ].filter(Boolean);
+
+    let lastErr = null;
+    for (const url of tries){
+      try{
+        const j = await fetchJSON(url, { ttl:0 });
+        if (j?.ok) return { ok:true, data:j, used:url };
+        lastErr = j?.error || "send_failed";
+      }catch(e){
+        lastErr = e?.message || String(e);
+      }
+    }
+    return { ok:false, error:lastErr || "all_variants_failed" };
+  };
+
+  // fuerza que el botón use el sendShift nuevo
+  window.sendShiftMessage = async function(targetEmail, action){
+    const box = document.querySelector(`#empStatusMsg-${targetEmail.replace(/[@.]/g,"_")}`);
+    if (box){ box.textContent="📤 Sending..."; box.style.color="#333"; }
+
+    try{
+      const res = await API.sendShift({ targetEmail, action, actor: currentUser?.email||"" });
+      if (res.ok){
+        const j = res.data;
+        const name  = j.sent?.name || targetEmail;
+        const shift = j.sent?.shift || "-";
+        if (box){ box.style.color="#00b341"; box.textContent=`✅ ${name} (${action.toUpperCase()}) → ${shift}`; }
+        toast(`✅ Sent to ${name}`, "success");
+      }else{
+        if (box){ box.style.color="#e53935"; box.textContent=`❌ ${res.error||"Send failed"}`; }
+        toast("❌ Send failed", "error");
+      }
+    }catch(e){
+      if (box){ box.style.color="#e53935"; box.textContent=`❌ ${e.message||"Error"}`; }
+      toast("❌ Send error", "error");
+    }
+  };
+
+  console.log("✅ PATCH v5.6.3 applied: Global API key for sendtoday/sendtomorrow");
+})();
