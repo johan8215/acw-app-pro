@@ -379,3 +379,129 @@ tr.today td{
   font-size:14px;
   text-align:center;
 }
+
+/* =========================================================
+   PATCH Nov 20 2025 — Readable colors (TV + Team Editor)
+   ========================================================= */
+
+/* Dock flotante managers */
+.manager-dock{
+  position: fixed;
+  right: 16px;
+  top: 110px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9999;
+}
+.manager-dock .team-btn{
+  background: #0a84ff;
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 800;
+  box-shadow: 0 6px 18px rgba(10,132,255,.35);
+  cursor: pointer;
+}
+.manager-dock .team-btn.alt{
+  background: #fff;
+  color: #0a84ff;
+  border: 2px solid #0a84ff;
+}
+
+/* Sección Team Editor */
+#teamEditorSection{
+  background: rgba(255,255,255,.98);
+  color: #111;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  margin: 14px auto;
+  max-width: 980px;
+}
+.team-editor-header h2{
+  color: #0a84ff;
+  margin: 0;
+}
+
+/* Tabla Teams (estilo Sheets claro) */
+.team-table{
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 14px;
+  background: #fff;
+  color: #111;
+  border: 1px solid rgba(0,0,0,.1);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.team-table th{
+  position: sticky;
+  top: 0;
+  background: #0f172a;
+  color: #fff;
+  font-weight: 800;
+  padding: 8px 6px;
+  border-bottom: 1px solid rgba(255,255,255,.12);
+  text-align: center;
+}
+.team-table td{
+  padding: 8px 6px;
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  text-align: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.team-table tbody tr:nth-child(even) td{ background:#f6f8fb; }
+.team-table tbody tr:hover td{ background:#e9f2ff; }
+
+/* Columna del nombre sticky y oscura */
+.team-table .name-col,
+.team-table td.name-col{
+  position: sticky;
+  left: 0;
+  background: #111827;
+  color: #fff;
+  font-weight: 800;
+  text-align: left;
+  padding-left: 10px;
+  z-index: 2;
+}
+
+/* celdas especiales */
+.team-table td.off{
+  color:#8b94a3;
+  font-style: italic;
+}
+.team-table td.saving{
+  background:#fff4cc !important;
+}
+
+/* input edición */
+.team-cell-input{
+  width:100%;
+  font:inherit;
+  padding:6px;
+  border:1px solid #0a84ff;
+  border-radius:6px;
+  outline:none;
+}
+
+/* Team View (modal) más claro */
+#directoryWrapper.tv-wrapper{
+  background:#fff !important;
+  color:#111 !important;
+}
+#directoryWrapper .tv-table th{
+  background:#0f172a !important;
+  color:#fff !important;
+}
+#directoryWrapper .tv-table td{
+  color:#111 !important;
+}
+#directoryWrapper .tv-table tr:nth-child(even) td{
+  background:#f6f8fb !important;
+}
