@@ -1884,3 +1884,233 @@ function ensureOpenInSheetsBtn(modalEl){
 
   console.log("✅ PATCH v5.6.3 applied: Global API key for sendtoday/sendtomorrow");
 })();
+
+/* =========================================================
+   TEAM EDITOR (Sheets-like editable table)
+   Requiere backend v4.6.9 R1:
+   - getEmployeesDirectory
+   - getSmartSchedule(email)
+   - updateShift(actor,target,day,shift)
+   ========================================================= */
+
+const TEAM_DAY_ORDER = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const TEAM_CONCURRENCY = 5;   // igual que Turbo (concurrencia limitada)
+
+/* Helpers */
+async function teamFetchJSON(url){
+  const r = await fetch(url, {cache:"no-store"});
+  const j = await r.json();
+  return j;
+}
+function teamStatus(msg){
+  const el = document.getElementById("teamSaveStatus");
+  if (el) el.textContent = msg || "";
+}
+function pMapLimit(items, limit, fn){
+  let i=0, active=0, out=[];
+  return new Promise((resolve,reject)=>{
+    const next=()=>{
+      if(i>=items.length && active===0) return resolve(out);
+      while(active<limit && i<items.length){
+        const idx=i++; active++;
+        Promise.resolve(fn(items[idx], idx))
+          .then(res=> out[idx]=res)
+          .catch(reject)
+          .finally(()=>{ active--; next(); });
+      }
+    };
+    next();
+  });
+}
+
+/* ==== Cargar Team Week ==== */
+async function teamLoadWeek(){
+  const wrap = document.getElementById("teamTableWrap");
+  if(!wrap) return;
+
+  teamStatus("Loading team week…");
+
+  // 1) directory
+  const dirURL = `${CONFIG.BASE_URL}?action=getEmployeesDirectory`;
+  const dir = await teamFetchJSON(dirURL);
+  if(!dir.ok) throw new Error(dir.error||"directory_error");
+
+  const employees = (dir.directory||[])
+    .filter(e => String(e.status||"active").toLowerCase() !== "off");
+
+  // 2) schedules por empleado
+  const rows = await pMapLimit(employees, TEAM_CONCURRENCY, async (emp)=>{
+    const email = String(emp.email||"").toLowerCase().trim();
+    if(!email) return null;
+
+    const schURL = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`;
+    const sch = await teamFetchJSON(schURL);
+
+    // Si un empleado no tiene fila, igual lo mostramos con "-"
+    const daysObj = {};
+    TEAM_DAY_ORDER.forEach(dn=>{
+      const item = (sch.days||[]).find(x=>x.name===dn);
+      daysObj[dn] = {
+        shift: item?.shift || "-",
+        hours: Number(item?.hours||0)
+      };
+    });
+
+    return {
+      name: emp.name || sch.name || email,
+      email,
+      role: emp.role || "employee",
+      days: daysObj,
+      total: Number(sch.total||0)
+    };
+  });
+
+  teamRenderTable(rows.filter(Boolean));
+  teamStatus("");
+}
+
+/* ==== Render Table ==== */
+function teamRenderTable(teamRows){
+  const wrap = document.getElementById("teamTableWrap");
+  if(!wrap) return;
+
+  const canEdit = ["owner","admin","manager","supervisor"].includes(
+    String(CURRENT_USER?.role||"").toLowerCase()
+  );
+
+  let html = `
+    <table class="team-table">
+      <thead>
+        <tr>
+          <th class="name-col">Employee</th>
+          ${TEAM_DAY_ORDER.map(d=>`<th>${d.slice(0,3).toUpperCase()}</th>`).join("")}
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  for(const r of teamRows){
+    html += `
+      <tr data-email="${r.email}">
+        <td class="name-col">${r.name}</td>
+        ${TEAM_DAY_ORDER.map(dn=>{
+          const cell = r.days[dn] || {shift:"-",hours:0};
+          const shiftTxt = cell.shift || "-";
+          const isOff = /off/i.test(shiftTxt) || shiftTxt==="-" || shiftTxt==="0";
+          return `
+            <td class="${canEdit?'editable':''} ${isOff?'off':''}"
+                data-day="${dn}"
+                data-old="${shiftTxt}">
+              ${shiftTxt}
+            </td>`;
+        }).join("")}
+        <td class="team-total">${(r.total||0).toFixed(1)}</td>
+      </tr>
+    `;
+  }
+
+  html += `</tbody></table>`;
+  wrap.innerHTML = html;
+
+  if(canEdit) teamBindEditableCells();
+}
+
+/* ==== Edit inline ==== */
+function teamBindEditableCells(){
+  const wrap = document.getElementById("teamTableWrap");
+  if(!wrap) return;
+
+  wrap.querySelectorAll("td.editable").forEach(td=>{
+    td.addEventListener("dblclick", ()=> teamStartEdit(td));
+    td.addEventListener("click", (e)=>{
+      // click simple también entra edit si quieres
+      if(e.detail===2) teamStartEdit(td);
+    });
+  });
+}
+
+function teamStartEdit(td){
+  if(td.querySelector("input")) return;
+
+  const oldVal = td.textContent.trim();
+  const day = td.dataset.day;
+  const tr = td.closest("tr");
+  const email = tr?.dataset.email;
+
+  td.dataset.old = oldVal;
+  td.innerHTML = `<input class="team-cell-input" value="${oldVal==='-'?'':oldVal}"/>`;
+  const input = td.querySelector("input");
+  input.focus();
+  input.select();
+
+  const finish = async (save)=>{
+    const newValRaw = input.value.trim();
+    const newVal = newValRaw || "OFF";
+
+    td.innerHTML = newVal;
+    if(!save || newVal===oldVal) return;
+
+    td.classList.add("saving");
+    teamStatus(`Saving ${email} ${day}…`);
+
+    const ok = await teamSaveShift(email, day, newVal, oldVal);
+    td.classList.remove("saving");
+
+    if(!ok){
+      td.innerHTML = oldVal;
+      teamStatus("⚠️ Error saving. Reverted.");
+      setTimeout(()=>teamStatus(""),1600);
+    }else{
+      teamStatus("Saved ✅");
+      setTimeout(()=>teamStatus(""),900);
+      teamRecalcRowTotal(tr);
+    }
+  };
+
+  input.addEventListener("keydown", (e)=>{
+    if(e.key==="Enter") { e.preventDefault(); finish(true); }
+    if(e.key==="Escape"){ e.preventDefault(); finish(false); }
+  });
+  input.addEventListener("blur", ()=> finish(true));
+}
+
+/* ==== Save to backend via updateShift ==== */
+async function teamSaveShift(targetEmail, dayName, shiftText, oldVal){
+  try{
+    const actor = String(CURRENT_USER?.email||"").toLowerCase().trim();
+    const url =
+      `${CONFIG.BASE_URL}?action=updateShift` +
+      `&actor=${encodeURIComponent(actor)}` +
+      `&target=${encodeURIComponent(targetEmail)}` +
+      `&day=${encodeURIComponent(dayName)}` +
+      `&shift=${encodeURIComponent(shiftText)}`;
+
+    const r = await teamFetchJSON(url);
+    return !!r.ok;
+  }catch(err){
+    console.error("teamSaveShift", err);
+    return false;
+  }
+}
+
+/* ==== Recalcular total de fila después de editar ==== */
+function teamRecalcRowTotal(tr){
+  try{
+    let total=0;
+    tr.querySelectorAll("td[data-day]").forEach(td=>{
+      const v = td.textContent.trim();
+      if(/off/i.test(v) || v==="-" || v==="0") return;
+      const h = parseHours(v) || 0; // usa tu parseHours ya global
+      total += h;
+    });
+    const totalTd = tr.querySelector(".team-total");
+    if(totalTd) totalTd.textContent = total.toFixed(1);
+  }catch(_){}
+}
+
+/* ==== Botón reload ==== */
+document.getElementById("teamReloadBtn")?.addEventListener("click", teamLoadWeek);
+
+/* ==== Exponer para tu navegación ==== */
+window.teamLoadWeek = teamLoadWeek;
