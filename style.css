@@ -311,3 +311,71 @@ tr.today td{
   `;
   document.head.appendChild(s);
 })();
+
+/* ===== Team Editor table ===== */
+.team-editor-header{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; margin-bottom:12px;
+}
+.team-editor-actions{ display:flex; align-items:center; gap:10px; }
+.team-save-status{ font-size:13px; opacity:.8; }
+
+.team-table-wrap{
+  width:100%;
+  overflow:auto;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;
+}
+
+.team-table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:900px;
+  background:rgba(255,255,255,0.03);
+}
+.team-table th, .team-table td{
+  border-bottom:1px solid rgba(255,255,255,.08);
+  border-right:1px solid rgba(255,255,255,.06);
+  padding:8px 10px;
+  text-align:center;
+  font-size:14px;
+  white-space:nowrap;
+}
+.team-table th{
+  position:sticky; top:0; z-index:3;
+  background:rgba(10,20,40,0.95);
+  font-weight:700;
+}
+
+/* sticky first col (names) */
+.team-table th.name-col,
+.team-table td.name-col{
+  position:sticky; left:0; z-index:2;
+  background:rgba(8,18,36,0.98);
+  text-align:left;
+  font-weight:600;
+}
+
+/* hover + editable feel */
+.team-table td.editable{
+  cursor:pointer;
+  transition:background .12s ease;
+}
+.team-table td.editable:hover{
+  background:rgba(255,255,255,0.06);
+}
+
+.team-table td.off{ opacity:.55; }
+.team-table td.saving{ outline:2px dashed rgba(255,255,255,.35); }
+
+/* inline input */
+.team-cell-input{
+  width:100%;
+  background:rgba(0,0,0,.35);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:6px;
+  padding:6px 6px;
+  font-size:14px;
+  text-align:center;
+}
