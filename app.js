@@ -882,6 +882,56 @@ async function openEmployeePanel(btnEl){
   enableModalLiveShift(m, data.days||[]);
 }
 
+/* =================== TEAM EDITOR Access Gate =================== */
+
+// Roles permitidos para ver/editar Team Editor
+function canUseTeamEditor(){
+  const r = String(currentUser?.role || "").toLowerCase();
+  return ["owner","admin","manager","supervisor"].includes(r);
+}
+
+// Botón flotante tipo Team View, solo managers
+function addTeamEditorButton(){
+  if (document.getElementById("teamEditorBtn")) return;
+  const btn = document.createElement("button");
+  btn.id = "teamEditorBtn";
+  btn.className = "team-btn"; // usa tu estilo existing
+  btn.textContent = "Team Editor";
+  btn.onclick = openTeamEditor;
+  document.body.appendChild(btn);
+}
+
+// Abre Team Editor solo si tiene rol
+function openTeamEditor(){
+  if (!canUseTeamEditor()){
+    toast("⛔ Solo managers/supervisores pueden ver Team Editor", "error");
+    return;
+  }
+  document.getElementById("teamEditorSection")?.classList.remove("hidden");
+  teamLoadWeek();
+}
+
+// Asegura que employees NUNCA lo vean al loguear/restaurar sesión
+(function patchShowWelcomeForTeamEditor(){
+  const prev = window.showWelcome;
+  if (typeof prev !== "function") return;
+
+  window.showWelcome = async function(name, role){
+    await prev.call(this, name, role);
+
+    const sec = document.getElementById("teamEditorSection");
+    if (!sec) return;
+
+    if (canUseTeamEditor()){
+      sec.classList.remove("hidden");
+      addTeamEditorButton();
+    } else {
+      sec.classList.add("hidden");
+      document.getElementById("teamEditorBtn")?.remove();
+    }
+  };
+})();
+
 function enableModalLiveShift(modal, days){
   try{
     const key = Today.key;
@@ -1886,21 +1936,21 @@ function ensureOpenInSheetsBtn(modalEl){
 })();
 
 /* =========================================================
-   TEAM EDITOR (Sheets-like editable table)
-   Requiere backend v4.6.9 R1:
+   TEAM EDITOR (Sheets-like editable table) — v5.6.3 FIX
+   Visible SOLO managers/supervisors (owner/admin también).
+   Backend v4.6.9 R1:
    - getEmployeesDirectory
    - getSmartSchedule(email)
    - updateShift(actor,target,day,shift)
    ========================================================= */
 
 const TEAM_DAY_ORDER = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-const TEAM_CONCURRENCY = 5;   // igual que Turbo (concurrencia limitada)
+const TEAM_CONCURRENCY = 5;
 
 /* Helpers */
 async function teamFetchJSON(url){
   const r = await fetch(url, {cache:"no-store"});
-  const j = await r.json();
-  return j;
+  return await r.json();
 }
 function teamStatus(msg){
   const el = document.getElementById("teamSaveStatus");
@@ -1925,12 +1975,13 @@ function pMapLimit(items, limit, fn){
 
 /* ==== Cargar Team Week ==== */
 async function teamLoadWeek(){
+  if (!canUseTeamEditor()) return; // extra seguro
+
   const wrap = document.getElementById("teamTableWrap");
   if(!wrap) return;
 
   teamStatus("Loading team week…");
 
-  // 1) directory
   const dirURL = `${CONFIG.BASE_URL}?action=getEmployeesDirectory`;
   const dir = await teamFetchJSON(dirURL);
   if(!dir.ok) throw new Error(dir.error||"directory_error");
@@ -1938,7 +1989,6 @@ async function teamLoadWeek(){
   const employees = (dir.directory||[])
     .filter(e => String(e.status||"active").toLowerCase() !== "off");
 
-  // 2) schedules por empleado
   const rows = await pMapLimit(employees, TEAM_CONCURRENCY, async (emp)=>{
     const email = String(emp.email||"").toLowerCase().trim();
     if(!email) return null;
@@ -1946,7 +1996,6 @@ async function teamLoadWeek(){
     const schURL = `${CONFIG.BASE_URL}?action=getSmartSchedule&email=${encodeURIComponent(email)}`;
     const sch = await teamFetchJSON(schURL);
 
-    // Si un empleado no tiene fila, igual lo mostramos con "-"
     const daysObj = {};
     TEAM_DAY_ORDER.forEach(dn=>{
       const item = (sch.days||[]).find(x=>x.name===dn);
@@ -1974,9 +2023,7 @@ function teamRenderTable(teamRows){
   const wrap = document.getElementById("teamTableWrap");
   if(!wrap) return;
 
-  const canEdit = ["owner","admin","manager","supervisor"].includes(
-    String(CURRENT_USER?.role||"").toLowerCase()
-  );
+  const canEdit = canUseTeamEditor(); // ✅ arreglado: usa currentUser
 
   let html = `
     <table class="team-table">
@@ -2024,7 +2071,6 @@ function teamBindEditableCells(){
   wrap.querySelectorAll("td.editable").forEach(td=>{
     td.addEventListener("dblclick", ()=> teamStartEdit(td));
     td.addEventListener("click", (e)=>{
-      // click simple también entra edit si quieres
       if(e.detail===2) teamStartEdit(td);
     });
   });
@@ -2054,7 +2100,7 @@ function teamStartEdit(td){
     td.classList.add("saving");
     teamStatus(`Saving ${email} ${day}…`);
 
-    const ok = await teamSaveShift(email, day, newVal, oldVal);
+    const ok = await teamSaveShift(email, day, newVal);
     td.classList.remove("saving");
 
     if(!ok){
@@ -2065,6 +2111,7 @@ function teamStartEdit(td){
       teamStatus("Saved ✅");
       setTimeout(()=>teamStatus(""),900);
       teamRecalcRowTotal(tr);
+      td.dataset.old = newVal;
     }
   };
 
@@ -2075,10 +2122,10 @@ function teamStartEdit(td){
   input.addEventListener("blur", ()=> finish(true));
 }
 
-/* ==== Save to backend via updateShift ==== */
-async function teamSaveShift(targetEmail, dayName, shiftText, oldVal){
+/* ==== Save to backend ==== */
+async function teamSaveShift(targetEmail, dayName, shiftText){
   try{
-    const actor = String(CURRENT_USER?.email||"").toLowerCase().trim();
+    const actor = String(currentUser?.email||"").toLowerCase().trim(); // ✅ FIX
     const url =
       `${CONFIG.BASE_URL}?action=updateShift` +
       `&actor=${encodeURIComponent(actor)}` +
@@ -2094,14 +2141,14 @@ async function teamSaveShift(targetEmail, dayName, shiftText, oldVal){
   }
 }
 
-/* ==== Recalcular total de fila después de editar ==== */
+/* ==== Recalcular total de fila ==== */
 function teamRecalcRowTotal(tr){
   try{
     let total=0;
     tr.querySelectorAll("td[data-day]").forEach(td=>{
       const v = td.textContent.trim();
       if(/off/i.test(v) || v==="-" || v==="0") return;
-      const h = parseHours(v) || 0; // usa tu parseHours ya global
+      const h = parseHours(v) || 0;
       total += h;
     });
     const totalTd = tr.querySelector(".team-total");
@@ -2110,7 +2157,13 @@ function teamRecalcRowTotal(tr){
 }
 
 /* ==== Botón reload ==== */
-document.getElementById("teamReloadBtn")?.addEventListener("click", teamLoadWeek);
+document.getElementById("teamReloadBtn")?.addEventListener("click", ()=>{
+  if (!canUseTeamEditor()){
+    toast("⛔ Solo managers/supervisores", "error");
+    return;
+  }
+  teamLoadWeek();
+});
 
-/* ==== Exponer para tu navegación ==== */
 window.teamLoadWeek = teamLoadWeek;
+window.openTeamEditor = openTeamEditor;
