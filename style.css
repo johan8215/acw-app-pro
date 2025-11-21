@@ -311,3 +311,104 @@ tr.today td{
   `;
   document.head.appendChild(s);
 })();
+
+/* ================= TEAM EDITOR (Full screen) ================= */
+#teamEditorSection{
+  position: fixed;
+  inset: 0;
+  z-index: 11000;
+  display: none;
+  padding: 10px;
+  background: rgba(0,0,0,.25);
+  backdrop-filter: blur(2px);
+}
+#teamEditorSection .team-editor-header{
+  background: rgba(255,255,255,.98);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  box-shadow: 0 6px 20px rgba(0,120,255,.18);
+}
+#teamEditorSection h2{
+  margin:0;
+  color: var(--blue);
+  text-shadow:0 0 8px rgba(0,120,255,.20);
+}
+
+#teamTableWrap{
+  margin-top: 8px;
+  background:#fff;
+  border-radius:12px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.08);
+  height: calc(100vh - 90px);
+  overflow: auto;
+}
+
+/* Tabla grande tipo Sheets */
+.te-table{
+  border-collapse: separate;
+  border-spacing: 0;
+  width: max-content;    /* permite scroll horizontal */
+  min-width: 100%;
+  font-size: 14px;
+}
+.te-table th, .te-table td{
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  padding: 8px 10px;
+  text-align: center;
+  vertical-align: middle;
+}
+.te-table thead th{
+  position: sticky;
+  top: 0;
+  background:#f7fbff;
+  color: var(--blue);
+  z-index: 3;
+}
+
+/* columnas pegadas izq/der */
+.te-table .sticky-col.left{
+  position: sticky;
+  left: 0;
+  background:#fff;
+  z-index: 2;
+  min-width: 210px;
+  text-align:left;
+}
+.te-table .sticky-col.right{
+  position: sticky;
+  right: 0;
+  background:#fff;
+  z-index: 2;
+  min-width: 150px;
+}
+
+.te-email{ font-size:11px; color:#888; margin-top:2px; }
+.te-shift{ min-width:120px; font-variant-numeric: tabular-nums; }
+.te-shift[contenteditable="true"]{ outline:none; cursor:text; }
+.te-shift.te-dirty{
+  box-shadow: inset 0 0 0 2px rgba(0,120,255,.35);
+  background: rgba(0,120,255,.04);
+}
+.te-shift.te-error{
+  box-shadow: inset 0 0 0 2px rgba(230,0,0,.35);
+  background: rgba(230,0,0,.04);
+}
+.te-hours{ font-size:11px; color:#666; margin-top:2px; }
+.te-total{ font-weight:800; color:var(--red); min-width:70px; }
+
+/* Acciones por fila */
+.te-actions button{
+  display:block; width:100%;
+  margin:3px 0; padding:6px 8px;
+  font-size:12px; border-radius:8px;
+}
+.te-actions .te-send{ background:var(--red); color:#fff; }
+.te-actions .te-send2{ background:#ff8800; color:#fff; }
+
+@media (max-width:700px){
+  .te-table{ font-size:12px; }
+  .te-shift{ min-width:100px; }
+}
