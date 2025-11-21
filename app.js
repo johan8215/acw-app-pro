@@ -2030,7 +2030,7 @@ window.createNextWeekFromApp = createNextWeekFromApp;
       newBtn.id="teamNewWeekBtn";
       newBtn.className="btn";
       newBtn.textContent="➕ New Week";
-      newBtn.onclick = createNewWeekFromApp;
+      newBtn.onclick = createNextWeekFromApp;
       aw.insertBefore(newBtn, TE.status());
     }
 
