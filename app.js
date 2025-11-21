@@ -2253,3 +2253,65 @@ window.createNextWeekFromApp = createNextWeekFromApp;
   window.closeTeamEditor = closeTeamEditor;
 
 })();
+
+/********** FORCE TEAM EDITOR BUTTON (drop-in safe) **********/
+(function ensureTeamEditorBtn(){
+
+  function isMgr(){
+    try{
+      return (typeof isManagerRole==="function")
+        && isManagerRole(currentUser?.role);
+    }catch(e){
+      return false;
+    }
+  }
+
+  function addBtn(){
+    if (!isMgr()) return;                 // solo managers
+    if (document.getElementById("teamEditorBtn")) return;
+
+    const btn = document.createElement("button");
+    btn.id = "teamEditorBtn";
+    btn.className = "team-btn team-editor-btn";
+    btn.textContent = "Team Editor";
+
+    btn.onclick = () => {
+      // usa lo que exista
+      if (window.openTeamEditor) return window.openTeamEditor();
+      if (window.toggleTeamEditor) return window.toggleTeamEditor();
+      toast("Team Editor not loaded", "error");
+    };
+
+    const tvBtn = document.getElementById("teamBtn"); // Team View button
+    if (tvBtn && tvBtn.parentNode){
+      tvBtn.parentNode.insertBefore(btn, tvBtn.nextSibling);
+      btn.style.marginLeft = "8px";
+      btn.style.marginTop  = "8px";
+    }else{
+      // fallback visible sí o sí
+      btn.style.position = "fixed";
+      btn.style.right    = "18px";
+      btn.style.bottom   = "90px";
+      btn.style.zIndex   = "10001";
+      document.body.appendChild(btn);
+    }
+  }
+
+  // encadenar showWelcome SIN romper otros módulos
+  const prevShowWelcome = window.showWelcome;
+  window.showWelcome = async function(...args){
+    if (prevShowWelcome) await prevShowWelcome.apply(this,args);
+    addBtn();
+  };
+
+  // intenta al cargar DOM
+  if (document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", addBtn);
+  } else {
+    addBtn();
+  }
+
+  // reintento por si currentUser llega tarde
+  setTimeout(addBtn, 800);
+
+})();
