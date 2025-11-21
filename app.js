@@ -4339,3 +4339,75 @@ document.getElementById("teamReloadBtn")?.addEventListener("click", ()=>{
 
 window.teamLoadWeek = teamLoadWeek;
 window.openTeamEditor = openTeamEditor;
+
+/* =========================================================
+   PATCH Nov 20 2025 — Bring back Team View + Manager Dock
+   - Team View y Team Editor solo para manager/supervisor/owner/admin
+   - Repara CURRENT_USER undefined
+   ========================================================= */
+(function(){
+
+  // ✅ roles que sí ven herramientas de manager
+  window.isManagerRole = function(role){
+    const r = String(role||"").toLowerCase();
+    return ["owner","admin","manager","supervisor"].includes(r);
+  };
+
+  // ✅ dock flotante con 2 botones
+  window.addTeamButton = function(){
+    if (document.getElementById("managerDock")) return;
+
+    const dock = document.createElement("div");
+    dock.id = "managerDock";
+    dock.className = "manager-dock";
+
+    dock.innerHTML = `
+      <button id="teamBtn" class="team-btn">Team View</button>
+      <button id="teamEditorBtn" class="team-btn alt">Team Editor</button>
+    `;
+
+    document.body.appendChild(dock);
+
+    dock.querySelector("#teamBtn").onclick       = () => window.toggleTeamOverview?.();
+    dock.querySelector("#teamEditorBtn").onclick = () => window.openTeamEditor?.();
+  };
+
+  // ✅ Team Editor toggle (abre/cierra)
+  window.openTeamEditor = function(){
+    const sec = document.getElementById("teamEditorSection");
+    if (!sec) return;
+
+    const open = !sec.classList.contains("hidden");
+    if (open){
+      sec.classList.add("hidden");
+      return;
+    }
+
+    // si Team View está abierto, lo cerramos
+    document.getElementById("directoryWrapper")?.remove();
+
+    sec.classList.remove("hidden");
+    window.teamLoadWeek?.();
+  };
+
+  // ✅ asegura que showWelcome vuelva a poner los botones
+  const prevShowWelcome = window.showWelcome;
+  window.showWelcome = async function(name, role){
+    await prevShowWelcome?.call(this, name, role);
+    if (window.isManagerRole(role)) window.addTeamButton();
+  };
+
+  // ✅ compatibilidad: si algo viejo usa CURRENT_USER
+  window.CURRENT_USER = window.currentUser || window.CURRENT_USER;
+
+  // ✅ si teamRenderTable existe, le metemos CURRENT_USER antes de render
+  if (typeof window.teamRenderTable === "function"){
+    const prevTeamRender = window.teamRenderTable;
+    window.teamRenderTable = function(teamRows){
+      window.CURRENT_USER = window.currentUser;
+      return prevTeamRender.call(this, teamRows);
+    };
+  }
+
+  console.log("✅ PATCH applied: Team View back + Manager Dock OK");
+})();
