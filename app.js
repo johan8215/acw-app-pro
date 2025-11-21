@@ -1969,6 +1969,40 @@ function ensureOpenInSheetsBtn(modalEl){
     document.body.appendChild(btn);
   }
 
+  // ✅ CREA TAB DE PRÓXIMA SEMANA DESDE EL APP
+async function createNextWeekFromApp(){
+  if (!isManagerRole(currentUser?.role)) {
+    return toast("Managers only", "error");
+  }
+
+  const actor = currentUser?.email || "";
+  toast("⏳ Creating next week...", "info");
+
+  try{
+    // OJO: tu backend lo recibe en lowercase => "createnextweek"
+    const url = `${CONFIG.BASE_URL}?action=createnextweek&actor=${encodeURIComponent(actor)}`;
+    const j = await fetchJSON(url, { ttl: 0 });
+
+    if (j?.ok){
+      toast(`✅ New week created: ${j.name}`, "success");
+      alert(`New week tab created:\n${j.name}`);
+
+      // refresca tabla (sigue mostrando semana actual, pero queda creada la nueva)
+      openTeamEditor();
+
+    }else{
+      toast(`⚠️ ${j.error || "failed"}`, "error");
+      alert(j.error || "Could not create week");
+    }
+  }catch(e){
+    console.warn(e);
+    toast("❌ Error creating week", "error");
+  }
+}
+
+// si quieres tenerla global también:
+window.createNextWeekFromApp = createNextWeekFromApp; 
+
   function ensureHeaderButtons(){
     const aw = TE.actionsWrap();
     if (!aw) return;
