@@ -1885,354 +1885,337 @@ function ensureOpenInSheetsBtn(modalEl){
   console.log("✅ PATCH v5.6.3 applied: Global API key for sendtoday/sendtomorrow");
 })();
 
-/* ============================================================
-   🧑‍💼 TEAM EDITOR v1 — ACW Turbo 5.6.3 (drop-in)
-   - No rompe Team View
-   - UI igual al app
-   - Mon→Sun, horas, Send Today/Tomorrow en tabla
-   ============================================================ */
-(function TeamEditorModule(){
+/* =================== TEAM EDITOR v1 (Turbo compatible) =================== */
+(function injectTeamEditorCSS(){
+  const id='acw-te-css';
+  if (document.getElementById(id)) return;
+  const css = `
+  #teamEditorSection{position:fixed;inset:0;z-index:11000;display:none;padding:10px;background:rgba(0,0,0,.25);backdrop-filter:blur(2px);}
+  #teamEditorSection .team-editor-header{background:rgba(255,255,255,.98);border-radius:12px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 6px 20px rgba(0,120,255,.18);}
+  #teamEditorSection h2{margin:0;color:var(--blue);text-shadow:0 0 8px rgba(0,120,255,.20);}
+  #teamTableWrap{margin-top:8px;background:#fff;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.08);height:calc(100vh - 90px);overflow:auto;}
+  .te-table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;font-size:14px;}
+  .te-table th,.te-table td{border-bottom:1px solid rgba(0,0,0,.06);padding:8px 10px;text-align:center;vertical-align:middle;}
+  .te-table thead th{position:sticky;top:0;background:#f7fbff;color:var(--blue);z-index:3;}
+  .te-table .sticky-col.left{position:sticky;left:0;background:#fff;z-index:2;min-width:210px;text-align:left;}
+  .te-table .sticky-col.right{position:sticky;right:0;background:#fff;z-index:2;min-width:150px;}
+  .te-email{font-size:11px;color:#888;margin-top:2px;}
+  .te-shift{min-width:120px;font-variant-numeric:tabular-nums;}
+  .te-shift[contenteditable="true"]{outline:none;cursor:text;}
+  .te-shift.te-dirty{box-shadow:inset 0 0 0 2px rgba(0,120,255,.35);background:rgba(0,120,255,.04);}
+  .te-shift.te-error{box-shadow:inset 0 0 0 2px rgba(230,0,0,.35);background:rgba(230,0,0,.04);}
+  .te-hours{font-size:11px;color:#666;margin-top:2px;}
+  .te-total{font-weight:800;color:var(--red);min-width:70px;}
+  .te-actions button{display:block;width:100%;margin:3px 0;padding:6px 8px;font-size:12px;border-radius:8px;}
+  .te-actions .te-send{background:var(--red);color:#fff;}
+  .te-actions .te-send2{background:#ff8800;color:#fff;}
+  @media (max-width:700px){.te-table{font-size:12px}.te-shift{min-width:100px}}
+  `;
+  const s=document.createElement('style'); s.id=id; s.textContent=css; document.head.appendChild(s);
+})();
 
-  if (typeof API === "undefined") return;
-
-  /* ---------- Estado ---------- */
-  const TE_PAGE_SIZE = 5; // menos filas porque editor es ancho
-  let __teList = [], __tePage = 0;
-  let __teController = null;
-  let __teDirty = new Map(); // email -> { day3 : newShift }
+(() => {
+  if (!window.API) return;
 
   const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-  const DAY_FULL = {
-    Mon:"MONDAY", Tue:"TUESDAY", Wed:"WEDNESDAY",
-    Thu:"THURSDAY", Fri:"FRIDAY", Sat:"SATURDAY", Sun:"SUNDAY"
+
+  const TE = {
+    open:false,
+    controller:null,
+    list:[],
+    data:new Map(), // email -> normalized schedule
+    sec: ()=>document.getElementById("teamEditorSection"),
+    wrap:()=>document.getElementById("teamTableWrap"),
+    status:()=>document.getElementById("teamSaveStatus"),
+    actionsWrap:()=>document.querySelector("#teamEditorSection .team-editor-actions"),
   };
 
-  /* ---------- Botón cerca a Team View ---------- */
-  function addTeamEditorButton(){
-    if (!isManagerRole(currentUser?.role)) return;
-    if (document.getElementById("teamEditBtn")) return;
-
-    const btn = document.createElement("button");
-    btn.id="teamEditBtn";
-    btn.className="team-btn team-edit-btn";
-    btn.textContent="Team Editor";
-    btn.onclick = toggleTeamEditor;
-
-    // lo ponemos justo debajo de Team View si existe
-    const tvBtn = document.getElementById("teamBtn");
-    if (tvBtn && tvBtn.parentNode){
-      tvBtn.parentNode.insertBefore(btn, tvBtn.nextSibling);
-      btn.style.marginTop = "8px";
-    } else {
-      document.body.appendChild(btn);
-    }
+  function escapeHtml(s){
+    return String(s||"").replace(/[&<>"']/g, m=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[m]));
   }
-
-  /* ---------- Abrir / Cerrar ---------- */
-  function toggleTeamEditor(){
-    const w = document.getElementById("teamEditorWrapper");
-    if (w){
-      w.classList.add("fade-out");
-      setTimeout(()=> w.remove(), 180);
-      __teController?.abort(); __teController=null;
-      return;
-    }
-    loadTeamEditor();
+  function normalizeShift(s){
+    return String(s||"")
+      .replace(/\s+/g," ")
+      .replace(/[–—]/g,"-")
+      .trim();
   }
-
-  async function loadTeamEditor(){
-    try{
-      __teController?.abort();
-      __teController = new AbortController();
-      __teDirty.clear();
-
-      const j = await API.getDirectory(__teController);
-      if (!j?.ok) return toast("❌ Directory error", "error");
-
-      __teList = j.directory || [];
-      __tePage = 0;
-      renderTeamEditorPage();
-
-    }catch(e){
-      if (e.name!=="AbortError") console.warn(e);
-    }
+  function calcHours(shift){
+    try{ return parseHours(shift); }catch{ return 0; }
   }
-
-  /* ---------- Render UI ---------- */
-  function renderTeamEditorPage(){
-    document.getElementById("teamEditorWrapper")?.remove();
-
-    const pages = Math.max(1, Math.ceil(__teList.length / TE_PAGE_SIZE));
-    const start = __tePage * TE_PAGE_SIZE;
-    const slice = __teList.slice(start, start + TE_PAGE_SIZE);
-
-    const box = document.createElement("div");
-    box.id="teamEditorWrapper";
-    box.className="directory-wrapper te-wrapper";
-    Object.assign(box.style,{
-      position:"fixed", top:"50%", left:"50%",
-      transform:"translate(-50%, -48%) scale(0.98)",
-      visibility:"hidden", opacity:"0",
-      background:"rgba(255,255,255,0.97)",
-      borderRadius:"16px",
-      boxShadow:"0 0 35px rgba(0,128,255,0.30)",
-      backdropFilter:"blur(10px)",
-      padding:"18px 18px 16px",
-      width:"95%", maxWidth:"980px",
-      zIndex:"10000", textAlign:"center",
-      transition:"all 0.35s ease"
-    });
-
-    box.innerHTML = `
-      <div class="te-head" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-        <h3 style="margin:0;color:#0078ff;text-shadow:0 0 8px rgba(0,120,255,.25);">Team Editor</h3>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <button id="teSaveAll" style="
-            background:#e60000;color:#fff;border:0;border-radius:10px;
-            padding:7px 12px;font-weight:800;cursor:pointer;
-            box-shadow:0 2px 8px rgba(230,0,0,.25)">Save All</button>
-          <button id="teClose" style="background:none;border:none;font-size:22px;cursor:pointer;">✖️</button>
-        </div>
-      </div>
-
-      <div class="te-pager" style="margin:10px 0;display:flex;justify-content:center;gap:10px;align-items:center;">
-        <button id="tePrev" ${__tePage===0?"disabled":""}>‹ Prev</button>
-        <span style="font-weight:700;color:#0078ff;">Page ${__tePage+1}/${pages}</span>
-        <button id="teNext" ${(__tePage+1)>=pages?"disabled":""}>Next ›</button>
-      </div>
-
-      <div style="overflow:auto;max-height:68vh;border-radius:12px;">
-        <table class="directory-table te-table" style="width:100%;font-size:14px;border-collapse:collapse;">
-          <thead>
-            <tr>
-              <th style="text-align:left;">Name</th>
-              ${DAYS.map(d=>`<th>${d}</th>`).join("")}
-              <th>Total</th>
-              <th>Send</th>
-            </tr>
-          </thead>
-          <tbody id="teBody">
-            ${slice.map(emp=>`
-              <tr data-email="${emp.email}" data-name="${emp.name}">
-                <td style="text-align:left;font-weight:700;">${emp.name}</td>
-                ${DAYS.map(d=>`<td class="te-cell" data-day="${d}" contenteditable="true">—</td>`).join("")}
-                <td class="te-total" style="font-weight:800;color:#e60000;">0.0</td>
-                <td class="te-send">
-                  <button class="te-today">Today</button>
-                  <button class="te-tomorrow">Tomorrow</button>
-                </td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      </div>
-
-      <p id="teStatus" style="margin:8px 0 0;font-weight:700;color:#555;"></p>
-    `;
-
-    document.body.appendChild(box);
-
-    // binds
-    box.querySelector("#teClose").onclick = toggleTeamEditor;
-    box.querySelector("#tePrev").onclick  = ()=>{ __tePage=Math.max(0,__tePage-1); renderTeamEditorPage(); };
-    box.querySelector("#teNext").onclick  = ()=>{ __tePage=Math.min(pages-1,__tePage+1); renderTeamEditorPage(); };
-    box.querySelector("#teSaveAll").onclick = saveAllEditorChanges;
-
-    // load schedules for slice
-    const body = box.querySelector("#teBody");
-    runLimited(slice, 3, async(emp)=>{
-      try{
-        const d = await API.getSchedule(emp.email, 0, __teController);
-        const tr = body.querySelector(`tr[data-email="${cssEscape(emp.email)}"]`);
-        if (!tr) return;
-
-        // fill days
-        DAYS.forEach(day3=>{
-          const cell = tr.querySelector(`td.te-cell[data-day="${day3}"]`);
-          const rec = d?.days?.find(x=>String(x.name||"").slice(0,3)===day3);
-          const shift = rec?.shift || "-";
-          cell.textContent = shift;
-          cell.dataset.original = shift;
-          cell.addEventListener("input", ()=> onCellEdit(tr, cell));
-        });
-
-        // total
-        recomputeRowTotal(tr);
-
-        // send buttons
-        tr.querySelector(".te-today").onclick    = ()=> teSend(emp.email, "sendtoday");
-        tr.querySelector(".te-tomorrow").onclick = ()=> teSend(emp.email, "sendtomorrow");
-
-      }catch(e){}
-    });
-
-    // show anim
-    setTimeout(()=>{
-      box.style.visibility="visible";
-      box.style.opacity="1";
-      box.style.transform="translate(-50%, -50%) scale(1)";
-    },60);
-  }
-
-  /* ---------- Edit tracking + total hours ---------- */
-  function onCellEdit(tr, cell){
-    const email = tr.dataset.email;
-    const day3  = cell.dataset.day;
-    const newShift = cell.innerText.replace(/\s+/g," ").trim();
-    const oldShift = (cell.dataset.original||"").replace(/\s+/g," ").trim();
-
-    // marca celda
-    if (newShift !== oldShift){
-      cell.style.background = "rgba(11,109,255,.08)";
-      cell.style.borderRadius="8px";
-      let rec = __teDirty.get(email) || {};
-      rec[day3] = newShift;
-      __teDirty.set(email, rec);
-    }else{
-      cell.style.background = "";
-      let rec = __teDirty.get(email);
-      if (rec){ delete rec[day3]; }
-      if (rec && Object.keys(rec).length===0) __teDirty.delete(email);
-    }
-
-    recomputeRowTotal(tr);
-    updateDirtyStatus();
-  }
-
-  function recomputeRowTotal(tr){
+  function calcRowTotal(tr){
     let total=0;
-    tr.querySelectorAll("td.te-cell").forEach(c=>{
-      total += parseHours(c.innerText);
+    DAYS.forEach(d=>{
+      const td = tr.querySelector(`td.te-shift[data-day="${d}"]`);
+      const shift = normalizeShift(td?.innerText||"");
+      const h = calcHours(shift);
+      total += h;
+      const hEl = td?.querySelector(".te-hours");
+      if (hEl) hEl.textContent = `${h.toFixed(1)}h`;
     });
-    const tEl = tr.querySelector(".te-total");
-    tEl.textContent = total.toFixed(1);
+    const totEl = tr.querySelector(".te-total");
+    if (totEl) totEl.textContent = `${total.toFixed(1)}h`;
   }
 
-  function updateDirtyStatus(){
-    const st = document.getElementById("teStatus");
-    if (!st) return;
-    const count = __teDirty.size;
-    st.textContent = count
-      ? `✏️ Pending changes: ${count} employee(s)`
-      : `✅ No pending changes`;
+  function addTeamEditorButton(){
+    if (document.getElementById("teamEditorBtn")) return;
+    const btn = document.createElement("button");
+    btn.id="teamEditorBtn";
+    btn.className="team-btn team-editor-btn";
+    btn.textContent="Team Editor";
+    btn.style.right="150px";   // queda cerquita al Team View button
+    btn.onclick=toggleTeamEditor;
+    document.body.appendChild(btn);
   }
 
-  /* ---------- SAVE ALL ---------- */
-  async function saveAllEditorChanges(){
-    const st = document.getElementById("teStatus");
-    if (__teDirty.size===0){
-      toast("ℹ️ No changes to save", "info");
+  function ensureHeaderButtons(){
+    const aw = TE.actionsWrap();
+    if (!aw) return;
+
+    if (!document.getElementById("teamSaveBtn")){
+      const saveBtn = document.createElement("button");
+      saveBtn.id="teamSaveBtn";
+      saveBtn.className="btn";
+      saveBtn.textContent="Save Changes";
+      saveBtn.onclick = saveAllChanges;
+      aw.insertBefore(saveBtn, TE.status());
+    }
+
+    if (!document.getElementById("teamCloseBtn")){
+      const closeBtn = document.createElement("button");
+      closeBtn.id="teamCloseBtn";
+      closeBtn.className="btn";
+      closeBtn.textContent="✖ Close";
+      closeBtn.onclick = closeTeamEditor;
+      aw.insertBefore(closeBtn, TE.status());
+    }
+
+    if (!document.getElementById("teamNewWeekBtn")){
+      const newBtn = document.createElement("button");
+      newBtn.id="teamNewWeekBtn";
+      newBtn.className="btn";
+      newBtn.textContent="➕ New Week";
+      newBtn.onclick = createNewWeekFromApp;
+      aw.insertBefore(newBtn, TE.status());
+    }
+
+    document.getElementById("teamReloadBtn")?.addEventListener("click", openTeamEditor);
+  }
+
+  async function toggleTeamEditor(){
+    if (TE.open) return closeTeamEditor();
+    return openTeamEditor();
+  }
+
+  function closeTeamEditor(){
+    TE.open=false;
+    TE.controller?.abort(); TE.controller=null;
+    const sec=TE.sec(); 
+    if (sec){ sec.style.display="none"; sec.classList.add("hidden"); }
+  }
+
+  async function openTeamEditor(){
+    TE.open=true;
+    ensureHeaderButtons();
+
+    const sec=TE.sec(); 
+    if (sec){
+      sec.classList.remove("hidden");
+      sec.style.display="block";
+    }
+
+    TE.wrap().innerHTML = `<div style="padding:14px;color:#0078ff;font-weight:600;">Loading team…</div>`;
+    safeText(TE.status(),"Loading…");
+
+    TE.controller?.abort();
+    TE.controller = new AbortController();
+
+    const dir = await API.getDirectory(TE.controller).catch(()=>null);
+    TE.list = (dir?.directory || []).filter(r=>r?.email);
+
+    const results = await runLimited(TE.list, 4, async (emp)=>{
+      const s = await API.getSchedule(emp.email, 0, TE.controller)
+        .catch(()=>({ok:false,days:[],total:0}));
+      return { emp, sched:s };
+    });
+
+    TE.data.clear();
+    results.forEach(({emp,sched})=> TE.data.set(emp.email, sched));
+
+    renderTable();
+    safeText(TE.status(), `Loaded ${TE.list.length} employees`);
+  }
+
+  function renderTable(){
+    const wrap = TE.wrap();
+    if (!wrap) return;
+
+    const rowsHTML = TE.list.map(emp=>{
+      const s = TE.data.get(emp.email) || {days:[],total:0};
+      const byDay = Object.fromEntries((s.days||[])
+        .map(x=>[String(x.name||"").slice(0,3), x]));
+
+      return `
+      <tr data-email="${emp.email}">
+        <td class="sticky-col left te-name">
+          <div class="te-name-main"><b>${escapeHtml(emp.name||emp.email)}</b></div>
+          <div class="te-email">${escapeHtml(emp.email)}</div>
+        </td>
+
+        ${DAYS.map(d=>{
+          const cell = byDay[d] || {};
+          const shift = cell.shift || "-";
+          const h = Number(cell.hours || calcHours(shift) || 0);
+
+          const editable = isManagerRole(currentUser?.role)
+            ? 'contenteditable="true"' : '';
+
+          return `
+            <td class="te-shift" ${editable}
+                data-day="${d}"
+                data-orig="${escapeHtml(shift)}">
+              ${escapeHtml(shift)}
+              <div class="te-hours">${h.toFixed(1)}h</div>
+            </td>`;
+        }).join("")}
+
+        <td class="te-total">${Number(s.total||0).toFixed(1)}h</td>
+
+        <td class="sticky-col right te-actions">
+          <button class="te-send" data-action="sendtoday">Send Today</button>
+          <button class="te-send te-send2" data-action="sendtomorrow">Send Tomorrow</button>
+        </td>
+      </tr>`;
+    }).join("");
+
+    wrap.innerHTML = `
+      <table id="teamEditorTable" class="te-table">
+        <thead>
+          <tr>
+            <th class="sticky-col left">Employee</th>
+            ${DAYS.map(d=>`<th>${d}</th>`).join("")}
+            <th>Total</th>
+            <th class="sticky-col right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+    `;
+
+    // Bind Send buttons
+    wrap.querySelectorAll(".te-send").forEach(btn=>{
+      btn.onclick = async ()=>{
+        const tr = btn.closest("tr");
+        const email = tr.dataset.email;
+        const action = btn.dataset.action;
+        btn.disabled=true;
+        const old=btn.textContent; btn.textContent="Sending…";
+        try{ await sendShiftMessage(email, action); }
+        finally{ btn.disabled=false; btn.textContent=old; }
+      };
+    });
+
+    // Editable recalcs
+    if (isManagerRole(currentUser?.role)){
+      wrap.querySelectorAll("td.te-shift[contenteditable]").forEach(td=>{
+        td.addEventListener("input", ()=>{
+          const tr = td.closest("tr");
+          const cur = normalizeShift(td.innerText);
+          const orig = normalizeShift(td.dataset.orig);
+          td.classList.toggle("te-dirty", cur !== orig);
+          calcRowTotal(tr);
+        });
+        td.addEventListener("blur", ()=>{
+          td.innerText = normalizeShift(td.innerText) || "-";
+        });
+      });
+    }
+
+    // Fix totals inicial
+    wrap.querySelectorAll("tbody tr").forEach(tr=>calcRowTotal(tr));
+  }
+
+  async function saveAllChanges(){
+    const actor = currentUser?.email;
+    if (!actor){ toast("Session expired", "error"); return; }
+
+    const wrap = TE.wrap();
+    const tds = Array.from(wrap.querySelectorAll("td.te-shift[contenteditable]"));
+
+    const changes = tds.map(td=>{
+      const tr = td.closest("tr");
+      const email = tr.dataset.email;
+      const day = td.dataset.day;
+      const newShift = normalizeShift(td.innerText);
+      const orig = normalizeShift(td.dataset.orig);
+      if (newShift !== orig) return { email, day, newShift, td };
+      return null;
+    }).filter(Boolean);
+
+    if (!changes.length){
+      safeText(TE.status(),"No changes");
+      toast("No changes", "info");
       return;
     }
-    const actor = currentUser?.email || "";
-    if (!actor){ toast("❌ Session expired", "error"); return; }
 
-    st.textContent = "⏳ Saving changes...";
-    let saved=0, failed=0;
+    safeText(TE.status(), `Saving ${changes.length}…`);
 
-    for (const [email, changes] of __teDirty.entries()){
-      for (const [day3, newShift] of Object.entries(changes)){
-        const res = await API.updateShift({
-          targetEmail: email,
-          day: day3,
-          newShift,
-          actor
-        });
-        if (res.ok) saved++; else failed++;
-      }
+    let ok=0;
+    for (const c of changes){
+      const r = await API.updateShift({
+        targetEmail:c.email, day:c.day, newShift:c.newShift, actor
+      });
 
-      // si salvó bien, refresca originales
-      const tr = document.querySelector(`#teamEditorWrapper tr[data-email="${cssEscape(email)}"]`);
-      if (tr){
-        Object.keys(changes).forEach(day3=>{
-          const cell = tr.querySelector(`td.te-cell[data-day="${day3}"]`);
-          if (cell){
-            cell.dataset.original = cell.innerText.replace(/\s+/g," ").trim();
-            cell.style.background="";
-          }
-        });
+      if (r.ok){
+        ok++;
+        c.td.dataset.orig = c.newShift;
+        c.td.classList.remove("te-dirty","te-error");
+      }else{
+        c.td.classList.add("te-error");
       }
     }
 
-    __teDirty.clear();
-    updateDirtyStatus();
+    safeText(TE.status(), ok===changes.length
+      ? `✅ Saved ${ok}`
+      : `⚠️ Saved ${ok}/${changes.length}`
+    );
 
-    if (failed===0){
-      st.textContent = `✅ Saved ${saved} change(s)`;
-      toast("✅ Team Editor saved!", "success");
-    }else{
-      st.textContent = `⚠️ Saved ${saved}, failed ${failed}`;
-      toast("⚠️ Some saves failed", "error");
-    }
+    toast(ok===changes.length ? "✅ Team saved" : "⚠️ Some saves failed",
+      ok===changes.length ? "success":"error");
   }
 
-  /* ---------- SEND TODAY/TOMORROW ---------- */
-  async function teSend(email, action){
+  // --- New week (por ahora abre Sheets) ---
+  async function createNewWeekFromApp(){
+    toast("Opening Sheets to create new week…", "info");
     try{
-      toast("📤 Sending...", "info");
-      const res = await API.sendShift({ targetEmail: email, action, actor: currentUser?.email||"" });
-      if (res.ok){
-        const j=res.data;
-        const who=j.sent?.name||email;
-        toast(`✅ ${action.toUpperCase()} → ${who}`, "success");
-      }else{
-        toast(`❌ ${action} failed`, "error");
+      // si algún día agregas endpoint createWeek en GAS, aquí se usa:
+      const actor=currentUser?.email||"";
+      const j = await fetchJSON(`${CONFIG.BASE_URL}?action=createWeek&actor=${encodeURIComponent(actor)}`,{ttl:0});
+      if (j?.ok){
+        toast(`✅ New week created: ${j.weekName||""}`,"success");
+        return openTeamEditor();
       }
     }catch(e){
-      toast(`❌ Send error`, "error");
+      // fallback a Sheets
+    }
+    // fallback: abrir el Weekly para duplicar tab
+    if (window.WEEKLY_ID){
+      window.open(`https://docs.google.com/spreadsheets/d/${WEEKLY_ID}/edit`,"_blank");
+    }else{
+      window.open("https://docs.google.com/spreadsheets","_blank");
     }
   }
 
-  /* ---------- CSS skin para editor ---------- */
-  (function injectTEcss(){
-    const id="acw-team-editor-css";
-    if (document.getElementById(id)) return;
-    const s=document.createElement("style"); s.id=id;
-    s.textContent=`
-      .team-edit-btn{
-        border-color: rgba(0,120,255,.4);
-        color:#0b6dff;
-      }
-      .te-wrapper th{
-        color:#0b6dff;
-        background:rgba(0,120,255,0.05);
-        border-bottom:2px solid rgba(0,120,255,0.15);
-        position:sticky; top:0; z-index:2;
-      }
-      .te-cell{
-        min-width:105px;
-        font-variant-numeric: tabular-nums;
-        white-space:nowrap;
-      }
-      .te-cell:focus{
-        outline:2px solid rgba(11,109,255,.45);
-        background:rgba(11,109,255,.06);
-        border-radius:8px;
-      }
-      .te-send button{
-        background: #e60000;
-        color:#fff;border:0;border-radius:8px;
-        padding:6px 8px; font-weight:800; cursor:pointer;
-        margin:2px; font-size:12px;
-      }
-      .te-send button:last-child{
-        background: linear-gradient(135deg,#ff8800,#ffaa33);
-      }
-    `;
-    document.head.appendChild(s);
-  })();
-
-  // hook: cuando hagas login/restore
-  const _oldShowWelcome = window.showWelcome;
-  window.showWelcome = async function(...args){
-    await _oldShowWelcome.apply(this,args);
-    addTeamEditorButton();
+  // Hook showWelcome -> agrega botón solo managers
+  const oldShow = window.showWelcome;
+  window.showWelcome = async function(name, role){
+    await oldShow.call(this, name, role);
+    if (isManagerRole(role)) addTeamEditorButton();
   };
 
-  // si ya está logueado
-  try{ addTeamEditorButton(); }catch{}
-
-  // export por si lo quieres llamar desde un botón
-  window.toggleTeamEditor = toggleTeamEditor;
+  // Export global opcional
+  window.openTeamEditor = openTeamEditor;
+  window.closeTeamEditor = closeTeamEditor;
 
 })();
