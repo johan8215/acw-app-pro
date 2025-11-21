@@ -1885,6 +1885,9 @@ function ensureOpenInSheetsBtn(modalEl){
   console.log("✅ PATCH v5.6.3 applied: Global API key for sendtoday/sendtomorrow");
 })();
 
+// --- EXPOSE API GLOBAL (NECESARIO PARA TEAM EDITOR) ---
+window.API = API;
+
 /* =================== TEAM EDITOR v1 (Turbo compatible) =================== */
 (function injectTeamEditorCSS(){
   const id='acw-te-css';
