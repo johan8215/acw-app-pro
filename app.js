@@ -2318,3 +2318,53 @@ window.createNextWeekFromApp = createNextWeekFromApp;
   setTimeout(addBtn, 800);
 
 })();
+
+/********** FORCE TEAM EDITOR BUTTON v2 (posicion + click seguro) **********/
+(function ensureTeamEditorBtnV2(){
+
+  function isMgr(){
+    try{
+      return (typeof isManagerRole==="function")
+        && isManagerRole(currentUser?.role);
+    }catch(e){ return false; }
+  }
+
+  function addOrFix(){
+    if (!isMgr()) return;
+
+    let btn = document.getElementById("teamEditorBtn");
+    if (!btn){
+      btn = document.createElement("button");
+      btn.id = "teamEditorBtn";
+      btn.className = "team-btn team-editor-btn";
+      btn.textContent = "Team Editor";
+      document.body.appendChild(btn);
+    }
+
+    // MISMA BASE que Team View, pero corrido a la izquierda
+    btn.style.position = "fixed";
+    btn.style.right = "150px";   // separado de Team View
+    btn.style.bottom = "18px";
+    btn.style.zIndex = "10001";
+
+    btn.onclick = () => {
+      if (window.openTeamEditor) return window.openTeamEditor();
+      if (window.toggleTeamEditor) return window.toggleTeamEditor();
+      toast("Team Editor not loaded (openTeamEditor missing)", "error");
+    };
+  }
+
+  const prevShowWelcome = window.showWelcome;
+  window.showWelcome = async function(...args){
+    if (prevShowWelcome) await prevShowWelcome.apply(this,args);
+    addOrFix();
+  };
+
+  if (document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", addOrFix);
+  } else {
+    addOrFix();
+  }
+
+  setTimeout(addOrFix, 800);
+})();
