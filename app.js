@@ -2368,3 +2368,82 @@ window.createNextWeekFromApp = createNextWeekFromApp;
 
   setTimeout(addOrFix, 800);
 })();
+
+/********** PATCH — Team Editor Button small + stacked **********/
+(function teamEditorBtnSkin(){
+  const id='acw-te-btn-skin';
+  if (document.getElementById(id)) return;
+
+  const css = `
+    /* Solo Team Editor */
+    #teamEditorBtn{
+      position:fixed !important;
+      right:18px !important;
+      bottom:90px !important;   /* queda arriba de Team View */
+      z-index:10002 !important;
+
+      font-size:13px !important;
+      font-weight:700 !important;
+      padding:8px 12px !important;
+
+      min-width:auto !important;
+      width:auto !important;
+      height:auto !important;
+
+      border-radius:12px !important;
+      box-shadow:0 6px 18px rgba(0,0,0,.25) !important;
+    }
+
+    @media (max-width:700px){
+      #teamEditorBtn{
+        bottom:78px !important;
+        font-size:12px !important;
+        padding:7px 10px !important;
+      }
+    }
+  `;
+  const s=document.createElement('style');
+  s.id=id; s.textContent=css;
+  document.head.appendChild(s);
+})();
+
+/********** PATCH — Filter inactive employees from API.getDirectory **********/
+(function filterInactiveDirectory(){
+  if (!window.API || !API.getDirectory) return;
+
+  function v(x){ return String(x ?? "").trim().toLowerCase(); }
+
+  function isActiveEmployee(r){
+    if (!r) return false;
+
+    const status = v(
+      r.active ?? r.isActive ?? r.status ?? r.state ?? r.enabled ?? r.hidden
+    );
+    const role   = v(r.role);
+    const name   = v(r.name);
+
+    // flags booleanos
+    if (r.active === false || r.isActive === false || r.enabled === false) return false;
+
+    // estados por texto
+    const badWords = ["inactive","inactivo","terminated","fired","left","former","disabled","hidden","retired"];
+    if (badWords.some(w => status.includes(w))) return false;
+    if (badWords.some(w => role.includes(w)))   return false;
+    if (badWords.some(w => name.includes(w)))   return false;
+
+    // si viene "0 / no / false" como string
+    if (["0","no","false"].includes(status)) return false;
+
+    return true;
+  }
+
+  const _orig = API.getDirectory.bind(API);
+  API.getDirectory = async function(controller){
+    const d = await _orig(controller);
+    const list = d?.directory || d?.employees || d?.rows || (Array.isArray(d)?d:[]);
+    const filtered = Array.isArray(list) ? list.filter(isActiveEmployee) : list;
+    return { ...d, directory: filtered, _directoryRaw: list };
+  };
+
+  console.log("✅ Directory filter ON (inactive employees hidden)");
+})();
