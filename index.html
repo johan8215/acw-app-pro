@@ -54,6 +54,73 @@
     </div>
   </div>
 </div>
+  // ===== TEAM PANEL (VIEW + EDITOR) =====
+function openTeamPanel(mode="view"){
+  let panel = document.getElementById("team-panel");
+  if(panel){ panel.remove(); }
+
+  panel = document.createElement("div");
+  panel.id = "team-panel";
+  panel.className = "employee-modal emp-panel team-panel"; // <-- mismas clases glass
+
+  panel.innerHTML = `
+    <div class="emp-box team-box">
+      <button class="emp-close" id="teamClose">×</button>
+
+      <div class="team-header">
+        <h3>👥 Team</h3>
+
+        <div class="team-tabs">
+          <button class="chip ${mode==="view"?"active":""}" id="tabTeamView">Team View</button>
+          <button class="chip ${mode==="edit"?"active":""}" id="tabTeamEdit">Team Editor</button>
+        </div>
+
+        <div class="team-actions">
+          <button class="btn small" id="btnSendToday">📤 Send Today</button>
+          <button class="btn small" id="btnSendTomorrow">📤 Send Tomorrow</button>
+          <button class="btn small" id="btnNewWeek">➕ New Week</button>
+        </div>
+      </div>
+
+      <div class="team-body" id="teamBody"></div>
+    </div>
+  `;
+
+  document.body.appendChild(panel);
+
+  // close
+  panel.querySelector("#teamClose").onclick = ()=>panel.remove();
+
+  // tabs
+  panel.querySelector("#tabTeamView").onclick = ()=>renderTeamPanel("view");
+  panel.querySelector("#tabTeamEdit").onclick = ()=>renderTeamPanel("edit");
+
+  // actions
+  panel.querySelector("#btnSendToday").onclick    = sendTodayGlobal;
+  panel.querySelector("#btnSendTomorrow").onclick= sendTomorrowGlobal;
+  panel.querySelector("#btnNewWeek").onclick     = createNewWeekFromEditor;
+
+  renderTeamPanel(mode);
+}
+
+
+// cambia solo el contenido (mismo panel)
+async function renderTeamPanel(mode){
+  const body = document.getElementById("teamBody");
+  if(!body) return;
+  body.innerHTML = `<div class="loading">Loading...</div>`;
+
+  if(mode==="view"){
+    body.innerHTML = await buildTeamViewHTML();   // usa tu Team View actual
+  }else{
+    body.innerHTML = await buildTeamEditorHTML(); // nuevo editor
+    bindTeamEditorEvents();                       // eventos de edición
+  }
+
+  // activar chip
+  document.getElementById("tabTeamView")?.classList.toggle("active", mode==="view");
+  document.getElementById("tabTeamEdit")?.classList.toggle("active", mode==="edit");
+}
 
 <!-- 🔑 CHANGE PASSWORD MODAL -->
 <div id="changePasswordModal" class="modal" style="display:none;">
