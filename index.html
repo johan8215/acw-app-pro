@@ -88,6 +88,52 @@
     }
   </script>
 
+  <!-- ================= TEAM EDITOR 1 (Glass) ================= -->
+<section id="teamEditor1View" class="view hidden">
+  <div class="glass-card team-editor">
+
+    <div class="team-editor-header">
+      <h2>👥 Team Editor</h2>
+
+      <div class="team-editor-actions">
+        <button id="btnSendTodayGlobal" class="btn btn-primary">
+          📤 Send Today (Global)
+        </button>
+
+        <button id="btnSendTomorrowGlobal" class="btn btn-primary">
+          📤 Send Tomorrow (Global)
+        </button>
+
+        <button id="btnCreateNewWeek" class="btn btn-ghost">
+          ➕ Create New Week
+        </button>
+      </div>
+    </div>
+
+    <div id="teamEditorWeekLabel" class="muted small" style="margin:8px 0 12px;"></div>
+
+    <div class="table-wrap">
+      <table class="team-editor-table">
+        <thead>
+          <tr>
+            <th class="col-name">Employee</th>
+            <th class="col-role">Role</th>
+            <th class="col-day">Mon</th>
+            <th class="col-day">Tue</th>
+            <th class="col-day">Wed</th>
+            <th class="col-day">Thu</th>
+            <th class="col-day">Fri</th>
+            <th class="col-day">Sat</th>
+            <th class="col-day">Sun</th>
+          </tr>
+        </thead>
+        <tbody id="teamEditorBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+</section>
+
   <!-- 📲 INSTALL HANDLER -->
   <script>
     const installBtn = document.getElementById("installToPhoneBtn");
