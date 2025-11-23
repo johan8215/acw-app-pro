@@ -1884,3 +1884,472 @@ function ensureOpenInSheetsBtn(modalEl){
 
   console.log("✅ PATCH v5.6.3 applied: Global API key for sendtoday/sendtomorrow");
 })();
+
+/* ============================================================
+   ✅ TEAM EDITOR v2 — Clean & Active Only (Nov 2025)
+   - Tabla actualizada con lista activa real (heurística)
+   - Punto verde activo
+   - Tap nombre abre Team View modal (openEmployeePanel)
+   - Send Today / Send Tomorrow GLOBAL para los que trabajan
+   ============================================================ */
+
+(function TeamEditorV2(){
+  if (window.__TE_V2__) return;
+  window.__TE_V2__ = true;
+
+  if (!window.API || !window.fetchJSON) {
+    console.warn("TE v2: API/fetchJSON not found");
+    return;
+  }
+
+  const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const DAY_KEY = () => (window.Today?.key || new Date().toLocaleString("en-US",{weekday:"short"}).slice(0,3).toLowerCase());
+
+  // ---------- DOM skeleton (si no existe en HTML) ----------
+  function ensureTeamEditorSection(){
+    if (document.getElementById("teamEditorSection")) return;
+    const sec = document.createElement("section");
+    sec.id = "teamEditorSection";
+    sec.style.display = "none";
+    sec.innerHTML = `
+      <div class="team-editor-header">
+        <h2>Team Editor</h2>
+        <div class="team-editor-actions">
+          <button id="teSendTodayAllBtn" class="btn te-global">📤 Send Today (All Working)</button>
+          <button id="teSendTomorrowAllBtn" class="btn te-global te-global2">📤 Send Tomorrow (All Working)</button>
+          <button id="teamSaveBtn" class="btn">Save Changes</button>
+          <button id="teamCloseBtn" class="btn">✖ Close</button>
+          <button id="teamReloadBtn" class="btn">↻ Reload</button>
+          <button id="teamNewWeekBtn" class="btn">➕ New Week</button>
+          <span id="teamSaveStatus" style="font-size:12px;opacity:.75;margin-left:8px;"></span>
+        </div>
+      </div>
+      <div id="teamTableWrap"></div>
+    `;
+    document.body.appendChild(sec);
+  }
+
+  // ---------- CSS clean ----------
+  function injectCSS(){
+    const id="acw-te-v2-css";
+    if (document.getElementById(id)) return;
+    const css = `
+    #teamEditorSection{
+      position:fixed; inset:0; z-index:11000; display:none; padding:10px;
+      background:rgba(0,0,0,.25); backdrop-filter:blur(2px);
+    }
+    #teamEditorSection .team-editor-header{
+      background:rgba(255,255,255,.98); border-radius:12px; padding:8px 10px;
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+      box-shadow:0 6px 20px rgba(0,120,255,.18);
+      flex-wrap:wrap;
+    }
+    #teamEditorSection h2{margin:0;color:#0b6dff;text-shadow:0 0 8px rgba(0,120,255,.20);}
+    #teamTableWrap{
+      margin-top:8px; background:#fff; border-radius:12px;
+      box-shadow:0 8px 28px rgba(0,0,0,.08);
+      height:calc(100vh - 88px); overflow:auto;
+    }
+    .te-table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;font-size:14px;}
+    .te-table th,.te-table td{border-bottom:1px solid rgba(0,0,0,.06);padding:8px 10px;text-align:center;vertical-align:middle;}
+    .te-table thead th{position:sticky;top:0;background:#f7fbff;color:#0b6dff;z-index:3;}
+    .te-table .sticky-col.left{position:sticky;left:0;background:#fff;z-index:2;min-width:220px;text-align:left;}
+    .te-table .sticky-col.right{position:sticky;right:0;background:#fff;z-index:2;min-width:170px;}
+    .te-name-main{display:flex;align-items:center;gap:8px;}
+    .te-dot{
+      width:9px;height:9px;border-radius:50%;
+      background:#b9c0c7; box-shadow:0 0 0 2px rgba(0,0,0,.04) inset;
+      flex:0 0 auto;
+    }
+    .te-dot.active{background:#22c55e; box-shadow:0 0 8px rgba(34,197,94,.9);}
+    .te-email{font-size:11px;color:#888;margin-top:2px;}
+    .te-shift{min-width:118px;font-variant-numeric:tabular-nums;}
+    .te-shift[contenteditable="true"]{outline:none;cursor:text;}
+    .te-shift.te-dirty{box-shadow:inset 0 0 0 2px rgba(0,120,255,.35);background:rgba(0,120,255,.04);}
+    .te-shift.te-error{box-shadow:inset 0 0 0 2px rgba(230,0,0,.35);background:rgba(230,0,0,.04);}
+    .te-hours{font-size:11px;color:#666;margin-top:2px;}
+    .te-total{font-weight:800;color:#e00000;min-width:70px;}
+    .te-actions button{display:block;width:100%;margin:3px 0;padding:6px 8px;font-size:12px;border-radius:8px;}
+    .te-actions .te-send{background:#e00000;color:#fff;}
+    .te-actions .te-send2{background:#ff8800;color:#fff;}
+    .team-editor-actions .btn{
+      background:#e00000;color:#fff;border:0;border-radius:8px;padding:6px 9px;font-weight:700;cursor:pointer;
+    }
+    .team-editor-actions .btn:disabled{opacity:.6;cursor:default;}
+    .team-editor-actions .te-global{background:#0b6dff;}
+    .team-editor-actions .te-global2{background:#ff8800;}
+    @media (max-width:700px){.te-table{font-size:12px}.te-shift{min-width:100px}}
+    `;
+    const s=document.createElement("style"); s.id=id; s.textContent=css;
+    document.head.appendChild(s);
+  }
+
+  // ---------- Utils ----------
+  const norm = s => String(s||"").replace(/\s+/g," ").replace(/[–—]/g,"-").trim();
+  const isOff = s => /^(off|offr|cerrado|n\/a|app|-)?$/i.test(norm(s));
+  const calcHours = (shift) => { try{ return parseHours(shift);}catch{ return 0; } };
+
+  function setStatus(txt){ const el=document.getElementById("teamSaveStatus"); if(el) el.textContent=txt; }
+  function sec(){ return document.getElementById("teamEditorSection"); }
+  function wrap(){ return document.getElementById("teamTableWrap"); }
+
+  const TE = {
+    open:false,
+    controller:null,
+    list:[],
+    data:new Map(),   // email -> sched normalized
+    active:new Set(), // emails active
+  };
+
+  // ---------- Button (visible y pequeño) ----------
+  function addTeamEditorButton(){
+    if (!isManagerRole(currentUser?.role)) return;
+    if (document.getElementById("teamEditorBtn")) return;
+
+    const btn = document.createElement("button");
+    btn.id="teamEditorBtn";
+    btn.className="team-btn team-editor-btn";
+    btn.textContent="Team Editor";
+    btn.onclick = toggleTeamEditor;
+
+    // ponlo junto a Team View si existe
+    const tvBtn = document.getElementById("teamBtn");
+    if (tvBtn && tvBtn.parentNode){
+      tvBtn.parentNode.insertBefore(btn, tvBtn.nextSibling);
+      btn.style.marginLeft="8px";
+      btn.style.marginTop="8px";
+    }else{
+      btn.style.position="fixed";
+      btn.style.right="18px";
+      btn.style.bottom="90px";
+      btn.style.zIndex="10001";
+      document.body.appendChild(btn);
+    }
+  }
+
+  // ---------- Core load ----------
+  async function openTeamEditor(){
+    TE.open=true;
+    ensureTeamEditorSection();
+    injectCSS();
+
+    const s = sec();
+    if (s){ s.style.display="block"; s.classList.remove("hidden"); }
+    wrap().innerHTML = `<div style="padding:14px;color:#0078ff;font-weight:600;">Loading team…</div>`;
+    setStatus("Loading…");
+
+    TE.controller?.abort();
+    TE.controller = new AbortController();
+
+    // 1) directorio completo
+    const dir = await API.getDirectory(TE.controller).catch(()=>null);
+    const fullList = (dir?.directory || []).filter(r=>r?.email);
+
+    // 2) traer horarios actuales para cada uno
+    const results = await runLimited(fullList, 4, async (emp)=>{
+      const sched = await API.getSchedule(emp.email, 0, TE.controller)
+        .catch(()=>({ok:false,days:[],total:0,raw:{}}));
+      return { emp, sched };
+    });
+
+    // 3) heurística de activos:
+    // activo = tiene al menos 1 día con shift válido (no OFF ni "-") en semana actual
+    TE.active.clear();
+    TE.data.clear();
+    TE.list = [];
+
+    results.forEach(({emp,sched})=>{
+      const days = Array.isArray(sched.days)?sched.days:[];
+      const hasRealShift = days.some(d=> !isOff(d.shift) && norm(d.shift)!=="");
+      const total = Number(sched.total||0);
+
+      if (hasRealShift || total>0){
+        TE.active.add(emp.email);
+        TE.list.push(emp);
+        TE.data.set(emp.email, sched);
+      }
+    });
+
+    renderTable();
+    setStatus(`Loaded ${TE.list.length} active employees`);
+  }
+
+  function closeTeamEditor(){
+    TE.open=false;
+    TE.controller?.abort(); TE.controller=null;
+    const s=sec(); if (s){ s.style.display="none"; s.classList.add("hidden"); }
+  }
+
+  async function toggleTeamEditor(){
+    if (TE.open) return closeTeamEditor();
+    return openTeamEditor();
+  }
+
+  // ---------- Render ----------
+  function renderTable(){
+    const w = wrap();
+    if (!w) return;
+
+    const rowsHTML = TE.list.map(emp=>{
+      const s = TE.data.get(emp.email) || {days:[],total:0};
+      const byDay = Object.fromEntries((s.days||[])
+        .map(x=>[String(x.name||"").slice(0,3), x]));
+
+      const dotClass = TE.active.has(emp.email) ? "te-dot active" : "te-dot";
+
+      return `
+      <tr data-email="${emp.email}" data-name="${emp.name||emp.email}" data-role="${emp.role||""}" data-phone="${emp.phone||""}">
+        <td class="sticky-col left te-name">
+          <div class="te-name-main">
+            <span class="${dotClass}" title="Active"></span>
+            <b class="te-name-click">${escapeHtml(emp.name||emp.email)}</b>
+          </div>
+          <div class="te-email">${escapeHtml(emp.email)}</div>
+        </td>
+
+        ${DAYS.map(d=>{
+          const cell = byDay[d] || {};
+          const shift = cell.shift || "-";
+          const h = Number(cell.hours || calcHours(shift) || 0);
+          const editable = isManagerRole(currentUser?.role)
+            ? 'contenteditable="true"' : '';
+          return `
+            <td class="te-shift" ${editable}
+                data-day="${d}"
+                data-orig="${escapeHtml(shift)}">
+              ${escapeHtml(shift)}
+              <div class="te-hours">${h.toFixed(1)}h</div>
+            </td>`;
+        }).join("")}
+
+        <td class="te-total">${Number(s.total||0).toFixed(1)}h</td>
+
+        <td class="sticky-col right te-actions">
+          <button class="te-send" data-action="sendtoday">Send Today</button>
+          <button class="te-send te-send2" data-action="sendtomorrow">Send Tomorrow</button>
+        </td>
+      </tr>`;
+    }).join("");
+
+    w.innerHTML = `
+      <table id="teamEditorTable" class="te-table">
+        <thead>
+          <tr>
+            <th class="sticky-col left">Employee</th>
+            ${DAYS.map(d=>`<th>${d}</th>`).join("")}
+            <th>Total</th>
+            <th class="sticky-col right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+    `;
+
+    // tap nombre => abre modal tipo Team View
+    w.querySelectorAll(".te-name-click").forEach(b=>{
+      b.style.cursor="pointer";
+      b.onclick = ()=>{
+        const tr = b.closest("tr");
+        if (window.openEmployeePanel){
+          window.openEmployeePanel({ closest:()=>tr });
+        }
+      };
+    });
+
+    // send individuales
+    w.querySelectorAll(".te-send").forEach(btn=>{
+      btn.onclick = async ()=>{
+        const tr = btn.closest("tr");
+        const email = tr.dataset.email;
+        const action = btn.dataset.action;
+        btn.disabled=true;
+        const old=btn.textContent; btn.textContent="Sending…";
+        try{ await sendShiftMessage(email, action); }
+        finally{ btn.disabled=false; btn.textContent=old; }
+      };
+    });
+
+    // editables recalculan
+    if (isManagerRole(currentUser?.role)){
+      w.querySelectorAll("td.te-shift[contenteditable]").forEach(td=>{
+        td.addEventListener("input", ()=>{
+          const tr = td.closest("tr");
+          const cur = norm(td.innerText);
+          const orig = norm(td.dataset.orig);
+          td.classList.toggle("te-dirty", cur !== orig);
+          calcRowTotal(tr);
+        });
+        td.addEventListener("blur", ()=>{
+          td.innerText = norm(td.innerText) || "-";
+        });
+      });
+    }
+
+    // totales iniciales
+    w.querySelectorAll("tbody tr").forEach(tr=>calcRowTotal(tr));
+
+    bindHeaderButtons();
+  }
+
+  function calcRowTotal(tr){
+    let total=0;
+    DAYS.forEach(d=>{
+      const td = tr.querySelector(`td.te-shift[data-day="${d}"]`);
+      const shift = norm(td?.innerText||"");
+      const h = calcHours(shift);
+      total += h;
+      const hEl = td?.querySelector(".te-hours");
+      if (hEl) hEl.textContent = `${h.toFixed(1)}h`;
+    });
+    const totEl = tr.querySelector(".te-total");
+    if (totEl) totEl.textContent = `${total.toFixed(1)}h`;
+  }
+
+  function bindHeaderButtons(){
+    // Close/Reload/Save/NewWeek
+    const closeBtn = document.getElementById("teamCloseBtn");
+    const reloadBtn= document.getElementById("teamReloadBtn");
+    const saveBtn  = document.getElementById("teamSaveBtn");
+    const newWeekBtn = document.getElementById("teamNewWeekBtn");
+
+    if (closeBtn) closeBtn.onclick = closeTeamEditor;
+    if (reloadBtn) reloadBtn.onclick = openTeamEditor;
+    if (saveBtn) saveBtn.onclick = saveAllChanges;
+    if (newWeekBtn) newWeekBtn.onclick = createNextWeekFromAppGlobal;
+
+    // GLOBAL sends
+    const sendTodayAllBtn = document.getElementById("teSendTodayAllBtn");
+    const sendTomorrowAllBtn = document.getElementById("teSendTomorrowAllBtn");
+
+    if (sendTodayAllBtn) sendTodayAllBtn.onclick = ()=> sendGlobalForDay("sendtoday", DAY_KEY());
+    if (sendTomorrowAllBtn) sendTomorrowAllBtn.onclick = ()=> {
+      const keys = ["mon","tue","wed","thu","fri","sat","sun"];
+      const i = keys.indexOf(DAY_KEY());
+      const nextKey = keys[(i+1)%7];
+      sendGlobalForDay("sendtomorrow", nextKey);
+    };
+  }
+
+  // ---------- SAVE bulk ----------
+  async function saveAllChanges(){
+    const actor = currentUser?.email;
+    if (!actor){ toast("Session expired", "error"); return; }
+
+    const w = wrap();
+    const tds = Array.from(w.querySelectorAll("td.te-shift[contenteditable]"));
+
+    const changes = tds.map(td=>{
+      const tr = td.closest("tr");
+      const email = tr.dataset.email;
+      const day = td.dataset.day;
+      const newShift = norm(td.innerText);
+      const orig = norm(td.dataset.orig);
+      if (newShift !== orig) return { email, day, newShift, td };
+      return null;
+    }).filter(Boolean);
+
+    if (!changes.length){
+      setStatus("No changes");
+      toast("No changes", "info");
+      return;
+    }
+
+    setStatus(`Saving ${changes.length}…`);
+
+    let ok=0;
+    for (const c of changes){
+      const r = await API.updateShift({
+        targetEmail:c.email, day:c.day, newShift:c.newShift, actor
+      });
+
+      if (r.ok){
+        ok++;
+        c.td.dataset.orig = c.newShift;
+        c.td.classList.remove("te-dirty","te-error");
+      }else{
+        c.td.classList.add("te-error");
+      }
+    }
+
+    setStatus(ok===changes.length ? `✅ Saved ${ok}` : `⚠️ Saved ${ok}/${changes.length}`);
+    toast(ok===changes.length ? "✅ Team saved" : "⚠️ Some saves failed",
+      ok===changes.length ? "success":"error");
+  }
+
+  // ---------- GLOBAL SEND ----------
+  async function sendGlobalForDay(action, dayKey3){
+    if (!isManagerRole(currentUser?.role)) return toast("Managers only", "error");
+    const actor = currentUser?.email || "";
+    const w = wrap();
+    const rows = Array.from(w.querySelectorAll("tbody tr"));
+
+    // filtra los que trabajan ese día
+    const targets = rows.filter(tr=>{
+      const td = tr.querySelector(`td.te-shift[data-day="${dayKey3[0].toUpperCase()+dayKey3.slice(1,3)}"]`) ||
+                 tr.querySelector(`td.te-shift[data-day="${dayKey3}"]`);
+      const shift = norm(td?.dataset.orig || td?.textContent || "-");
+      return !isOff(shift);
+    }).map(tr=>tr.dataset.email);
+
+    if (!targets.length){
+      toast("No employees working that day", "info");
+      return;
+    }
+
+    toast(`📤 ${action.toUpperCase()} to ${targets.length} employees…`, "info");
+    setStatus(`Sending ${targets.length}…`);
+
+    let ok=0, fail=0;
+    await runLimited(targets, 3, async (email)=>{
+      try{
+        const r = await API.sendShift({ targetEmail:email, action, actor });
+        if (r.ok) ok++; else fail++;
+      }catch{ fail++; }
+      setStatus(`Sending… ok:${ok} fail:${fail}`);
+    });
+
+    setStatus(`Done → ok:${ok} fail:${fail}`);
+    toast(fail===0 ? `✅ Sent to all (${ok})` : `⚠️ Sent ok:${ok} fail:${fail}`, fail===0?"success":"error");
+  }
+
+  // ---------- Create Next Week (global) ----------
+  async function createNextWeekFromAppGlobal(){
+    if (!isManagerRole(currentUser?.role)) return toast("Managers only", "error");
+    const actor = currentUser?.email || "";
+    toast("⏳ Creating next week…", "info");
+    try{
+      const url = `${CONFIG.BASE_URL}?action=createnextweek&actor=${encodeURIComponent(actor)}`;
+      const j = await fetchJSON(url, { ttl:0 });
+      if (j?.ok){
+        toast(`✅ New week created: ${j.name}`, "success");
+        alert(`New week tab created:\n${j.name}`);
+      }else{
+        toast(`⚠️ ${j.error||"failed"}`, "error");
+        alert(j.error || "Could not create week");
+      }
+    }catch(e){
+      console.warn(e);
+      toast("❌ Error creating week", "error");
+    }
+  }
+
+  // ---------- Helpers ----------
+  function escapeHtml(s){
+    return String(s||"").replace(/[&<>"']/g, m=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[m]));
+  }
+
+  // Hook showWelcome => botón manager
+  const prevShow = window.showWelcome;
+  window.showWelcome = async function(name, role){
+    if (prevShow) await prevShow.call(this, name, role);
+    if (isManagerRole(role)) addTeamEditorButton();
+  };
+
+  // export
+  window.openTeamEditor = openTeamEditor;
+  window.closeTeamEditor = closeTeamEditor;
+
+  console.log("✅ Team Editor v2 loaded clean");
+})();
