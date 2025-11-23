@@ -133,25 +133,6 @@
       installBtn.style.display = "none";
       tip.textContent = "✅ ACW-App already installed.";
     });
-    /********** TEAM EDITOR DOM SKELETON (si no existe en HTML) **********/
-(function ensureTeamEditorSection(){
-  if (document.getElementById("teamEditorSection")) return;
-
-  const sec = document.createElement("section");
-  sec.id = "teamEditorSection";
-  sec.style.display = "none";
-  sec.innerHTML = `
-    <div class="team-editor-header">
-      <h2>Team Editor</h2>
-      <div class="team-editor-actions">
-        <span id="teamSaveStatus" style="font-size:12px;color:#666;margin-left:8px;"></span>
-      </div>
-    </div>
-    <div id="teamTableWrap"></div>
-  `;
-  document.body.appendChild(sec);
-})();
   </script>
 </body>
 </html>
-
