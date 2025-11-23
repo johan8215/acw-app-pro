@@ -230,3 +230,49 @@ button:active{ transform:translateY(1px); }
   }
 }
 /* =============================================================== */
+
+/* ===================== TEAM BUTTONS (small + no overlap) ===================== */
+.team-btn{
+  position:fixed;
+  right:18px;
+  bottom:22px;
+  z-index:10000;
+  padding:8px 12px;
+  border-radius:12px;
+  border:0;
+  font-weight:800;
+  background:#0a84ff;
+  color:#fff;
+  box-shadow:0 8px 22px rgba(0,120,255,.35);
+  cursor:pointer;
+}
+
+#teamBtn{ bottom:22px; }                 /* Team View abajo */
+#teamEditorBtn{ bottom:72px; }           /* Team Editor arriba, NO encima */
+.team-editor-btn{ background:#e60000; }  /* rojo ACW */
+
+/* ===================== TEAM EDITOR minimal skin ===================== */
+#teamEditorSection.hidden{ display:none; }
+#teamEditorSection{ font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; }
+
+/* botones del header */
+#teamEditorSection .btn{
+  background:#fff;
+  border:1px solid rgba(0,0,0,.08);
+  padding:6px 10px;
+  border-radius:10px;
+  font-weight:800;
+  cursor:pointer;
+  margin-left:6px;
+}
+#teamEditorSection .btn:active{ transform:translateY(1px); }
+
+/* send all */
+#teamEditorSection .te-sendall{
+  background:#e60000; color:#fff; border:0;
+  box-shadow:0 4px 12px rgba(230,0,0,.25);
+}
+#teamEditorSection .te-sendall2{
+  background:#ff8800; color:#fff; border:0;
+  box-shadow:0 4px 12px rgba(255,136,0,.25);
+}
