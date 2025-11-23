@@ -2353,3 +2353,59 @@ function ensureOpenInSheetsBtn(modalEl){
 
   console.log("✅ Team Editor v2 loaded clean");
 })();
+
+/********** PATCH — filtrar empleados inactivos (UI) **********/
+(function(){
+  if (!window.API) return;
+
+  const isActiveEmp = (e)=>{
+    if (!e || !e.email) return false;
+
+    // si el backend trae un flag
+    if (e.active === false || e.isActive === false) return false;
+
+    const s = String(e.status||e.role||e.note||"").toLowerCase();
+    if (/inactive|inactivo|terminated|former|old|no\s*usa|offboard|retired/.test(s)) return false;
+
+    return true;
+  };
+
+  // Wrap getDirectory para que todo el UI solo vea activos
+  const _getDir = API.getDirectory.bind(API);
+  API.getDirectory = async function(controller){
+    const j = await _getDir(controller);
+    if (j?.directory && Array.isArray(j.directory)){
+      window.__teamDirFull = j.directory.slice();         // backup full por si quieres mirar algo
+      j.directory = j.directory.filter(isActiveEmp);
+    }
+    return j;
+  };
+
+  // Reabre TE ya filtrado si existe
+  const _openTE = window.openTeamEditor;
+  if (typeof _openTE === "function"){
+    window.openTeamEditor = async function(...args){
+      await _openTE.apply(this,args);
+      const table = document.getElementById("teamEditorTable");
+      const st = document.getElementById("teamSaveStatus");
+      if (table && st){
+        st.textContent = `Loaded ${table.querySelectorAll("tbody tr").length} active employees`;
+      }
+    };
+  }
+
+  // Team View refresca lista filtrada si existe
+  const _loadTV = window.loadEmployeeDirectory;
+  if (typeof _loadTV === "function"){
+    window.loadEmployeeDirectory = async function(...args){
+      await _loadTV.apply(this,args);
+      if (Array.isArray(window.__teamList)){
+        window.__teamList = window.__teamList.filter(isActiveEmp);
+        window.__teamPage = 0;
+        window.renderTeamViewPage?.();
+      }
+    };
+  }
+
+  console.log("✅ PATCH activos aplicado (UI)");
+})();
