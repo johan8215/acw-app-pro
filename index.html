@@ -33,6 +33,22 @@
     <p id="totalHours" class="total"></p>
   </div>
 
+  <section id="teamEditorSection" class="section" style="display:none;">
+  <div class="glass-card team-editor-card">
+    <div class="team-editor-header">
+      <h2>Team Editor</h2>
+
+      <div class="team-editor-actions">
+        <button id="teamSaveBtn" class="btn btn-red">Save Changes</button>
+        <button id="teamCloseBtn" class="btn btn-ghost">Close</button>
+        <span id="teamSaveStatus" class="muted small"></span>
+      </div>
+    </div>
+
+    <div id="teamTableWrap" class="team-table-wrap"></div>
+  </div>
+</section>
+
 <!-- ⚙️ SETTINGS BUTTON -->
 <button id="settingsBtn" class="gear-btn" onclick="openSettings()">⚙️</button>
 
