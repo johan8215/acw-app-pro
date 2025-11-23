@@ -1,313 +1,232 @@
 /* ============================================================
-   🎨 ACW-App — Blue Glass White Edition (v5.6.2) — CLEAN
-   Johan A. Giraldo (JAG15) & Sky — Nov 2025
+   ACW-App — Blue Glass White Edition (backup base)
    ============================================================ */
 
-/* ---------- Vars & Reset ---------- */
 :root{
-  --red:#e60000;
-  --red-2:#ff3333;
   --blue:#0078ff;
-  --blue-2:#33a0ff;
-  --shadow:0 0 35px rgba(0,120,255,0.35);
+  --red:#e60000;
+  --glass: rgba(255,255,255,0.90);
 }
 
 *{ box-sizing:border-box; }
-html,body{ margin:0; padding:0; }
+
 body{
-  font-family:'Segoe UI', Roboto, Arial, sans-serif;
-  background:#fff;
-  color:#222;
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:#f2f7ff;
+  color:#111;
+}
+
+/* Container principal */
+.container{
+  max-width:520px;
+  margin:60px auto;
+  padding:20px 22px;
+  background:var(--glass);
+  border-radius:16px;
+  box-shadow:0 8px 25px rgba(0,0,0,.12);
   text-align:center;
 }
 
-/* ---------- Container ---------- */
-.container{
-  background:rgba(255,255,255,0.95);
-  border-radius:14px;
-  padding:40px 50px;
-  margin:70px auto;
-  max-width:420px;
-  box-shadow:var(--shadow);
-  transition:all .4s ease;
-}
-h1{ margin:0 0 18px; letter-spacing:1px; }
+/* Login */
+h2{ color:var(--blue); margin:0 0 8px; }
+.subtitle{ color:#666; margin:0 0 14px; }
 
-/* ---------- Inputs ---------- */
-input[type="email"], input[type="password"]{
-  display:block; margin:10px auto; width:80%; max-width:280px;
-  padding:10px 14px; font-size:15px;
-  border:1px solid rgba(0,120,255,0.25);
-  border-radius:6px; outline:none; transition:.25s ease;
-}
-input[type="email"]:focus, input[type="password"]:focus{
-  border-color:var(--blue);
-  box-shadow:0 0 8px rgba(0,120,255,0.25);
+input{
+  width:100%;
+  padding:12px 10px;
+  margin:8px 0;
+  border-radius:8px;
+  border:1px solid rgba(0,0,0,.15);
+  outline:none;
+  font-size:16px;
 }
 
-/* ---------- Buttons ---------- */
 button{
-  background:var(--red); color:#fff; border:none; border-radius:6px;
-  padding:10px 22px; cursor:pointer; font-size:15px; transition:.25s ease;
+  padding:12px 18px;
+  margin-top:10px;
+  border:none;
+  border-radius:10px;
+  background:var(--blue);
+  color:#fff;
+  font-weight:700;
+  cursor:pointer;
+  box-shadow:0 4px 12px rgba(0,120,255,.25);
 }
-button:hover{ background:var(--red-2); }
-button:disabled{ opacity:.6; cursor:default; }
+button:disabled{ opacity:.55; cursor:not-allowed; }
+button:active{ transform:translateY(1px); }
 
-/* ---------- Gear Button ---------- */
-.gear-btn{
-  position:fixed; bottom:20px; right:20px;
-  background:var(--red); color:#fff; border:none; border-radius:50%;
-  width:46px; height:46px; font-size:22px; cursor:pointer;
-  box-shadow:0 0 25px rgba(0,120,255,.4);
-  transition:.3s; z-index:999;
-}
-.gear-btn:hover{ background:var(--red-2); transform:rotate(25deg); }
-
-/* ---------- Clock & Totals ---------- */
-.clock{ color:#0070ff; font-size:.9em; margin-top:6px; }
-.total{ color:var(--red); font-weight:bold; margin-top:10px; }
-
-/* ---------- Error / Footer ---------- */
-.error{ color:#c00; font-size:13px; margin-top:10px; min-height:18px; }
-footer.hud{ color:#666; font-size:13px; margin:14px 0 30px; }
-
-/* ---------- Tables (Schedule) ---------- */
-table{
-  margin:0 auto; width:95%;
-  border-collapse:separate; border-spacing:20px 10px;
-  text-align:center; font-size:18px;
-}
-th{
-  padding-bottom:6px; color:#000; letter-spacing:.5px;
-  border-bottom:2px solid rgba(0,120,255,0.15);
-}
-td{ padding:8px 12px; }
-tr.today td{
-  background:rgba(0,120,255,0.06); border-radius:8px;
+.error{
+  margin-top:10px;
+  color:#c00;
+  font-weight:600;
 }
 
-/* ---------- Generic Modal (Settings) ---------- */
+/* Welcome header */
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:6px;
+}
+.settings-btn{
+  width:40px;height:40px;
+  border-radius:50%;
+  font-size:18px;
+  padding:0;
+}
+
+/* Role */
+.role{ color:#666; margin-top:-4px; }
+
+/* Schedule table */
+#schedule table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:14px;
+  background:#fff;
+  border-radius:12px;
+  overflow:hidden;
+}
+#schedule th, #schedule td{
+  padding:10px 12px;
+  border-bottom:1px solid rgba(0,0,0,.06);
+  text-align:left;
+}
+#schedule th{
+  color:var(--blue);
+  font-weight:800;
+}
+#schedule tr.today td{
+  background:rgba(0,120,255,.06);
+}
+.total{
+  margin-top:10px;
+  color:var(--red);
+  font-weight:800;
+}
+
+/* Footer */
+.footer{
+  text-align:center;
+  color:#777;
+  font-size:13px;
+  margin:25px 0;
+}
+
+/* =================== MODALS =================== */
 .modal{
-  display:none; position:fixed; inset:0;
-  background:rgba(0,0,0,.45); z-index:2000; animation:fadeIn .25s ease;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.35);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:10000;
 }
-.modal .modal-content{
-  background:rgba(255,255,255,.97); border-radius:16px;
-  padding:28px 30px; width:340px; margin:12% auto; text-align:center;
-  box-shadow:0 0 40px rgba(0,128,255,.3); animation:popIn .25s ease;
-}
-.modal .close{
-  color:#555; float:right; font-size:24px; font-weight:bold; cursor:pointer; margin-top:-10px;
-}
-.modal .close:hover{ color:#000; }
+.modal.show{ display:flex; }
 
-.settings-section{
-  display:flex; flex-direction:column; gap:12px; margin-top:20px; text-align:center;
+.modal-content.glass{
+  background:rgba(255,255,255,.98);
+  border-radius:14px;
+  padding:20px 22px;
+  width:340px;
+  max-width:92vw;
+  position:relative;
+  text-align:center;
+  box-shadow:0 0 40px rgba(0,120,255,.3);
 }
-.settings-section button{
-  background:var(--red); color:#fff; border:none; border-radius:8px;
-  padding:12px; width:100%; font-size:16px; font-weight:600; cursor:pointer;
-  margin-top:10px; box-shadow:0 4px 15px rgba(0,0,0,.15); transition:.3s;
-}
-.settings-section button:hover{ background:var(--red-2); transform:scale(1.05); }
-
-/* ---------- User phone ---------- */
-.user-phone{
-  color:var(--blue); font-weight:600; font-size:17px;
-  margin:10px 0 16px; text-shadow:0 0 8px rgba(0,120,255,.25);
-  opacity:0; animation:fadeIn .4s ease forwards;
-}
-
-/* ---------- Live hours label ---------- */
-.live-hours{
-  margin-top:10px; color:#007bff; font-size:18px; font-weight:600;
-  text-shadow:0 0 12px rgba(0,120,255,.35); animation:glowBlue 3s ease-in-out infinite alternate;
-}
-@keyframes glowBlue{
-  from{ text-shadow:0 0 5px rgba(0,120,255,.25); }
-  to{   text-shadow:0 0 18px rgba(0,120,255,.5); }
+.modal-content .close{
+  position:absolute;
+  right:10px; top:8px;
+  background:none;
+  border:none;
+  color:#333;
+  font-size:22px;
+  cursor:pointer;
+  box-shadow:none;
 }
 
-/* ============================================================
-   🧑‍🤝‍🧑 Team View (uses inline styles + .show)
-   ============================================================ */
+/* =================== TEAM VIEW BUTTON =================== */
 .team-btn{
-  position:fixed; top:25px; right:40px;
-  background:#fff; color:var(--red);
-  border:2px solid rgba(0,120,255,.4); border-radius:10px;
-  padding:8px 16px; font-weight:600;
-  box-shadow:0 4px 20px rgba(0,120,255,.4);
-  cursor:pointer; z-index:9999; transition:.3s;
-}
-.team-btn:hover{ background:#f9f9f9; box-shadow:0 0 25px rgba(0,136,255,.6); }
-
-/* Solo animación/visibilidad; el resto viene inline desde JS */
-#directoryWrapper.show{
-  visibility:visible !important;
-  opacity:1 !important;
-  transform:translate(-50%, -50%) scale(1) !important;
+  position:fixed;
+  top:40px;
+  right:25px;
+  z-index:9998;
+  background:var(--red);
+  padding:12px 22px;
+  border-radius:14px;
+  font-size:16px;
+  box-shadow:0 8px 20px rgba(230,0,0,.25);
 }
 
-.directory-table{
-  width:100%; font-size:15px; border-collapse:collapse; margin-top:10px;
-}
-.directory-table th, .directory-table td{
-  padding:8px 5px; border-bottom:1px solid rgba(0,0,0,0.08);
+/* Team View modal */
+.directory-wrapper{
+  border:1px solid rgba(0,0,0,.08);
 }
 .directory-table th{
-  color:var(--blue); background:rgba(0,120,255,0.05);
-  border-bottom:2px solid rgba(0,120,255,0.15);
+  color:var(--blue);
+  font-weight:800;
 }
-.directory-table tr:hover{ background:rgba(0,120,255,0.08); transition:background .25s ease; }
-.tv-live{ color:#33ff66; text-shadow:0 0 8px rgba(51,255,102,.5); }
-.fade-out{ animation:fadeOut .25s forwards; }
-@keyframes fadeOut{ from{opacity:1;} to{opacity:0;} }
+.open-btn{
+  background:var(--blue);
+  padding:6px 10px;
+  font-size:12px;
+  border-radius:8px;
+}
 
-/* ============================================================
-   👤 Employee Modal
-   ============================================================ */
+/* Employee modal */
 .employee-modal{
-  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-  background:rgba(0,0,0,.45); backdrop-filter:blur(10px); z-index:9999;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.35);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:10001;
 }
-.employee-modal .emp-box{
-  background:rgba(255,255,255,.97); border-radius:16px;
-  box-shadow:0 0 45px rgba(0,120,255,.35);
-  width:85%; max-width:800px; padding:40px 50px 54px;
-  color:#111; text-align:center;
+.emp-box{
+  background:#fff;
+  padding:18px 18px;
+  border-radius:14px;
+  width:92%;
+  max-width:460px;
+  position:relative;
 }
-.emp-header::before{
-  content:"🚘 Allston Car Wash — ";
-  display:block; font-size:18px; font-weight:700; color:var(--blue);
-  text-shadow:0 0 10px rgba(0,120,255,.35); margin-bottom:4px;
+.emp-close{
+  position:absolute;
+  top:8px; right:10px;
+  font-size:22px;
+  background:none;
+  color:#333;
+  box-shadow:none;
 }
-.emp-phone a{ color:var(--blue); font-weight:600; text-decoration:none; font-size:16px; }
-.emp-role{ color:#777; margin-bottom:12px; font-size:15px; }
-
-.employee-modal .schedule-mini{
-  width:95%; border-collapse:separate; border-spacing:20px 10px;
-  text-align:center; font-size:18px; margin:0 auto;
+.schedule-mini{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
 }
-.employee-modal .schedule-mini th{
-  background:rgba(0,120,255,0.05); color:var(--blue);
-  border-bottom:2px solid rgba(0,120,255,0.2);
-  border-radius:6px; padding:6px;
-}
-.employee-modal .schedule-mini td{
-  padding:6px; border-bottom:1px solid rgba(0,0,0,0.05);
-}
-
-.employee-modal .total{ color:var(--red); font-weight:700; margin-top:14px; font-size:18px; }
-.employee-modal .live-hours{ color:var(--blue); font-weight:600; margin-top:6px; font-size:16px; }
-
-.emp-actions{
-  display:flex; justify-content:center; gap:10px; margin-top:12px; flex-wrap:wrap;
-}
-.emp-actions button{
-  color:#fff; border:none; border-radius:8px; font-weight:600;
-  padding:8px 14px; cursor:pointer; transition:.25s;
-  box-shadow:0 4px 12px rgba(0,0,0,0.15);
-}
-.emp-actions .btn-update{ background:linear-gradient(135deg,#007bff,#0096ff); }
-.emp-actions .btn-update:hover{ background:linear-gradient(135deg,#0096ff,#33a0ff); transform:translateY(-2px); }
-.emp-actions .btn-today{ background:linear-gradient(135deg,#e60000,#ff3333); }
-.emp-actions .btn-today:hover{ background:linear-gradient(135deg,#ff3333,#ff6666); transform:translateY(-2px); }
-.emp-actions .btn-tomorrow{ background:linear-gradient(135deg,#ff8800,#ffaa33); }
-.emp-actions .btn-tomorrow:hover{ background:linear-gradient(135deg,#ffaa33,#ffbb55); transform:translateY(-2px); }
-
-.emp-status-msg{ width:100%; text-align:center; font-weight:600; font-size:.9em; margin-top:6px; }
-
-/* ============================================================
-   🔐 Change Password Modal
-   ============================================================ */
-#changePasswordModal{ z-index:9999; display:none; align-items:center; justify-content:center; animation:fadeIn .25s ease; }
-#changePasswordModal.show{ display:flex !important; }
-#changePasswordModal .modal-content.glass{
-  background:rgba(255,255,255,.97); border-radius:14px; box-shadow:0 0 40px rgba(0,120,255,.3);
-  backdrop-filter:blur(10px); padding:28px 30px; width:340px; text-align:center; animation:popIn .25s ease;
+.schedule-mini th, .schedule-mini td{
+  padding:8px 10px;
+  border-top:1px solid rgba(0,0,0,.06);
 }
 
-/* ============================================================
-   📚 History (Centered Settings-style) — .acwh-*
-   ============================================================ */
-.acwh-overlay{
-  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-  background:rgba(0,0,0,.45); z-index:9999; animation:fadeIn .25s ease;
-}
-.acwh-card{
-  width:340px; max-width:90vw; background:rgba(255,255,255,.97);
-  border-radius:16px; box-shadow:0 0 40px rgba(0,120,255,.30);
-  padding:22px 24px; text-align:center; animation:popIn .25s ease;
-}
-.acwh-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
-.acwh-title{ margin:0 auto; color:var(--blue); font-weight:700; }
-.acwh-close{ background:none; border:none; font-size:22px; cursor:pointer; color:#333; }
-.acwh-sub{ color:#777; font-size:13px; margin:2px 0 10px; }
+/* ================= Team Editor small button fix ================= */
+.hidden{ display:none !important; }
 
-.acwh-list{ display:flex; flex-direction:column; gap:10px; margin-top:8px; }
-.acwh-row{
-  display:flex; align-items:center; justify-content:space-between;
-  background:#fff; border:1px solid rgba(0,0,0,.08); border-radius:10px;
-  padding:10px 12px;
-}
-.acwh-row:hover{ box-shadow:0 4px 14px rgba(0,0,0,.10); }
-
-.acwh-week{ text-align:left; }
-.acwh-week small{ color:#999; display:block; margin-top:2px; }
-.acwh-total{ font-weight:800; color:var(--red); margin-left:auto; margin-right:8px; }
-
-.acwh-btn{
-  background:var(--red); color:#fff; border:none; border-radius:8px;
-  padding:8px 12px; font-weight:700; cursor:pointer;
-}
-.acwh-back{
-  background:#fff; color:var(--blue); border:2px solid rgba(0,120,255,.35);
-  border-radius:10px; padding:6px 10px; font-weight:600; cursor:pointer;
+#teamEditorBtn.team-btn,
+.team-editor-btn{
+  padding:8px 14px;
+  font-size:14px;
+  right:150px; /* queda al lado de Team View */
 }
 
-.acwh-table{ width:100%; border-collapse:collapse; margin-top:10px; }
-.acwh-table th{
-  text-align:left; color:var(--blue);
-  border-bottom:2px solid rgba(0,120,255,.15);
-  padding:6px 4px;
+@media (max-width:700px){
+  #teamEditorBtn.team-btn,
+  .team-editor-btn{
+    right:120px;
+    padding:6px 10px;
+    font-size:13px;
+  }
 }
-.acwh-table td{ padding:6px 4px; border-bottom:1px solid rgba(0,0,0,.08); }
-.acwh-table td:last-child{ text-align:right; }
-.acwh-total-line{ text-align:right; font-weight:800; color:var(--red); margin:10px 0 2px; }
-
-/* ============================================================
-   ⬇️ Download button
-   ============================================================ */
-.download-btn{
-  display:inline-block; width:90%; margin-top:8px; padding:10px 18px;
-  border:none; border-radius:8px;
-  background:linear-gradient(135deg,var(--blue),var(--blue-2));
-  color:#fff; font-weight:600; font-size:1em;
-  box-shadow:0 4px 12px rgba(0,123,255,.35);
-  cursor:pointer; transition:.25s;
-}
-.download-btn:hover{
-  transform:translateY(-1px);
-  background:linear-gradient(135deg,#1a8cff,#4db8ff);
-  box-shadow:0 6px 16px rgba(0,136,255,.45);
-}
-
-/* ---------- Shared Animations ---------- */
-@keyframes fadeIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
-@keyframes popIn{ from{opacity:0; transform:scale(.96);} to{opacity:1; transform:scale(1);} }
-
-// === CSS para botón Share rojo en History ===
-(function injectHistoryShareCSS(){
-  if (document.getElementById('acw-history-share-css')) return;
-  const s = document.createElement('style'); s.id='acw-history-share-css';
-  s.textContent = `
-    .acwh-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
-    .acwh-share{
-      background:#ff3b30; color:#fff; border:none; border-radius:10px;
-      padding:6px 10px; font-weight:800; cursor:pointer;
-      box-shadow:0 2px 10px rgba(255,59,48,.35);
-    }
-    .acwh-share:active{ transform:translateY(1px); }
-  `;
-  document.head.appendChild(s);
-})();
+/* =============================================================== */
