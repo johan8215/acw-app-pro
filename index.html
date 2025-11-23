@@ -82,6 +82,28 @@
   </section>
   <!-- ========================================================== -->
 
+  <!-- ================= TEAM EDITOR (overlay) ================= -->
+<section id="teamEditorSection" class="hidden" aria-hidden="true">
+  <div class="team-editor-header">
+    <h2>Team Editor</h2>
+
+    <div class="team-editor-actions">
+      <!-- botones se crean también por JS, pero dejamos los hooks -->
+      <button id="teamReloadBtn" class="btn">↻ Reload</button>
+      <button id="teamSaveBtn" class="btn">Save Changes</button>
+      <button id="teamSendTodayAllBtn" class="btn te-sendall">📤 Send Today (All)</button>
+      <button id="teamSendTomorrowAllBtn" class="btn te-sendall te-sendall2">📤 Send Tomorrow (All)</button>
+      <button id="teamNewWeekBtn" class="btn">➕ New Week</button>
+      <button id="teamCloseBtn" class="btn">✖ Close</button>
+
+      <span id="teamSaveStatus" style="margin-left:8px;font-weight:700;color:#0a84ff;"></span>
+    </div>
+  </div>
+
+  <div id="teamTableWrap"></div>
+</section>
+<!-- ========================================================= -->
+
   <div class="footer">
     <p>Powered by JAG15 | Allston Car Wash © 2025</p>
     <p id="versionLabel"></p>
