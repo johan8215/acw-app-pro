@@ -2086,3 +2086,67 @@ function ensureOpenInSheetsBtn(modalEl){
 
   console.log("✅ PATCH v5.6.3 applied: Global API key for sendtoday/sendtomorrow");
 })();
+
+/* =================== REALTIME POLLING (safe) =================== */
+const REALTIME_INTERVAL = 60000; // 60s (cámbialo si quieres)
+let __rtTimer = null;
+let __rtController = null;
+
+function startRealtime(refreshFn, interval = REALTIME_INTERVAL){
+  stopRealtime();
+  __rtController = new AbortController();
+
+  const tick = () => refreshFn(__rtController).catch(()=>{});
+  tick();
+  __rtTimer = setInterval(tick, interval);
+}
+
+function stopRealtime(){
+  if (__rtTimer){ clearInterval(__rtTimer); __rtTimer = null; }
+  if (__rtController){ __rtController.abort(); __rtController = null; }
+}
+
+async function refreshTeamEditorVisibleRows(controller){
+  const wrap = document.getElementById("teamEditorWrapper");
+  if (!wrap) return;
+
+  // agarramos filas YA reales
+  const rowEls = Array.from(wrap.querySelectorAll('tr[data-email]'));
+  if (!rowEls.length) return;
+
+  const rows = rowEls.map(r => ({
+    email: r.dataset.email,
+    rowEl: r
+  }));
+
+  await runLimited(rows, 4, async (info)=>{
+    const email = info.email;
+    const tr = info.rowEl;
+
+    const d = await API.getSchedule(email, 0, controller);
+    if (!d?.ok) return;
+
+    // ✅ actualiza shifts por día
+    (d.days || []).forEach(day=>{
+      const day3 = String(day.name||"").slice(0,3);
+      const cell = tr.querySelector(`[data-day="${day3}"]`);
+      if (!cell) return;
+
+      const newShift = String(day.shift||"-").trim();
+      if (cell.__lastShift !== newShift){
+        cell.__lastShift = newShift;
+        cell.textContent = newShift;
+      }
+    });
+
+    // ✅ total hours correcto PARA ESA FILA
+    const tot = tr.querySelector(".te-total");
+    if (tot){
+      const t = Number(d.total||0).toFixed(1);
+      if (tot.__lastTot !== t){
+        tot.__lastTot = t;
+        tot.textContent = t;
+      }
+    }
+  });
+}
