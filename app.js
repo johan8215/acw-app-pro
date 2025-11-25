@@ -1259,6 +1259,205 @@ API.getSchedule = async function(identifier, offset = 0, controller){
   return res; // ok:false
 };
 
+/* =================== TEAM EDITOR (simple table) =================== */
+let __teList = [];
+let __teController = null;
+
+function addTeamEditorButton(){
+  if (document.getElementById("teamEditorBtn")) return;
+
+  const btn = document.createElement("button");
+  btn.id = "teamEditorBtn";
+  btn.className = "team-btn";          // usa el mismo estilo del Team View
+  btn.textContent = "Team Editor";
+  btn.onclick = toggleTeamEditor;
+
+  document.body.appendChild(btn);
+}
+
+function toggleTeamEditor(){
+  const w = document.getElementById("teamEditorWrapper");
+  if (w){
+    w.classList.add("fade-out");
+    setTimeout(()=> w.remove(), 180);
+    __teController?.abort();
+    __teController = null;
+    return;
+  }
+  openTeamEditor();
+}
+
+async function openTeamEditor(){
+  try{
+    __teController?.abort();
+    __teController = new AbortController();
+
+    const j = await API.getDirectory(__teController);
+    if (!j?.ok) { toast("❌ Directory error", "error"); return; }
+
+    __teList = j.directory || [];
+    renderTeamEditor();
+  }catch(e){
+    if (e.name !== "AbortError") console.warn(e);
+    toast("❌ Team Editor error", "error");
+  }
+}
+
+function renderTeamEditor(){
+  document.getElementById("teamEditorWrapper")?.remove();
+
+  const wrap = document.createElement("div");
+  wrap.id = "teamEditorWrapper";
+  wrap.className = "directory-wrapper te-wrapper";
+
+  Object.assign(wrap.style, {
+    position:"fixed", inset:"0",
+    background:"rgba(0,0,0,.25)",
+    backdropFilter:"blur(2px)",
+    zIndex:"9999",
+    display:"flex",
+    alignItems:"center",
+    justifyContent:"center",
+    padding:"12px"
+  });
+
+  wrap.innerHTML = `
+    <div class="glass" style="
+      width:96%; max-width:1100px; max-height:90vh; overflow:auto;
+      background:rgba(255,255,255,.97); border-radius:16px;
+      box-shadow:0 0 35px rgba(0,128,255,0.3); padding:14px 14px 18px;">
+      
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <h3 style="margin:0;color:#0078ff;">Team Editor</h3>
+        <div style="display:flex;gap:8px;">
+          <button id="teSaveBtn" class="open-btn" style="background:#e60000;color:#fff;">Save Changes</button>
+          <button id="teCloseBtn" class="open-btn">Close</button>
+        </div>
+      </div>
+
+      <table class="directory-table" style="width:100%;font-size:14px;border-collapse:collapse;margin-top:10px;">
+        <thead>
+          <tr>
+            <th style="text-align:left;">Employee</th>
+            <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th>
+          </tr>
+        </thead>
+        <tbody id="teBody">
+          <tr><td colspan="8" style="padding:10px;opacity:.7;">Loading schedules…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  document.body.appendChild(wrap);
+
+  // close
+  wrap.querySelector("#teCloseBtn").onclick = toggleTeamEditor;
+  wrap.addEventListener("click", e=>{
+    if(e.target === wrap) toggleTeamEditor();
+  });
+
+  // save
+  wrap.querySelector("#teSaveBtn").onclick = ()=> saveTeamEditor(wrap);
+
+  // cargar schedules
+  fillTeamEditorRows(wrap);
+}
+
+async function fillTeamEditorRows(root){
+  const body = root.querySelector("#teBody");
+  const list = __teList;
+
+  // hacemos filas vacías primero
+  body.innerHTML = list.map(emp=>{
+    const active = (emp.active === false || String(emp.status||"").toLowerCase()==="inactive") ? "⚪" : "🟢";
+    return `
+      <tr data-email="${emp.email}" data-name="${emp.name}">
+        <td style="text-align:left;">
+          <b>${emp.name}</b> <span title="Active">${active}</span><br>
+          <small style="opacity:.6">${emp.email||""}</small>
+        </td>
+        ${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d=>`
+          <td class="te-cell" data-day="${d}" contenteditable="true"
+              data-original="-" style="min-width:86px;">—</td>
+        `).join("")}
+      </tr>
+    `;
+  }).join("");
+
+  // ahora traemos schedules en paralelo con límite
+  await runLimited(list, 4, async (emp)=>{
+    try{
+      const s = await API.getSchedule(emp.email, 0, __teController);
+      const tr = body.querySelector(`tr[data-email="${cssEscape(emp.email)}"]`);
+      if (!tr) return;
+
+      const days = s?.days || [];
+      const byDay = {};
+      days.forEach(x=>{
+        const k = String(x.name||"").slice(0,3);
+        byDay[k] = x.shift || "-";
+      });
+
+      ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].forEach(d=>{
+        const td = tr.querySelector(`.te-cell[data-day="${d}"]`);
+        if (!td) return;
+        const val = byDay[d] ?? "-";
+        td.textContent = val;
+        td.setAttribute("data-original", val);
+      });
+    }catch(e){}
+  });
+}
+
+async function saveTeamEditor(root){
+  const actor = currentUser?.email;
+  if (!actor){ toast("⚠️ Session expired", "error"); return; }
+
+  const rows = Array.from(root.querySelectorAll("tr[data-email]"));
+  let changes = [];
+
+  rows.forEach(tr=>{
+    const email = tr.dataset.email;
+    const cells = Array.from(tr.querySelectorAll(".te-cell[data-day]"));
+    cells.forEach(td=>{
+      const day = td.dataset.day;                 // Mon/Tue/...
+      const newShift = td.innerText.replace(/\s+/g," ").trim() || "-";
+      const oldShift = (td.getAttribute("data-original")||"").trim();
+      if (newShift !== oldShift){
+        changes.push({ email, day, newShift, td });
+      }
+    });
+  });
+
+  if (!changes.length){
+    toast("ℹ️ No changes to save", "info");
+    return;
+  }
+
+  toast("✏️ Saving...", "info");
+
+  let ok = 0;
+  for (const c of changes){
+    const r = await API.updateShift({
+      targetEmail: c.email,
+      day: c.day,
+      newShift: c.newShift,
+      actor
+    });
+    if (r.ok){
+      ok++;
+      c.td.setAttribute("data-original", c.newShift);
+    }
+  }
+
+  if (ok === changes.length){
+    toast("✅ All changes saved", "success");
+  }else{
+    toast(`⚠️ Saved ${ok}/${changes.length}`, "error");
+  }
+}
+
 /* =================== GLOBAL BINDS =================== */
 window.loginUser = loginUser;
 window.openSettings = openSettings;
