@@ -1306,6 +1306,16 @@ async function openTeamEditor(){
   }
 }
 
+function openTeamEditor(){
+  // ... creas #teamEditorWrapper y pintas tabla ...
+  startRealtime(refreshTeamEditorVisibleRows, 60000);
+}
+
+function closeTeamEditor(){
+  document.getElementById("teamEditorWrapper")?.remove();
+  stopRealtime();
+}
+
 function renderTeamEditor(){
   document.getElementById("teamEditorWrapper")?.remove();
 
