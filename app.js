@@ -2170,3 +2170,150 @@ async function refreshTeamEditorVisibleRows(controller){
     }
   });
 }
+
+/* === PATCH Nov 24 2025 — Alias específicos para apellidos repetidos === */
+(function(){
+  if (!window.API) return console.warn("API missing");
+
+  const norm = v => (v||"").toString().trim();
+
+  function buildAliases(fullName){
+    const raw = norm(fullName).replace(/\s+/g," ");
+    const parts = raw.split(" ").filter(p=>!/^[A-ZÁÉÍÓÚÜÑ]\.?$/.test(p));
+    if (!parts.length) return [];
+
+    const first = parts[0].toUpperCase();
+    let last = parts[parts.length-1].toUpperCase();
+
+    const JOINERS=new Set(["DE","DEL","DE LA","DE LOS","DE LAS","DA","VON","VAN","DI","DAL"]);
+    const prev=(parts[parts.length-2]||"").toUpperCase();
+    if (JOINERS.has(prev)) last=`${prev} ${last}`;
+
+    const fi=first[0]||"";
+    const NBSP="\u00A0";
+
+    // orden: más específico -> menos específico
+    const base=[
+      `${fi}. ${last}`,               // D. MEJIA
+      `${fi}.${last}`,                // D.MEJIA
+      `${fi}${NBSP}.${NBSP}${last}`,  // D. MEJIA con NBSP
+      `${first} ${last}`,             // DENIS MEJIA
+      parts.join(" ").toUpperCase(),  // nombre completo
+      last                            // MEJIA (último recurso)
+    ];
+
+    return Array.from(new Set(
+      base.map(x=>x.replace(/\s+/g," ").trim()).filter(Boolean)
+    ));
+  }
+
+  // override resolveAlias: ahora devuelve {alias principal + aliases[]}
+  const oldGetDir = API.getDirectory.bind(API);
+  API._aliasCache = new Map();
+
+  API.resolveAlias = async function({email, phone}={}, controller){
+    const key=(email||phone||"").toLowerCase();
+    if (this._aliasCache.has(key)) return this._aliasCache.get(key);
+
+    const d = await oldGetDir(controller);
+    const list = d?.directory || d?.employees || d?.rows || (Array.isArray(d)?d:[]);
+    const nPhone=v=>norm(v).replace(/\D/g,"");
+
+    const rec = list.find(x=>
+      (email && norm(x.email).toLowerCase()===norm(email).toLowerCase()) ||
+      (phone && nPhone(x.phone) && nPhone(x.phone)===nPhone(phone))
+    );
+    if(!rec) throw new Error("ALIAS_NOT_FOUND_IN_DIRECTORY");
+
+    const full = norm(rec.name || rec.employee || rec.fullname || "");
+    const aliases = buildAliases(full);
+    if(!aliases.length) throw new Error("ALIAS_EMPTY");
+
+    const res={ alias: aliases[0], aliases, foundBy:"directory" };
+    this._aliasCache.set(key,res);
+    return res;
+  };
+
+  // override getSchedule fallback: prueba TODAS las variantes
+  const base = CONFIG.BASE_URL;
+  const oldFetchJSON = window.fetchJSON;
+  const ttl0 = API.schedTTL0 || 60000;
+  const ttlo = API.schedTTLOld || 300000;
+
+  API.getSchedule = async function(identifier, offset=0, controller){
+    const ttl = offset===0 ? ttl0 : ttlo;
+    const signal = controller?.signal;
+
+    function toMin(s){
+      s=String(s||"").trim().toUpperCase();
+      let ap=(s.match(/\b(AM|PM)\b/)||[])[1]||"";
+      s=s.replace(/\s*(AM|PM)\s*$/,'');
+      let [h,m]=s.split(":"); h=+h; m=+(m||0);
+      if(ap==="AM"&&h===12) h=0;
+      if(ap==="PM"&&h!==12) h+=12;
+      return h*60+m;
+    }
+    function _parseHours(cell){
+      if(!cell) return 0;
+      const t=String(cell).trim().toUpperCase();
+      if(/^(OFF|OFFR|CERRADO|N\/A|APP)$/.test(t)) return 0;
+      const core=t.split(/\s+(DONE|READY|SENT|UPDATE|UPDATED)\b/i)[0].trim();
+      const clean=core.replace(/\.+\s*$/,"").replace(/[–—]|to/gi,"-").replace(/\s*-\s*/,"-");
+      const m=clean.match(/^([0-9]{1,2}(?::[0-9]{2})?\s*(?:AM|PM)?)\s*-\s*([0-9]{1,2}(?::[0-9]{2})?\s*(?:AM|PM)?)$/i);
+      if(!m) return 0;
+      let a=toMin(m[1]), b=toMin(m[2]);
+      if(!/[AP]M/i.test(m[1]) && !/[AP]M/i.test(m[2]) && b<a) b+=720;
+      return Math.max(0,b-a)/60;
+    }
+    function normalize(j){
+      if(!j) return {ok:false,days:[],total:0};
+      let daysArr=j.days || j.week?.days || j.schedule || j.rows;
+
+      if(!Array.isArray(daysArr)){
+        const keys=["Mon","Tue","Wed","Thu","Fri","Sat","Sun","mon","tue","wed","thu","fri","sat","sun"];
+        if(keys.some(k=>k in j)){
+          daysArr=keys.filter(k=>k in j).map(k=>({name:k,shift:j[k]}));
+        }
+      }
+
+      const days = Array.isArray(daysArr) ? daysArr.map(x=>{
+        const name = x?.name || x?.day || "";
+        const shift = x?.shift ?? x?.text ?? x ?? "";
+        const hRaw = x?.hours;
+        const hours = (hRaw!==undefined && hRaw!==null) ? Number(hRaw) : _parseHours(shift);
+        return {name,shift,hours};
+      }) : [];
+
+      const total = (typeof j.total==="number") ? j.total : days.reduce((s,r)=>s+(Number(r.hours)||0),0);
+      return { ok: days.length>0, days, total, rowAlias:j.rowAlias||j.alias||null, weekLabel:j.weekLabel||j.label };
+    }
+    async function fetchN(u){
+      try{
+        const raw = await oldFetchJSON(u,{ttl,signal});
+        const n = normalize(raw);
+        return {...n, raw};
+      }catch{ return {ok:false,days:[],total:0};}
+    }
+
+    // 1) por email primero
+    let res=await fetchN(`${base}?action=getSmartSchedule&email=${encodeURIComponent(identifier||"")}&offset=${offset}`);
+    if(res.ok) return res;
+
+    // 2) si falla, probamos alias específicos
+    let aliases=[];
+    try{
+      const al = await API.resolveAlias({email:identifier}, controller);
+      aliases = al?.aliases || (al?.alias?[al.alias]:[]);
+    }catch{}
+
+    for(const a of aliases){
+      for(const action of ["getSmartSchedule","getScheduleByAlias","getSchedule"]){
+        res = await fetchN(`${base}?action=${action}&alias=${encodeURIComponent(a)}&offset=${offset}`);
+        if(res.ok) return res;
+      }
+    }
+    return res;
+  };
+
+  console.log("✅ PATCH alias-specific applied (duplicates safe)");
+})();
