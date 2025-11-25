@@ -1277,7 +1277,6 @@ function addTeamEditorButton(){
 
   document.body.appendChild(btn);
 }
-
 function toggleTeamEditor(){
   const w = document.getElementById("teamEditorWrapper");
   if (w){
@@ -1285,6 +1284,8 @@ function toggleTeamEditor(){
     setTimeout(()=> w.remove(), 180);
     __teController?.abort();
     __teController = null;
+
+    stopRealtime(); // ✅ importantísimo
     return;
   }
   openTeamEditor();
