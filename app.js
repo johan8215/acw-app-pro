@@ -428,13 +428,17 @@ async function loadSchedule(email) {
       return;
     }
 
-    // Normaliza
     const normDays = daysArr.map(x => {
-      const name  = x?.name || x?.day || "";
-      const shift = x?.shift ?? x?.text ?? x ?? "";
-      const hours = Number(x?.hours ?? 0) || parseHours(String(shift));
-      return { name, shift, hours };
-    });
+  const name  = x?.name || x?.day || "";
+  const shift = x?.shift ?? x?.text ?? x ?? "";
+
+  const hRaw = x?.hours;
+  const hours = (hRaw !== undefined && hRaw !== null)
+    ? Number(hRaw)                 // respeta 0
+    : parseHours(String(shift));   // solo calcula si NO vino hours
+
+  return { name, shift, hours };
+});
 
     const total = (typeof d?.total === "number")
       ? d.total
