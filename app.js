@@ -1234,17 +1234,19 @@ API.getSchedule = async function(identifier, offset = 0, controller){
         daysArr = keys.filter(k=>k in j).map(k=>({ name:k, shift:j[k] }));
       }
     }
-    const days = Array.isArray(daysArr)
-      ? daysArr.map(x=>{
-          const name  = x?.name || x?.day || "";
-          const shift = x?.shift ?? x?.text ?? x ?? "";
-          const hRaw = x?.hours;
-const hours = (hRaw !== undefined && hRaw !== null)
-  ? Number(hRaw)
-  : _parseHours(shift);
-          return { name, shift, hours };
-        })
-      : [];
+ const days = Array.isArray(daysArr)
+  ? daysArr.map(x=>{
+      const name  = x?.name || x?.day || "";
+      const shift = x?.shift ?? x?.text ?? x ?? "";
+
+      const hRaw = x?.hours;
+      const hours = (hRaw !== undefined && hRaw !== null)
+        ? Number(hRaw)
+        : _parseHours(shift);
+
+      return { name, shift, hours };
+    })
+  : [];
     const total = (typeof j.total === "number") ? j.total : days.reduce((s,r)=>s+(Number(r.hours)||0),0);
     return { ok: days.length>0, days, total, rowAlias: j.rowAlias||j.alias||null, weekLabel: j.weekLabel||j.label };
   }
