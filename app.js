@@ -371,7 +371,10 @@ async function showWelcome(name, role) {
   $("#welcomeName").innerHTML = `<b>${name}</b>`;
   safeText($("#welcomeRole"), role || "");
 
-  if (isManagerRole(role)) addTeamButton();
+  if (isManagerRole(role)) {
+  addTeamButton();        // Team View
+  addTeamEditorButton();  // Team Editor
+}
 
   // Teléfono del usuario (usando caché de directorio)
   try {
