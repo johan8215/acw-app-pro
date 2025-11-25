@@ -1238,7 +1238,10 @@ API.getSchedule = async function(identifier, offset = 0, controller){
       ? daysArr.map(x=>{
           const name  = x?.name || x?.day || "";
           const shift = x?.shift ?? x?.text ?? x ?? "";
-          const hours = Number(x?.hours ?? 0) || _parseHours(shift);
+          const hRaw = x?.hours;
+const hours = (hRaw !== undefined && hRaw !== null)
+  ? Number(hRaw)
+  : _parseHours(shift);
           return { name, shift, hours };
         })
       : [];
