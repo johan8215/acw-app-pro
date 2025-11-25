@@ -1295,20 +1295,20 @@ async function openTeamEditor(){
     __teController?.abort();
     __teController = new AbortController();
 
+    // si quieres SIEMPRE fresquito, puedes usar ?ts=
     const j = await API.getDirectory(__teController);
     if (!j?.ok) { toast("❌ Directory error", "error"); return; }
 
     __teList = j.directory || [];
     renderTeamEditor();
+
+    // ✅ empieza realtime SOLO cuando ya pintó
+    startRealtime(refreshTeamEditorVisibleRows, 60000);
+
   }catch(e){
     if (e.name !== "AbortError") console.warn(e);
     toast("❌ Team Editor error", "error");
   }
-}
-
-function openTeamEditor(){
-  // ... creas #teamEditorWrapper y pintas tabla ...
-  startRealtime(refreshTeamEditorVisibleRows, 60000);
 }
 
 function closeTeamEditor(){
