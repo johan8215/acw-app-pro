@@ -2067,7 +2067,7 @@ async function __teamEditorSaveChanges(overlay){
   }
 }
 
-// === MAIN: abrir Team Editor ===
+// === MAIN: abrir Team Editor (Glass v2) ===
 async function openTeamEditor(){
   if (!isManagerRole(currentUser?.role)){
     toast("Solo managers/supervisores pueden usar el Team Editor.", "error");
@@ -2087,6 +2087,7 @@ async function openTeamEditor(){
           <p id="teTodayStats" class="te-today"></p>
         </div>
         <div class="te-actions">
+          <button class="te-btn te-save">✏️ Save changes</button>
           <button class="te-btn te-refresh">🔁 Refresh</button>
           <button class="te-btn te-send-today">Send Today (Global)</button>
           <button class="te-btn te-send-tomorrow">Send Tomorrow (Global)</button>
@@ -2098,7 +2099,6 @@ async function openTeamEditor(){
       </div>
       <div class="te-footer">
         <div id="teTotals" class="te-totals"></div>
-        <button class="te-btn te-save">✏️ Save changes</button>
       </div>
     </div>
   `;
@@ -2110,7 +2110,7 @@ async function openTeamEditor(){
 
   const close = ()=> overlay.remove();
   overlay.querySelector(".te-close").onclick = close;
-  // 👇 Importante: ya NO cerramos al tocar afuera (para que el scroll no lo cierre)
+  // 👉 NO cerramos al tocar afuera, para que el scroll no cierre nada
 
   overlay.querySelector(".te-send-today").onclick    = ()=> __teamEditorSendGlobal("sendtoday", overlay);
   overlay.querySelector(".te-send-tomorrow").onclick = ()=> __teamEditorSendGlobal("sendtomorrow", overlay);
@@ -2125,7 +2125,7 @@ async function openTeamEditor(){
       return;
     }
 
-    // 🔧 Filtramos la fila "Emails" u otras sin email válido
+    // Solo filas con email válido
     list = list.filter(emp => /\S+@\S+\.\S+/.test(String(emp.email || "")));
 
     const enriched = list.map((emp, idx)=>({
@@ -2137,9 +2137,7 @@ async function openTeamEditor(){
 
     const groups = __buildTeamGroupsV2(enriched);
 
-    // ✅ Si por alguna razón no encuentra los rangos,
-    // mete a TODOS los empleados en "Back" para que
-    // NUNCA salga vacío.
+    // Si no encontró NINGÚN rango, mete todos en Back
     const hasAny =
       (groups.back?.length || 0) +
       (groups.front?.length || 0) +
@@ -2150,13 +2148,21 @@ async function openTeamEditor(){
       groups.back = enriched.slice();
     }
 
+    // Otros = empleados que no cayeron en Back / Front / Cashiers
+    const usedEmails = new Set([
+      ...(groups.back  || []).map(e=>e.email),
+      ...(groups.front || []).map(e=>e.email),
+      ...(groups.cash  || []).map(e=>e.email),
+    ]);
+    groups.others = enriched.filter(emp => !usedEmails.has(emp.email));
+
     const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-    const todayKey = Today.key;                             // mon/tue/...
+    const todayKey = Today.key;                      // mon/tue/...
     const dayIdxMap = { mon:0,tue:1,wed:2,thu:3,fri:4,sat:5,sun:6 };
     const todayIdx  = dayIdxMap[todayKey] ?? 0;
     const today3    = DAYS[todayIdx];
 
-    // Traer horarios para todos
+    // Traer horarios para TODOS (para que el conteo sea 28, etc.)
     await runLimited(enriched, 4, async (emp)=>{
       try{
         const sched = await API.getSchedule(emp.email, 0);
@@ -2166,18 +2172,39 @@ async function openTeamEditor(){
       }
     });
 
+    // 👇 Títulos simples, sin rangos
     const LABELS = {
-      back:  "BACK · J. GIRALDO → S. BARRERA",
-      front: "FRONT · E. REYES → S. ZULETA",
-      cash:  "CASHIERS · K. ORTIZ → C. BUSTAMANTE"
+      back:  "Back",
+      front: "Front",
+      cash:  "Cashiers"
     };
 
     const groupToday = {
       back:{scheduled:0,on:0,done:0},
       front:{scheduled:0,on:0,done:0},
-      cash:{scheduled:0,on:0,done:0}
+      cash:{scheduled:0,on:0,done:0},
+      others:{scheduled:0,on:0,done:0}
     };
     const todayStats = { scheduled:0, on:0, done:0 };
+
+    function bumpStats(emp, groupKey){
+      const days = emp.schedule?.days || [];
+      const dayObj = days.find(x => API._dayFix(x.name).slice(0,3) === today3);
+      const shift = dayObj?.shift || "";
+      if (!shift || shift === "-" || /off/i.test(shift)) return;
+
+      groupToday[groupKey].scheduled++;
+      todayStats.scheduled++;
+
+      const st = __classifyTodayShift(shift);
+      if (st === "on"){
+        groupToday[groupKey].on++;
+        todayStats.on++;
+      }else if (st === "done"){
+        groupToday[groupKey].done++;
+        todayStats.done++;
+      }
+    }
 
     let html = "";
 
@@ -2205,6 +2232,8 @@ async function openTeamEditor(){
 
       arr.forEach(emp=>{
         const days = emp.schedule?.days || [];
+        bumpStats(emp, key);
+
         const label = (emp.alias || emp.name || emp.email || "").replace(/[<>]/g,"");
         let rowTotalHours = 0;
 
@@ -2213,25 +2242,10 @@ async function openTeamEditor(){
           let shift = dayObj?.shift || "-";
           let off   = /off/i.test(String(shift)) || !shift || shift === "-";
 
-          // Horas del día
           let h = 0;
           if (!off){
             h = (typeof dayObj?.hours === "number" ? dayObj.hours : parseHours(shift)) || 0;
             rowTotalHours += h;
-          }
-
-          // Conteo diario (solo HOY)
-          if (d === today3 && !off){
-            groupToday[key].scheduled++;
-            todayStats.scheduled++;
-            const st = __classifyTodayShift(shift);
-            if (st === "on"){
-              groupToday[key].on++;
-              todayStats.on++;
-            } else if (st === "done"){
-              groupToday[key].done++;
-              todayStats.done++;
-            }
           }
 
           const safe = String(shift || "-").replace(/"/g,"&quot;");
@@ -2263,10 +2277,13 @@ async function openTeamEditor(){
       `;
     });
 
+    // 👉 Los que están fuera de Back/Front/Cashiers también cuentan en los totales
+    (groups.others || []).forEach(emp => bumpStats(emp, "others"));
+
     body.innerHTML = html || `<p style="color:#c00;">No hay empleados en los rangos definidos.</p>`;
 
-    // Totales por grupo (HOY)
-    Object.keys(groupToday).forEach(key=>{
+    // Conteos por grupo visibles
+    ["back","front","cash"].forEach(key=>{
       const g = groupToday[key];
       const el = document.getElementById(`teCount-${key}`);
       if (!el) return;
@@ -2280,34 +2297,30 @@ async function openTeamEditor(){
       }
     });
 
-    // Texto resumen arriba (HOY)
-    const totalScheduled = todayStats.scheduled;
-    const totalOn   = todayStats.on;
-    const totalDone = todayStats.done;
-    const todayLabel = API._dayFix(todayKey).slice(0,3); // Mon/Tue...
+    const todayLabel = API._dayFix(todayKey).slice(0,3);
     if (todayEl){
-      if (!totalScheduled){
+      if (!todayStats.scheduled){
         todayEl.textContent = `Today (${todayLabel}): 0 empleados con turno.`;
       }else{
         todayEl.textContent =
-          `Today (${todayLabel}) — On: ${totalOn} · Done: ${totalDone} · Total hoy: ${totalScheduled}`;
+          `Today (${todayLabel}) — On: ${todayStats.on} · Done: ${todayStats.done} · Total hoy: ${todayStats.scheduled}`;
       }
     }
 
-    // Texto pie (Back / Front / Cashiers HOY)
-    const sumBack  = groupToday.back.scheduled;
-    const sumFront = groupToday.front.scheduled;
-    const sumCash  = groupToday.cash.scheduled;
-    const totalAll = sumBack + sumFront + sumCash;
+    const sumBack   = groupToday.back.scheduled;
+    const sumFront  = groupToday.front.scheduled;
+    const sumCash   = groupToday.cash.scheduled;
+    const sumOthers = groupToday.others.scheduled;
+    const totalAll  = sumBack + sumFront + sumCash + sumOthers;
+
     totalsEl.textContent =
-      `Back: ${sumBack} · Front: ${sumFront} · Cashiers: ${sumCash} · Total activos hoy: ${totalAll}`;
+      `Back: ${sumBack} · Front: ${sumFront} · Cashiers: ${sumCash} · Otros: ${sumOthers} · Total activos hoy: ${totalAll}`;
 
   }catch(e){
     console.warn("TeamEditor error", e);
     body.innerHTML = `<p style="color:#c00;">Error cargando el Team Editor.</p>`;
   }
 }
-
 // Exponer global
 window.openTeamEditor = openTeamEditor;
 
