@@ -1884,3 +1884,299 @@ function ensureOpenInSheetsBtn(modalEl){
 
   console.log("✅ PATCH v5.6.3 applied: Global API key for sendtoday/sendtomorrow");
 })();
+
+/* ============================================================
+   🧑‍💻 Team Editor Glass v1 — Back / Front / Cashiers
+   Basado en ACW-App v5.6.3 Turbo — Blue Glass White
+   JAG15 & Sky — Nov 2025
+   ============================================================ */
+
+function __buildTeamGroups(list){
+  // Límites por alias tal como en tu Weekly
+  const LABELS = {
+    backStart:  "J. GIRALDO",
+    backEnd:    "S. BARRERA",
+    frontStart: "E. REYES",
+    frontEnd:   "S. ZULETA",
+    cashStart:  "K. ORTIZ",
+    cashEnd:    "C. BUSTAMANTE"
+  };
+
+  function matchesLabel(emp, label){
+    const target = String(label || "").toUpperCase().trim();
+    if (!target) return false;
+
+    const alias = String(emp.alias || "").toUpperCase().trim();
+    if (alias === target) return true;
+
+    // Usa tus helpers de alias
+    try{
+      const vars = buildAliasVariants(emp.name || emp.alias || "") || [];
+      return vars.some(v => String(v).toUpperCase().trim() === target);
+    }catch{
+      return false;
+    }
+  }
+
+  const idx = {};
+  list.forEach((emp, i)=>{
+    for (const key in LABELS){
+      if (idx[key] == null && matchesLabel(emp, LABELS[key])) {
+        idx[key] = i;
+      }
+    }
+  });
+
+  function segment(aKey, bKey){
+    const a = idx[aKey], b = idx[bKey];
+    if (typeof a !== "number" || typeof b !== "number") return [];
+    const start = Math.min(a, b), end = Math.max(a, b);
+    return list.slice(start, end + 1);
+  }
+
+  const back = segment("backStart","backEnd");
+  const front = segment("frontStart","frontEnd");
+  const cash = segment("cashStart","cashEnd");
+
+  const used = new Set();
+  [...back, ...front, ...cash].forEach(e => used.add(e.email));
+
+  const other = list.filter(e => !used.has(e.email));
+
+  return { back, front, cash, other };
+}
+
+async function __teamEditorSendGlobal(action, overlay){
+  const rows = Array.from(overlay.querySelectorAll(".te-table tbody tr[data-email]"));
+  if (!rows.length){
+    toast("No hay empleados para enviar.", "info");
+    return;
+  }
+  const emails = rows.map(r => r.dataset.email);
+  toast(`📤 Enviando ${action === "sendtoday" ? "HOY" : "MAÑANA"} a ${emails.length} empleados…`, "info");
+
+  let ok = 0;
+  await runLimited(emails, 3, async (email)=>{
+    try{
+      const res = await API.sendShift({ targetEmail: email, action, actor: currentUser?.email || "" });
+      if (res.ok) ok++;
+    }catch{}
+  });
+
+  toast(`✅ ${action === "sendtoday" ? "Hoy" : "Mañana"} → ${ok}/${emails.length}`, "success");
+}
+
+async function __teamEditorSaveChanges(overlay){
+  const cells = Array.from(overlay.querySelectorAll(".te-day[contenteditable='true']"));
+  const changes = [];
+
+  cells.forEach(cell=>{
+    const newShift = cell.innerText.replace(/\s+/g," ").trim();
+    const original = String(cell.dataset.original || "").replace(/\s+/g," ").trim();
+    if (newShift === original) return;
+    const tr = cell.closest("tr");
+    if (!tr) return;
+    changes.push({
+      email: tr.dataset.email,
+      day: cell.dataset.day,
+      newShift
+    });
+  });
+
+  if (!changes.length){
+    toast("ℹ️ No hay cambios que guardar.", "info");
+    return;
+  }
+
+  toast(`✏️ Guardando ${changes.length} cambios en Sheets…`, "info");
+
+  let ok = 0;
+  for (const ch of changes){
+    const res = await API.updateShift({
+      targetEmail: ch.email,
+      day: ch.day,
+      newShift: ch.newShift,
+      actor: currentUser?.email || ""
+    });
+    if (res.ok) ok++;
+  }
+
+  if (ok === changes.length){
+    toast("✅ Todos los cambios se guardaron en Sheets.", "success");
+    // Actualiza los originales
+    cells.forEach(cell=>{
+      const txt = cell.innerText.replace(/\s+/g," ").trim();
+      cell.dataset.original = txt;
+    });
+  }else if (ok > 0){
+    toast(`⚠️ Guardado parcial: ${ok}/${changes.length}.`, "error");
+  }else{
+    toast("❌ No se pudo guardar ningún cambio.", "error");
+  }
+}
+
+async function openTeamEditor(){
+  if (!isManagerRole(currentUser?.role)){
+    toast("Solo managers/supervisores pueden usar el Team Editor.", "error");
+    return;
+  }
+  if (document.getElementById("teamEditorOverlay")) return;
+
+  const overlay = document.createElement("div");
+  overlay.id = "teamEditorOverlay";
+  overlay.className = "team-editor-overlay";
+  overlay.innerHTML = `
+    <div class="team-editor-card">
+      <div class="te-head">
+        <div class="te-titles">
+          <h3>Team Editor</h3>
+          <p>Blue Glass White · Weekly hours</p>
+        </div>
+        <div class="te-actions">
+          <button class="te-btn te-send-today">Send Today (Global)</button>
+          <button class="te-btn te-send-tomorrow">Send Tomorrow (Global)</button>
+          <button class="te-close" aria-label="Close">×</button>
+        </div>
+      </div>
+      <div id="teamEditorBody" class="te-body">
+        <p class="te-loading">Loading team hours…</p>
+      </div>
+      <div class="te-footer">
+        <div id="teTotals" class="te-totals"></div>
+        <button class="te-btn te-save">✏️ Save changes</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const body = overlay.querySelector("#teamEditorBody");
+  const totalsEl = overlay.querySelector("#teTotals");
+
+  const close = ()=> overlay.remove();
+  overlay.querySelector(".te-close").onclick = close;
+  overlay.addEventListener("click", e=>{ if (e.target === overlay) close(); });
+
+  overlay.querySelector(".te-send-today").onclick    = ()=> __teamEditorSendGlobal("sendtoday", overlay);
+  overlay.querySelector(".te-send-tomorrow").onclick = ()=> __teamEditorSendGlobal("sendtomorrow", overlay);
+  overlay.querySelector(".te-save").onclick          = ()=> __teamEditorSaveChanges(overlay);
+
+  try{
+    const dir = await API.getDirectory();
+    const list = dir?.directory || dir?.employees || [];
+    if (!Array.isArray(list) || !list.length){
+      body.innerHTML = `<p style="color:#c00;">No hay datos en el directorio.</p>`;
+      return;
+    }
+
+    // Enriquecer con alias y posición
+    const enriched = list.map((emp, idx)=>({
+      ...emp,
+      index: idx,
+      alias: deriveAliasFromFullName(emp.name || emp.alias || emp.employee || "") ||
+             emp.alias || emp.name || ""
+    }));
+
+    const groups = __buildTeamGroups(enriched);
+
+    // Traer horarios (Mon–Sun) para todos
+    await runLimited(enriched, 4, async (emp)=>{
+      try{
+        const sched = await API.getSchedule(emp.email, 0);
+        emp.schedule = sched;
+      }catch{
+        emp.schedule = { ok:false, days:[], total:0 };
+      }
+    });
+
+    const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    const LABELS = {
+      back:  "BACK · J. GIRALDO → S. BARRERA",
+      front: "FRONT · E. REYES → S. ZULETA",
+      cash:  "CASHIERS · K. ORTIZ → C. BUSTAMANTE",
+      other: "OTHERS (fuera de rangos)"
+    };
+
+    function isActive(emp){
+      const days = emp.schedule?.days || [];
+      return days.some(d => !/off/i.test(String(d.shift || "")));
+    }
+
+    let html = "";
+    const summary = { back:0, front:0, cash:0, other:0 };
+
+    ["back","front","cash","other"].forEach(key=>{
+      const arr = groups[key];
+      if (!arr || !arr.length) return;
+
+      const activeCount = arr.filter(isActive).length;
+      summary[key] = activeCount;
+
+      html += `
+        <section class="te-section" data-group="${key}">
+          <div class="te-section-head">
+            <h4>${LABELS[key]}</h4>
+            <span class="te-section-count">${activeCount} activos</span>
+          </div>
+          <div class="te-table-wrap">
+            <table class="te-table">
+              <thead>
+                <tr>
+                  <th class="te-col-name">Name</th>
+                  ${DAYS.map(d=>`<th>${d}</th>`).join("")}
+                </tr>
+              </thead>
+              <tbody>
+                ${arr.map(emp=>{
+                  const days = emp.schedule?.days || [];
+                  const label = (emp.alias || emp.name || emp.email || "").replace(/[<>]/g,"");
+                  const rowCells = DAYS.map(d=>{
+                    const dayObj = days.find(x => API._dayFix(x.name).slice(0,3) === d);
+                    const shift = dayObj?.shift || "-";
+                    const off   = /off/i.test(String(shift));
+                    const safe  = String(shift || "-").replace(/"/g,"&quot;");
+                    return `<td class="te-day${off?" te-off":""}" data-day="${d}" contenteditable="true" data-original="${safe}">${shift || "-"}</td>`;
+                  }).join("");
+                  return `
+                    <tr data-email="${emp.email}" data-name="${label}">
+                      <td class="te-name">${label}</td>
+                      ${rowCells}
+                    </tr>`;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      `;
+    });
+
+    body.innerHTML = html || `<p style="color:#c00;">No hay empleados en los rangos definidos.</p>`;
+
+    const totalAll = summary.back + summary.front + summary.cash + summary.other;
+    let txt = `Back: ${summary.back} · Front: ${summary.front} · Cashiers: ${summary.cash}`;
+    if (summary.other) txt += ` · Otros: ${summary.other}`;
+    txt += ` · Total activos: ${totalAll}`;
+    totalsEl.textContent = txt;
+
+  }catch(e){
+    console.warn("TeamEditor error", e);
+    body.innerHTML = `<p style="color:#c00;">Error cargando el Team Editor.</p>`;
+  }
+}
+
+// Exponer global
+window.openTeamEditor = openTeamEditor;
+
+/* Patch: crea botón Team Editor junto al Team View solo para managers */
+(function patchTeamEditorButton(){
+  const prev = window.addTeamButton;
+  window.addTeamButton = function(){
+    if (typeof prev === "function") prev();
+    if (document.getElementById("teamEditorBtn")) return;
+    const btn = document.createElement("button");
+    btn.id = "teamEditorBtn";
+    btn.className = "team-btn team-editor-btn";
+    btn.textContent = "Team Editor";
+    btn.onclick = openTeamEditor;
+    document.body.appendChild(btn);
+  };
+})();
