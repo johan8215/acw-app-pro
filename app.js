@@ -1894,7 +1894,6 @@ function ensureOpenInSheetsBtn(modalEl){
    - Refresh y no se cierra al tocar afuera
    JAG15 & Sky — Nov 2025
    ============================================================ */
-
 function __buildTeamGroupsV2(list){
   const LABELS = {
     backStart:  "J. GIRALDO",
@@ -1908,7 +1907,7 @@ function __buildTeamGroupsV2(list){
   // Variantes de un nombre tipo "J. GIRALDO"
   function variantsFromString(str){
     if (!str) return [];
-    const v = buildAliasVariants(str); // usa la global que ya tienes
+    const v = buildAliasVariants(str);  // usa la helper global
     v.push(String(str).toUpperCase());
     return Array.from(new Set(v.map(x => x.toUpperCase().trim())));
   }
@@ -1946,32 +1945,9 @@ function __buildTeamGroupsV2(list){
     return list.slice(start, end + 1);
   }
 
-  const back = segment("backStart","backEnd");
+  const back  = segment("backStart","backEnd");
   const front = segment("frontStart","frontEnd");
-  const cash = segment("cashStart","cashEnd");
-
-  return { back, front, cash };
-}
-
-  const idx = {};
-  list.forEach((emp, i)=>{
-    for (const key in LABELS){
-      if (idx[key] == null && matchesLabel(emp, LABELS[key])) {
-        idx[key] = i;
-      }
-    }
-  });
-
-  function segment(aKey, bKey){
-    const a = idx[aKey], b = idx[bKey];
-    if (typeof a !== "number" || typeof b !== "number") return [];
-    const start = Math.min(a, b), end = Math.max(a, b);
-    return list.slice(start, end + 1);
-  }
-
-  const back = segment("backStart","backEnd");
-  const front = segment("frontStart","frontEnd");
-  const cash = segment("cashStart","cashEnd");
+  const cash  = segment("cashStart","cashEnd");
 
   return { back, front, cash };
 }
