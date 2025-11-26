@@ -311,3 +311,178 @@ tr.today td{
   `;
   document.head.appendChild(s);
 })();
+
+/* ============================================================
+   🎨 Team Editor Glass — Back / Front / Cashiers
+   ============================================================ */
+
+.team-editor-overlay{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.45);
+  backdrop-filter:blur(14px);
+  z-index:11000;
+  animation:fadeIn .25s ease;
+}
+
+.team-editor-card{
+  width:96%;
+  max-width:1120px;
+  max-height:90vh;
+  background:rgba(255,255,255,.97);
+  border-radius:18px;
+  box-shadow:0 18px 45px rgba(0,120,255,.35);
+  padding:16px 20px 14px;
+  display:flex;
+  flex-direction:column;
+}
+
+.te-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:6px;
+}
+.te-titles h3{
+  margin:0;
+  color:#0078ff;
+  letter-spacing:.3px;
+}
+.te-titles p{
+  margin:2px 0 0;
+  color:#7a8696;
+  font-size:12px;
+}
+.te-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.te-btn{
+  border:none;
+  border-radius:9px;
+  padding:7px 12px;
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
+  color:#fff;
+  background:linear-gradient(135deg,#e60000,#ff3333);
+  box-shadow:0 4px 12px rgba(0,0,0,.18);
+  transition:.2s;
+}
+.te-btn:hover{ transform:translateY(-1px); }
+.te-send-today{ background:linear-gradient(135deg,#e60000,#ff3333); }
+.te-send-tomorrow{ background:linear-gradient(135deg,#ff8800,#ffb347); }
+.te-save{ background:linear-gradient(135deg,#007bff,#33a0ff); }
+
+.te-close{
+  background:none;
+  border:none;
+  font-size:22px;
+  cursor:pointer;
+  color:#444;
+}
+
+.te-body{
+  flex:1;
+  overflow:auto;
+  margin-top:4px;
+  padding-right:4px;
+}
+.te-loading{
+  text-align:center;
+  color:#0078ff;
+}
+
+.te-section{
+  margin-top:8px;
+  padding-top:6px;
+  border-top:1px solid rgba(0,0,0,.08);
+}
+.te-section-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  margin-bottom:4px;
+}
+.te-section-head h4{
+  margin:0;
+  font-size:14px;
+  color:#111;
+}
+.te-section-count{
+  font-size:12px;
+  color:#0078ff;
+  font-weight:600;
+}
+
+.te-table-wrap{
+  overflow-x:auto;
+}
+.te-table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  font-size:12px;
+  table-layout:fixed;
+}
+.te-table thead th{
+  padding:8px 6px;
+  border-bottom:2px solid rgba(0,0,0,.08);
+  color:#0078ff;
+  font-weight:700;
+}
+.te-col-name{
+  text-align:left;
+  width:20%;
+}
+.te-table tbody td{
+  padding:6px 6px;
+  border-bottom:1px solid rgba(0,0,0,.05);
+}
+.te-name{
+  text-align:left;
+  font-weight:600;
+}
+.te-day{
+  text-align:center;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+  cursor:text;
+}
+.te-day.te-off{
+  color:#9aa3ad;
+}
+.te-day:focus{
+  outline:2px solid rgba(0,120,255,.55);
+  background:rgba(0,120,255,.06);
+}
+
+.te-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:6px;
+}
+.te-totals{
+  font-size:12px;
+  color:#444;
+}
+
+/* Botón Team Editor bajo Team View */
+.team-editor-btn{
+  top:72px;
+  right:40px;
+  background:#ffffff;
+  color:#0078ff;
+  border:2px solid rgba(0,120,255,.4);
+}
+.team-editor-btn:hover{
+  background:#f9f9f9;
+}
+
+/* (usa las animaciones fadeIn/popIn ya definidas en tu CSS) */
