@@ -2126,7 +2126,18 @@ async function openTeamEditor(){
     }
 
     // Solo filas con email válido
-    list = list.filter(emp => /\S+@\S+\.\S+/.test(String(emp.email || "")));
+        // Quita solo filas de encabezado (Emails, Active/Inactive staff) pero NO exige email
+    list = list.filter(emp => {
+      const name = String(emp.name || emp.employee || "").trim();
+      if (!name) return false;
+
+      const upper = name.toUpperCase();
+      if (upper === "EMAILS") return false;
+      if (upper.includes("ACTIVE STAFF")) return false;
+      if (upper.includes("INACTIVE STAFF")) return false;
+
+      return true;
+    });
 
     const enriched = list.map((emp, idx)=>({
       ...emp,
