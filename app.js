@@ -1905,18 +1905,53 @@ function __buildTeamGroupsV2(list){
     cashEnd:    "C. BUSTAMANTE"
   };
 
-  function matchesLabel(emp, label){
-    const target = String(label || "").toUpperCase().trim();
-    if (!target) return false;
-    const alias = String(emp.alias || "").toUpperCase().trim();
-    if (alias === target) return true;
-    try{
-      const vars = buildAliasVariants(emp.name || emp.alias || "") || [];
-      return vars.some(v => String(v).toUpperCase().trim() === target);
-    }catch{
-      return false;
-    }
+  // Variantes de un nombre tipo "J. GIRALDO"
+  function variantsFromString(str){
+    if (!str) return [];
+    const v = buildAliasVariants(str); // usa la global que ya tienes
+    v.push(String(str).toUpperCase());
+    return Array.from(new Set(v.map(x => x.toUpperCase().trim())));
   }
+
+  // Variantes para un empleado del directorio
+  function variantsFromEmp(emp){
+    const baseName = emp.name || emp.alias || emp.employee || "";
+    let v = buildAliasVariants(baseName);
+    const alias = (emp.alias || "").toUpperCase();
+    if (alias) v.push(alias);
+    return Array.from(new Set(v.map(x => x.toUpperCase().trim())));
+  }
+
+  const labelVars = {};
+  Object.keys(LABELS).forEach(k => {
+    labelVars[k] = variantsFromString(LABELS[k]);
+  });
+
+  const idx = {};
+  list.forEach((emp, i)=>{
+    const ev = variantsFromEmp(emp);
+    for (const key in LABELS){
+      if (idx[key] != null) continue;
+      const lv = labelVars[key];
+      if (ev.some(v => lv.includes(v))) {
+        idx[key] = i;
+      }
+    }
+  });
+
+  function segment(aKey, bKey){
+    const a = idx[aKey], b = idx[bKey];
+    if (typeof a !== "number" || typeof b !== "number") return [];
+    const start = Math.min(a,b), end = Math.max(a,b);
+    return list.slice(start, end + 1);
+  }
+
+  const back = segment("backStart","backEnd");
+  const front = segment("frontStart","frontEnd");
+  const cash = segment("cashStart","cashEnd");
+
+  return { back, front, cash };
+}
 
   const idx = {};
   list.forEach((emp, i)=>{
