@@ -2127,6 +2127,20 @@ async function openTeamEditor(){
     }));
 
     const groups = __buildTeamGroupsV2(enriched);
+
+    // ✅ Si por alguna razón no encuentra los rangos,
+    // mete a TODOS los empleados en "Back" para que
+    // NUNCA salga vacío.
+    const hasAny =
+      (groups.back?.length || 0) +
+      (groups.front?.length || 0) +
+      (groups.cash?.length || 0);
+
+    if (!hasAny){
+      console.warn("TeamEditor: no se encontraron rangos, usando 'Back = todos'.");
+      groups.back = enriched.slice();
+    }
+
     const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
     const todayKey = Today.key;                             // mon/tue/...
     const dayIdxMap = { mon:0,tue:1,wed:2,thu:3,fri:4,sat:5,sun:6 };
