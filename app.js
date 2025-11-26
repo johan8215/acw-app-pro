@@ -1886,13 +1886,16 @@ function ensureOpenInSheetsBtn(modalEl){
 })();
 
 /* ============================================================
-   🧑‍💻 Team Editor Glass v1 — Back / Front / Cashiers
-   Basado en ACW-App v5.6.3 Turbo — Blue Glass White
+   🧑‍💻 Team Editor Glass v2 — Back / Front / Cashiers
+   - Encima de la tabla
+   - Horas por día + Total semana
+   - Contador diario (Back/Front/Cashiers + hoy)
+   - Send Today / Tomorrow solo si hay turno ese día
+   - Refresh y no se cierra al tocar afuera
    JAG15 & Sky — Nov 2025
    ============================================================ */
 
-function __buildTeamGroups(list){
-  // Límites por alias tal como en tu Weekly
+function __buildTeamGroupsV2(list){
   const LABELS = {
     backStart:  "J. GIRALDO",
     backEnd:    "S. BARRERA",
@@ -1905,11 +1908,8 @@ function __buildTeamGroups(list){
   function matchesLabel(emp, label){
     const target = String(label || "").toUpperCase().trim();
     if (!target) return false;
-
     const alias = String(emp.alias || "").toUpperCase().trim();
     if (alias === target) return true;
-
-    // Usa tus helpers de alias
     try{
       const vars = buildAliasVariants(emp.name || emp.alias || "") || [];
       return vars.some(v => String(v).toUpperCase().trim() === target);
@@ -1938,22 +1938,65 @@ function __buildTeamGroups(list){
   const front = segment("frontStart","frontEnd");
   const cash = segment("cashStart","cashEnd");
 
-  const used = new Set();
-  [...back, ...front, ...cash].forEach(e => used.add(e.email));
-
-  const other = list.filter(e => !used.has(e.email));
-
-  return { back, front, cash, other };
+  return { back, front, cash };
 }
 
+// Clasifica un turno de HOY: on / done / later / none
+function __classifyTodayShift(shift){
+  const raw = String(shift || "").trim();
+  if (!raw || /^-+$/.test(raw)) return "none";
+  if (/off/i.test(raw)) return "none";
+
+  const clean = raw.split(/\s+(DONE|READY|SENT|UPDATE|UPDATED)\b/i)[0].trim();
+  const parts = clean.split("-");
+  const now = new Date();
+
+  if (parts.length >= 2){
+    let sStr = parts[0].replace(/\.+\s*$/,"").trim();
+    let eStr = parts[1].replace(/\.+\s*$/,"").trim();
+    const start = parseTime(sStr);
+    const end   = parseTime(eStr);
+    if (!start || !end) return "unknown";
+    if (now < start) return "later";
+    if (now >= start && now <= end) return "on";
+    if (now > end) return "done";
+    return "unknown";
+  } else {
+    let sStr = clean.replace(/\.+\s*$/,"").trim();
+    const start = parseTime(sStr);
+    if (!start) return "unknown";
+    return (now >= start) ? "on" : "later";
+  }
+}
+
+// === SEND GLOBAL (solo con turno ese día) ===
 async function __teamEditorSendGlobal(action, overlay){
+  const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const todayKey = Today.key;                  // mon/tue/...
+  const dayIdxMap = { mon:0,tue:1,wed:2,thu:3,fri:4,sat:5,sun:6 };
+
+  const todayIdx = dayIdxMap[todayKey] ?? 0;
+  const sendIdx  = action === "sendtomorrow" ? (todayIdx + 1) % 7 : todayIdx;
+  const sendDay3 = DAYS[sendIdx];
+
   const rows = Array.from(overlay.querySelectorAll(".te-table tbody tr[data-email]"));
-  if (!rows.length){
-    toast("No hay empleados para enviar.", "info");
+  const emails = [];
+
+  rows.forEach(row=>{
+    const cell = row.querySelector(`.te-day[data-day="${sendDay3}"]`);
+    if (!cell) return;
+    const txt = String(cell.innerText || "").trim();
+    if (!txt || txt === "-" || /off/i.test(txt)) return; // no turno → no enviar
+    emails.push(row.dataset.email);
+  });
+
+  if (!emails.length){
+    toast("ℹ️ No hay turnos para enviar en ese día.", "info");
     return;
   }
-  const emails = rows.map(r => r.dataset.email);
-  toast(`📤 Enviando ${action === "sendtoday" ? "HOY" : "MAÑANA"} a ${emails.length} empleados…`, "info");
+
+  const label = action === "sendtomorrow" ? "Mañana" : "Hoy";
+  toast(`📤 Enviando ${label} a ${emails.length} empleados…`, "info");
 
   let ok = 0;
   await runLimited(emails, 3, async (email)=>{
@@ -1963,9 +2006,10 @@ async function __teamEditorSendGlobal(action, overlay){
     }catch{}
   });
 
-  toast(`✅ ${action === "sendtoday" ? "Hoy" : "Mañana"} → ${ok}/${emails.length}`, "success");
+  toast(`✅ ${label}: ${ok}/${emails.length} enviados.`, "success");
 }
 
+// === SAVE CHANGES (usa API.updateShift) ===
 async function __teamEditorSaveChanges(overlay){
   const cells = Array.from(overlay.querySelectorAll(".te-day[contenteditable='true']"));
   const changes = [];
@@ -2003,18 +2047,18 @@ async function __teamEditorSaveChanges(overlay){
 
   if (ok === changes.length){
     toast("✅ Todos los cambios se guardaron en Sheets.", "success");
-    // Actualiza los originales
     cells.forEach(cell=>{
       const txt = cell.innerText.replace(/\s+/g," ").trim();
       cell.dataset.original = txt;
     });
-  }else if (ok > 0){
+  } else if (ok > 0){
     toast(`⚠️ Guardado parcial: ${ok}/${changes.length}.`, "error");
-  }else{
+  } else {
     toast("❌ No se pudo guardar ningún cambio.", "error");
   }
 }
 
+// === MAIN: abrir Team Editor ===
 async function openTeamEditor(){
   if (!isManagerRole(currentUser?.role)){
     toast("Solo managers/supervisores pueden usar el Team Editor.", "error");
@@ -2031,8 +2075,10 @@ async function openTeamEditor(){
         <div class="te-titles">
           <h3>Team Editor</h3>
           <p>Blue Glass White · Weekly hours</p>
+          <p id="teTodayStats" class="te-today"></p>
         </div>
         <div class="te-actions">
+          <button class="te-btn te-refresh">🔁 Refresh</button>
           <button class="te-btn te-send-today">Send Today (Global)</button>
           <button class="te-btn te-send-tomorrow">Send Tomorrow (Global)</button>
           <button class="te-close" aria-label="Close">×</button>
@@ -2049,26 +2095,30 @@ async function openTeamEditor(){
   `;
   document.body.appendChild(overlay);
 
-  const body = overlay.querySelector("#teamEditorBody");
+  const body     = overlay.querySelector("#teamEditorBody");
   const totalsEl = overlay.querySelector("#teTotals");
+  const todayEl  = overlay.querySelector("#teTodayStats");
 
   const close = ()=> overlay.remove();
   overlay.querySelector(".te-close").onclick = close;
-  overlay.addEventListener("click", e=>{ if (e.target === overlay) close(); });
+  // 👇 Importante: ya NO cerramos al tocar afuera (para que el scroll no lo cierre)
 
   overlay.querySelector(".te-send-today").onclick    = ()=> __teamEditorSendGlobal("sendtoday", overlay);
   overlay.querySelector(".te-send-tomorrow").onclick = ()=> __teamEditorSendGlobal("sendtomorrow", overlay);
   overlay.querySelector(".te-save").onclick          = ()=> __teamEditorSaveChanges(overlay);
+  overlay.querySelector(".te-refresh").onclick       = ()=> { overlay.remove(); openTeamEditor(); };
 
   try{
     const dir = await API.getDirectory();
-    const list = dir?.directory || dir?.employees || [];
+    let list = dir?.directory || dir?.employees || [];
     if (!Array.isArray(list) || !list.length){
       body.innerHTML = `<p style="color:#c00;">No hay datos en el directorio.</p>`;
       return;
     }
 
-    // Enriquecer con alias y posición
+    // 🔧 Filtramos la fila "Emails" u otras sin email válido
+    list = list.filter(emp => /\S+@\S+\.\S+/.test(String(emp.email || "")));
+
     const enriched = list.map((emp, idx)=>({
       ...emp,
       index: idx,
@@ -2076,9 +2126,14 @@ async function openTeamEditor(){
              emp.alias || emp.name || ""
     }));
 
-    const groups = __buildTeamGroups(enriched);
+    const groups = __buildTeamGroupsV2(enriched);
+    const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    const todayKey = Today.key;                             // mon/tue/...
+    const dayIdxMap = { mon:0,tue:1,wed:2,thu:3,fri:4,sat:5,sun:6 };
+    const todayIdx  = dayIdxMap[todayKey] ?? 0;
+    const today3    = DAYS[todayIdx];
 
-    // Traer horarios (Mon–Sun) para todos
+    // Traer horarios para todos
     await runLimited(enriched, 4, async (emp)=>{
       try{
         const sched = await API.getSchedule(emp.email, 0);
@@ -2088,34 +2143,30 @@ async function openTeamEditor(){
       }
     });
 
-    const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
     const LABELS = {
       back:  "BACK · J. GIRALDO → S. BARRERA",
       front: "FRONT · E. REYES → S. ZULETA",
-      cash:  "CASHIERS · K. ORTIZ → C. BUSTAMANTE",
-      other: "OTHERS (fuera de rangos)"
+      cash:  "CASHIERS · K. ORTIZ → C. BUSTAMANTE"
     };
 
-    function isActive(emp){
-      const days = emp.schedule?.days || [];
-      return days.some(d => !/off/i.test(String(d.shift || "")));
-    }
+    const groupToday = {
+      back:{scheduled:0,on:0,done:0},
+      front:{scheduled:0,on:0,done:0},
+      cash:{scheduled:0,on:0,done:0}
+    };
+    const todayStats = { scheduled:0, on:0, done:0 };
 
     let html = "";
-    const summary = { back:0, front:0, cash:0, other:0 };
 
-    ["back","front","cash","other"].forEach(key=>{
+    ["back","front","cash"].forEach(key=>{
       const arr = groups[key];
       if (!arr || !arr.length) return;
-
-      const activeCount = arr.filter(isActive).length;
-      summary[key] = activeCount;
 
       html += `
         <section class="te-section" data-group="${key}">
           <div class="te-section-head">
             <h4>${LABELS[key]}</h4>
-            <span class="te-section-count">${activeCount} activos</span>
+            <span class="te-section-count" id="teCount-${key}"></span>
           </div>
           <div class="te-table-wrap">
             <table class="te-table">
@@ -2123,25 +2174,65 @@ async function openTeamEditor(){
                 <tr>
                   <th class="te-col-name">Name</th>
                   ${DAYS.map(d=>`<th>${d}</th>`).join("")}
+                  <th>Total</th>
                 </tr>
               </thead>
               <tbody>
-                ${arr.map(emp=>{
-                  const days = emp.schedule?.days || [];
-                  const label = (emp.alias || emp.name || emp.email || "").replace(/[<>]/g,"");
-                  const rowCells = DAYS.map(d=>{
-                    const dayObj = days.find(x => API._dayFix(x.name).slice(0,3) === d);
-                    const shift = dayObj?.shift || "-";
-                    const off   = /off/i.test(String(shift));
-                    const safe  = String(shift || "-").replace(/"/g,"&quot;");
-                    return `<td class="te-day${off?" te-off":""}" data-day="${d}" contenteditable="true" data-original="${safe}">${shift || "-"}</td>`;
-                  }).join("");
-                  return `
-                    <tr data-email="${emp.email}" data-name="${label}">
-                      <td class="te-name">${label}</td>
-                      ${rowCells}
-                    </tr>`;
-                }).join("")}
+      `;
+
+      arr.forEach(emp=>{
+        const days = emp.schedule?.days || [];
+        const label = (emp.alias || emp.name || emp.email || "").replace(/[<>]/g,"");
+        let rowTotalHours = 0;
+
+        const rowCells = DAYS.map(d=>{
+          const dayObj = days.find(x => API._dayFix(x.name).slice(0,3) === d);
+          let shift = dayObj?.shift || "-";
+          let off   = /off/i.test(String(shift)) || !shift || shift === "-";
+
+          // Horas del día
+          let h = 0;
+          if (!off){
+            h = (typeof dayObj?.hours === "number" ? dayObj.hours : parseHours(shift)) || 0;
+            rowTotalHours += h;
+          }
+
+          // Conteo diario (solo HOY)
+          if (d === today3 && !off){
+            groupToday[key].scheduled++;
+            todayStats.scheduled++;
+            const st = __classifyTodayShift(shift);
+            if (st === "on"){
+              groupToday[key].on++;
+              todayStats.on++;
+            } else if (st === "done"){
+              groupToday[key].done++;
+              todayStats.done++;
+            }
+          }
+
+          const safe = String(shift || "-").replace(/"/g,"&quot;");
+          const dayHoursLabel = h ? `<div class="te-day-h">${h.toFixed(1)}h</div>` : "";
+
+          return `
+            <td class="te-day${off?" te-off":""}"
+                data-day="${d}"
+                contenteditable="true"
+                data-original="${safe}">
+              ${shift || "-"}${dayHoursLabel}
+            </td>`;
+        }).join("");
+
+        html += `
+          <tr data-email="${emp.email}" data-name="${label}">
+            <td class="te-name">${label}</td>
+            ${rowCells}
+            <td class="te-total-hours">${rowTotalHours ? rowTotalHours.toFixed(1) : ""}</td>
+          </tr>
+        `;
+      });
+
+      html += `
               </tbody>
             </table>
           </div>
@@ -2151,11 +2242,42 @@ async function openTeamEditor(){
 
     body.innerHTML = html || `<p style="color:#c00;">No hay empleados en los rangos definidos.</p>`;
 
-    const totalAll = summary.back + summary.front + summary.cash + summary.other;
-    let txt = `Back: ${summary.back} · Front: ${summary.front} · Cashiers: ${summary.cash}`;
-    if (summary.other) txt += ` · Otros: ${summary.other}`;
-    txt += ` · Total activos: ${totalAll}`;
-    totalsEl.textContent = txt;
+    // Totales por grupo (HOY)
+    Object.keys(groupToday).forEach(key=>{
+      const g = groupToday[key];
+      const el = document.getElementById(`teCount-${key}`);
+      if (!el) return;
+      if (!g.scheduled){
+        el.textContent = "0 hoy";
+      }else{
+        el.textContent =
+          `${g.scheduled} hoy` +
+          (g.on ? ` · On: ${g.on}` : "") +
+          (g.done ? ` · Done: ${g.done}` : "");
+      }
+    });
+
+    // Texto resumen arriba (HOY)
+    const totalScheduled = todayStats.scheduled;
+    const totalOn   = todayStats.on;
+    const totalDone = todayStats.done;
+    const todayLabel = API._dayFix(todayKey).slice(0,3); // Mon/Tue...
+    if (todayEl){
+      if (!totalScheduled){
+        todayEl.textContent = `Today (${todayLabel}): 0 empleados con turno.`;
+      }else{
+        todayEl.textContent =
+          `Today (${todayLabel}) — On: ${totalOn} · Done: ${totalDone} · Total hoy: ${totalScheduled}`;
+      }
+    }
+
+    // Texto pie (Back / Front / Cashiers HOY)
+    const sumBack  = groupToday.back.scheduled;
+    const sumFront = groupToday.front.scheduled;
+    const sumCash  = groupToday.cash.scheduled;
+    const totalAll = sumBack + sumFront + sumCash;
+    totalsEl.textContent =
+      `Back: ${sumBack} · Front: ${sumFront} · Cashiers: ${sumCash} · Total activos hoy: ${totalAll}`;
 
   }catch(e){
     console.warn("TeamEditor error", e);
@@ -2166,7 +2288,7 @@ async function openTeamEditor(){
 // Exponer global
 window.openTeamEditor = openTeamEditor;
 
-/* Patch: crea botón Team Editor junto al Team View solo para managers */
+// === Botón Team Editor junto a Team View (solo managers) ===
 (function patchTeamEditorButton(){
   const prev = window.addTeamButton;
   window.addTeamButton = function(){
