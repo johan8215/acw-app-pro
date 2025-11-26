@@ -1894,8 +1894,9 @@ function ensureOpenInSheetsBtn(modalEl){
    - Refresh y no se cierra al tocar afuera
    JAG15 & Sky — Nov 2025
    ============================================================ */
+/* === Agrupa Back / Front / Cashiers por rangos de nombre === */
 function __buildTeamGroupsV2(list){
-  const LABELS = {
+  const LABELS_POS = {
     backStart:  "J. GIRALDO",
     backEnd:    "S. BARRERA",
     frontStart: "E. REYES",
@@ -1904,15 +1905,13 @@ function __buildTeamGroupsV2(list){
     cashEnd:    "C. BUSTAMANTE"
   };
 
-  // Variantes de un nombre tipo "J. GIRALDO"
   function variantsFromString(str){
     if (!str) return [];
-    const v = buildAliasVariants(str);  // usa la helper global
+    const v = buildAliasVariants(str);
     v.push(String(str).toUpperCase());
     return Array.from(new Set(v.map(x => x.toUpperCase().trim())));
   }
 
-  // Variantes para un empleado del directorio
   function variantsFromEmp(emp){
     const baseName = emp.name || emp.alias || emp.employee || "";
     let v = buildAliasVariants(baseName);
@@ -1922,14 +1921,14 @@ function __buildTeamGroupsV2(list){
   }
 
   const labelVars = {};
-  Object.keys(LABELS).forEach(k => {
-    labelVars[k] = variantsFromString(LABELS[k]);
+  Object.keys(LABELS_POS).forEach(k => {
+    labelVars[k] = variantsFromString(LABELS_POS[k]);
   });
 
   const idx = {};
   list.forEach((emp, i)=>{
     const ev = variantsFromEmp(emp);
-    for (const key in LABELS){
+    for (const key in LABELS_POS){
       if (idx[key] != null) continue;
       const lv = labelVars[key];
       if (ev.some(v => lv.includes(v))) {
@@ -1951,7 +1950,6 @@ function __buildTeamGroupsV2(list){
 
   return { back, front, cash };
 }
-
 // Clasifica un turno de HOY: on / done / later / none
 function __classifyTodayShift(shift){
   const raw = String(shift || "").trim();
