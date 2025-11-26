@@ -503,3 +503,15 @@ tr.today td{
 .team-editor-btn:hover{
   background:#f9f9f9;
 }
+.team-editor-overlay{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:flex-start !important;  /* 👈 fuerza que quede arriba */
+  justify-content:center;
+  padding-top:48px;
+  background:rgba(0,0,0,.45);
+  backdrop-filter:blur(14px);
+  z-index:12000;
+  animation:fadeIn .25s ease;
+}
