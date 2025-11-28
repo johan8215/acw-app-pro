@@ -2249,7 +2249,7 @@ async function openTeamEditor(){
         const days = emp.schedule?.days || [];
         bumpStats(emp, key);
 
-        const label = (emp.alias || emp.name || emp.email || "").replace(/[<>]/g,"");
+          const label = String(emp.name || emp.employee || emp.alias || emp.email || "").replace(/[<>]/g,"");
         let rowTotalHours = 0;
 
         const rowCells = DAYS.map(d=>{
