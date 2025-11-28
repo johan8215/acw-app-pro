@@ -2183,11 +2183,12 @@ async function openTeamEditor(){
       }
     });
 
-    // 👇 Títulos simples, sin rangos
+        // 👉 Títulos simples, ahora con "Others"
     const LABELS = {
       back:  "Back",
       front: "Front",
-      cash:  "Cashiers"
+      cash:  "Cashiers",
+      others:"Others"
     };
 
     const groupToday = {
@@ -2219,7 +2220,10 @@ async function openTeamEditor(){
 
     let html = "";
 
-    ["back","front","cash"].forEach(key=>{
+    // 👇 ahora recorremos también "others"
+    const ORDER = ["back","front","cash","others"];
+
+    ORDER.forEach(key=>{
       const arr = groups[key];
       if (!arr || !arr.length) return;
 
@@ -2288,11 +2292,7 @@ async function openTeamEditor(){
       `;
     });
 
-    // 👉 Los que están fuera de Back/Front/Cashiers también cuentan en los totales
-    (groups.others || []).forEach(emp => bumpStats(emp, "others"));
-
-    body.innerHTML = html || `<p style="color:#c00;">No hay empleados en los rangos definidos.</p>`;
-
+    body.innerHTML = html || `<p style="color:#c00;">No hay empleados en el directorio.</p>`;
     // Conteos por grupo visibles
     ["back","front","cash"].forEach(key=>{
       const g = groupToday[key];
