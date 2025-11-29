@@ -515,69 +515,62 @@ tr.today td{
   z-index:12000;
   animation:fadeIn .25s ease;
 }
-// === Team Editor – columnas fijas (Name + días) ===
-(function(){
-  const id = "acw-team-editor-sticky";
-  if (document.getElementById(id)) return;
+/* === Team Editor – columnas fijas (Name + días) === */
+.team-editor-card{
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+}
 
-  const css = `
-    .team-editor-card{
-      max-height: 82vh;
-      display:flex;
-      flex-direction:column;
-    }
-    .te-body{
-      overflow-y:auto;
-      padding-right:4px;
-    }
-    .te-table-wrap{
-      overflow:auto;
-      margin-top:6px;
-    }
-    .te-table{
-      border-collapse:separate;
-      border-spacing:0;
-    }
-    .te-table th,
-    .te-table td{
-      white-space:nowrap;
-    }
+.te-body{
+  overflow-y: auto;
+  padding-right: 4px;
+}
 
-    /* Encabezado con días pegado arriba al hacer scroll */
-    .te-table thead th{
-      position:sticky;
-      top:0;
-      z-index:3;
-      background:rgba(255,255,255,.98);
-    }
+.te-table-wrap{
+  overflow: auto;
+  margin-top: 6px;
+}
 
-    /* Columna de nombres pegada a la izquierda */
-    .te-table .te-name{
-      position:sticky;
-      left:0;
-      z-index:2;
-      background:rgba(255,255,255,.98);
-    }
-    .te-table thead .te-col-name{
-      position:sticky;
-      left:0;
-      z-index:4;
-      background:rgba(255,255,255,.98);
-    }
+.te-table{
+  border-collapse: separate;
+  border-spacing: 0;
+}
 
-    /* Fila divisoria Drivers / Crew (amarillo suave) */
-    .te-table tr.te-divider td{
-      background:#fff7bf;
-      border-top:2px solid #f1c40f;
-      font-weight:600;
-      font-size:.86em;
-      color:#b57f00;
-      text-align:left;
-    }
-  `;
-  const s = document.createElement("style");
-  s.id = id;
-  s.textContent = css;
-  document.head.appendChild(s);
-})();
+.te-table th,
+.te-table td{
+  white-space: nowrap;
+}
 
+/* Encabezado con días pegado arriba al hacer scroll */
+.te-table thead th{
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: rgba(255,255,255,.98);
+}
+
+/* Columna de nombres pegada a la izquierda */
+.te-table .te-name{
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: rgba(255,255,255,.98);
+}
+
+.te-table thead .te-col-name{
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  background: rgba(255,255,255,.98);
+}
+
+/* Fila divisoria Drivers / Crew (amarillo suave) */
+.te-table tr.te-divider td{
+  background:#fff7bf;
+  border-top:2px solid #f1c40f;
+  font-weight:600;
+  font-size:.86em;
+  color:#b57f00;
+  text-align:left;
+}
