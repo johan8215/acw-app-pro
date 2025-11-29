@@ -2224,12 +2224,9 @@ async function openTeamEditor(){
       }
     }
 
-    let html = "";
+       let html = "";
 
-    // 👇 ahora recorremos también "others"
-    const ORDER = ["back","front","cash","others"];
-
-    ORDER.forEach(key=>{
+    ["back","front","cash"].forEach(key=>{
       const arr = groups[key];
       if (!arr || !arr.length) return;
 
@@ -2251,17 +2248,35 @@ async function openTeamEditor(){
               <tbody>
       `;
 
+      // 👉 Fila divisoria Crew cuando cambia de Drivers a Crew
+      let crewDividerInserted = false;
+      const dividerLabel =
+        key === "back"  ? "Crew (Back)" :
+        key === "front" ? "Crew (Front)" :
+        "Crew";
+
       arr.forEach(emp=>{
         const days = emp.schedule?.days || [];
         bumpStats(emp, key);
 
-          const label = String(emp.name || emp.employee || emp.alias || emp.email || "").replace(/[<>]/g,"");
+        const label = (emp.alias || emp.name || emp.email || "").replace(/[<>]/g,"");
         let rowTotalHours = 0;
+
+        // Si este es el primer empleado con rol Crew en este grupo, mete divisor
+        const roleStr = String(emp.role || "").toLowerCase();
+        if (!crewDividerInserted && /crew/.test(roleStr) && (key === "back" || key === "front")){
+          crewDividerInserted = true;
+          html += `
+            <tr class="te-divider">
+              <td colspan="${DAYS.length + 2}">${dividerLabel}</td>
+            </tr>
+          `;
+        }
 
         const rowCells = DAYS.map(d=>{
           const dayObj = days.find(x => API._dayFix(x.name).slice(0,3) === d);
           let shift = dayObj?.shift || "-";
-          let off   = /off/i.test(String(shift)) || !shift || shift === "-";
+          const off   = /off/i.test(String(shift)) || !shift || shift === "-";
 
           let h = 0;
           if (!off){
