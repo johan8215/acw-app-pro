@@ -2167,6 +2167,12 @@ async function openTeamEditor(){
     ]);
     groups.others = enriched.filter(emp => !usedEmails.has(emp.email));
 
+        // 👉 Para ACW: todos los "Others" cuentan como Back
+    if (groups.others && groups.others.length){
+      groups.back = (groups.back || []).concat(groups.others);
+      groups.others = [];  // ya no usamos grupo "Others"
+    } 
+
     const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
     const todayKey = Today.key;                      // mon/tue/...
     const dayIdxMap = { mon:0,tue:1,wed:2,thu:3,fri:4,sat:5,sun:6 };
