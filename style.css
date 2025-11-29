@@ -560,3 +560,77 @@ tr.today td{
   color:#b57f00;
   text-align:left;
 }
+/* ============================================================
+   🧑‍🤝‍🧑 Team Editor – Sticky header + primera columna
+   ============================================================ */
+
+/* El área que hace scroll */
+.te-body{
+  flex:1;
+  overflow:auto;        /* aquí está el scroll principal */
+  margin-top:4px;
+  padding-right:4px;
+  position:relative;    /* ayuda a sticky a portarse bien */
+}
+
+/* La tabla del editor */
+.te-table-wrap{
+  overflow:visible;     /* importante: que NO tenga scroll propio */
+  margin-top:6px;
+}
+
+.te-table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  table-layout:fixed;
+  font-size:12px;
+}
+
+/* Que no se rompan las horas/nombres */
+.te-table th,
+.te-table td{
+  white-space:nowrap;
+}
+
+/* ===== Header de días fijo arriba ===== */
+.te-table thead th{
+  position:sticky;
+  top:0;
+  z-index:5;
+  background:rgba(255,255,255,.98);
+  border-bottom:2px solid rgba(0,0,0,.08);
+}
+
+/* ===== Columna de nombres fija a la izquierda ===== */
+.te-table th.te-col-name{
+  position:sticky;
+  left:0;
+  z-index:6; /* por encima de los días */
+  background:rgba(255,255,255,.98);
+}
+
+.te-table td.te-name{
+  position:sticky;
+  left:0;
+  z-index:4;
+  background:rgba(255,255,255,.98);
+}
+
+/* Totales a la derecha (normal) */
+.te-total-hours{
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+  font-weight:600;
+  white-space:nowrap;
+}
+
+/* ===== Fila divisoria Drivers / Back / Front ===== */
+.te-table tr.te-divider td{
+  background:#fff7bf;
+  border-top:2px solid #f1c40f;
+  font-weight:600;
+  font-size:.86em;
+  color:#b57f00;
+  text-align:left;
+}
