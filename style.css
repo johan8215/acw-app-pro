@@ -21,7 +21,7 @@ body{
   text-align:center;
 }
 
-/* ---------- Container ---------- */
+/* ---------- Container (login) ---------- */
 .container{
   background:rgba(255,255,255,0.95);
   border-radius:14px;
@@ -53,7 +53,7 @@ button{
 button:hover{ background:var(--red-2); }
 button:disabled{ opacity:.6; cursor:default; }
 
-/* ---------- Gear Button ---------- */
+/* ---------- Gear Button (settings FAB) ---------- */
 .gear-btn{
   position:fixed; bottom:20px; right:20px;
   background:var(--red); color:#fff; border:none; border-radius:50%;
@@ -71,7 +71,7 @@ button:disabled{ opacity:.6; cursor:default; }
 .error{ color:#c00; font-size:13px; margin-top:10px; min-height:18px; }
 footer.hud{ color:#666; font-size:13px; margin:14px 0 30px; }
 
-/* ---------- Tables (Schedule) ---------- */
+/* ---------- Tables (My Schedule) ---------- */
 table{
   margin:0 auto; width:95%;
   border-collapse:separate; border-spacing:20px 10px;
@@ -86,7 +86,9 @@ tr.today td{
   background:rgba(0,120,255,0.06); border-radius:8px;
 }
 
-/* ---------- Generic Modal (Settings) ---------- */
+/* ============================================================
+   ⚙️ Generic Modal (Settings)
+   ============================================================ */
 .modal{
   display:none; position:fixed; inset:0;
   background:rgba(0,0,0,.45); z-index:2000; animation:fadeIn .25s ease;
@@ -111,7 +113,7 @@ tr.today td{
 }
 .settings-section button:hover{ background:var(--red-2); transform:scale(1.05); }
 
-/* ---------- User phone ---------- */
+/* ---------- User phone debajo del nombre ---------- */
 .user-phone{
   color:var(--blue); font-weight:600; font-size:17px;
   margin:10px 0 16px; text-shadow:0 0 8px rgba(0,120,255,.25);
@@ -129,7 +131,7 @@ tr.today td{
 }
 
 /* ============================================================
-   🧑‍🤝‍🧑 Team View (uses inline styles + .show)
+   🧑‍🤝‍🧑 Team View (directory popup)
    ============================================================ */
 .team-btn{
   position:fixed; top:25px; right:40px;
@@ -220,7 +222,13 @@ tr.today td{
 /* ============================================================
    🔐 Change Password Modal
    ============================================================ */
-#changePasswordModal{ z-index:9999; display:none; align-items:center; justify-content:center; animation:fadeIn .25s ease; }
+#changePasswordModal{
+  z-index:9999;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  animation:fadeIn .25s ease;
+}
 #changePasswordModal.show{ display:flex !important; }
 #changePasswordModal .modal-content.glass{
   background:rgba(255,255,255,.97); border-radius:14px; box-shadow:0 0 40px rgba(0,120,255,.3);
@@ -228,7 +236,7 @@ tr.today td{
 }
 
 /* ============================================================
-   📚 History (Centered Settings-style) — .acwh-*
+   📚 History (Centered) — .acwh-*
    ============================================================ */
 .acwh-overlay{
   position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
@@ -275,8 +283,23 @@ tr.today td{
 .acwh-table td:last-child{ text-align:right; }
 .acwh-total-line{ text-align:right; font-weight:800; color:var(--red); margin:10px 0 2px; }
 
+/* Botón Share rojo en History (CSS puro) */
+.acwh-share{
+  background:#ff3b30;
+  color:#fff;
+  border:none;
+  border-radius:10px;
+  padding:6px 10px;
+  font-weight:800;
+  cursor:pointer;
+  box-shadow:0 2px 10px rgba(255,59,48,.35);
+}
+.acwh-share:active{
+  transform:translateY(1px);
+}
+
 /* ============================================================
-   ⬇️ Download button
+   ⬇️ Download button (para exportar imagen)
    ============================================================ */
 .download-btn{
   display:inline-block; width:90%; margin-top:8px; padding:10px 18px;
@@ -293,24 +316,15 @@ tr.today td{
 }
 
 /* ---------- Shared Animations ---------- */
-@keyframes fadeIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
-@keyframes popIn{ from{opacity:0; transform:scale(.96);} to{opacity:1; transform:scale(1);} }
+@keyframes fadeIn{
+  from{opacity:0; transform:translateY(10px);}
+  to{opacity:1; transform:translateY(0);}
+}
+@keyframes popIn{
+  from{opacity:0; transform:scale(.96);}
+  to{opacity:1; transform:scale(1);}
+}
 
-// === CSS para botón Share rojo en History ===
-(function injectHistoryShareCSS(){
-  if (document.getElementById('acw-history-share-css')) return;
-  const s = document.createElement('style'); s.id='acw-history-share-css';
-  s.textContent = `
-    .acwh-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
-    .acwh-share{
-      background:#ff3b30; color:#fff; border:none; border-radius:10px;
-      padding:6px 10px; font-weight:800; cursor:pointer;
-      box-shadow:0 2px 10px rgba(255,59,48,.35);
-    }
-    .acwh-share:active{ transform:translateY(1px); }
-  `;
-  document.head.appendChild(s);
-})();
 /* ============================================================
    🎨 Team Editor Glass v2 — Back / Front / Cashiers
    ============================================================ */
@@ -319,7 +333,7 @@ tr.today td{
   position:fixed;
   inset:0;
   display:flex;
-  align-items:flex-start;      /* arriba, sobre la tabla */
+  align-items:flex-start;
   justify-content:center;
   padding-top:48px;
   background:rgba(0,0,0,.45);
@@ -331,7 +345,7 @@ tr.today td{
 .team-editor-card{
   width:98%;
   max-width:1240px;
-  max-height:94vh;
+  max-height:82vh;
   background:rgba(255,255,255,.98);
   border-radius:20px;
   box-shadow:0 20px 50px rgba(0,120,255,.40);
@@ -397,7 +411,7 @@ tr.today td{
 
 .te-body{
   flex:1;
-  overflow:auto;
+  overflow-y:auto;
   margin-top:4px;
   padding-right:4px;
 }
@@ -429,8 +443,10 @@ tr.today td{
 }
 
 .te-table-wrap{
-  overflow-x:auto;
+  overflow:auto;
+  margin-top:6px;
 }
+
 .te-table{
   width:100%;
   border-collapse:separate;
@@ -448,6 +464,8 @@ tr.today td{
   text-align:left;
   width:19%;
 }
+
+/* celdas */
 .te-table tbody td{
   padding:6px 6px;
   border-bottom:1px solid rgba(0,0,0,.05);
@@ -503,66 +521,34 @@ tr.today td{
 .team-editor-btn:hover{
   background:#f9f9f9;
 }
-.team-editor-overlay{
-  position:fixed;
-  inset:0;
-  display:flex;
-  align-items:flex-start !important;  /* 👈 fuerza que quede arriba */
-  justify-content:center;
-  padding-top:48px;
-  background:rgba(0,0,0,.45);
-  backdrop-filter:blur(14px);
-  z-index:12000;
-  animation:fadeIn .25s ease;
-}
+
 /* === Team Editor – columnas fijas (Name + días) === */
-.team-editor-card{
-  max-height: 82vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.te-body{
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.te-table-wrap{
-  overflow: auto;
-  margin-top: 6px;
-}
-
-.te-table{
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
 .te-table th,
 .te-table td{
-  white-space: nowrap;
+  white-space:nowrap;
 }
 
 /* Encabezado con días pegado arriba al hacer scroll */
 .te-table thead th{
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  background: rgba(255,255,255,.98);
+  position:sticky;
+  top:0;
+  z-index:3;
+  background:rgba(255,255,255,.98);
 }
 
 /* Columna de nombres pegada a la izquierda */
 .te-table .te-name{
-  position: sticky;
-  left: 0;
-  z-index: 2;
-  background: rgba(255,255,255,.98);
+  position:sticky;
+  left:0;
+  z-index:2;
+  background:rgba(255,255,255,.98);
 }
 
 .te-table thead .te-col-name{
-  position: sticky;
-  left: 0;
-  z-index: 4;
-  background: rgba(255,255,255,.98);
+  position:sticky;
+  left:0;
+  z-index:4;
+  background:rgba(255,255,255,.98);
 }
 
 /* Fila divisoria Drivers / Crew (amarillo suave) */
