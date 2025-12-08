@@ -472,7 +472,12 @@ window.addEventListener("load", () => {
     if (saved) {
       currentUser = JSON.parse(saved);
       showWelcome(currentUser.name, currentUser.role);
-      loadSchedule(currentUser.email);
+      loadSchedule(currentUser.email).then(() => {
+        // 🔹 Activa los botones también cuando se restaura la sesión
+        if (typeof initMyExtraButtons === "function") {
+          initMyExtraButtons();
+        }
+      });
     }
   } catch {}
 });
