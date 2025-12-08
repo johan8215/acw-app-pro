@@ -803,7 +803,6 @@ function renderTeamViewPage() {
     box.style.transform = "translate(-50%, -50%) scale(1)";
   }, 60);
 }
-
 /* =================== EMPLOYEE MODAL =================== */
 async function openEmployeePanel(btnEl){
   const tr    = btnEl.closest("tr");
@@ -864,9 +863,13 @@ async function openEmployeePanel(btnEl){
     </tr>
   `).join("");
 
-  // Bloque semana siguiente (solo lectura)
-  let nextHtml = "";
+  // Bloque semana siguiente (solo lectura, colapsable)
+  let nextToggleHtml = "";
+  let nextBlockHtml  = "";
+  let nextWeekLabel  = "";
+
   if (nextDays.length){
+    nextWeekLabel = next.week || next.weekLabel || "";
     const nextRowsHtml = nextDays.map(d => `
       <tr>
         <td>${d.name}</td>
@@ -875,12 +878,17 @@ async function openEmployeePanel(btnEl){
       </tr>
     `).join("");
 
-    const nextWeekName = next.week || next.weekLabel || "";
+    nextToggleHtml = `
+      <button class="btn-toggle-next" style="margin-top:10px;">
+        ⬇️ Next week${nextWeekLabel ? ` (${nextWeekLabel})` : ""}
+      </button>
+    `;
 
-    nextHtml = `
-      <div class="emp-week-block future-week" style="margin-top:10px;border-top:1px dashed #ddd;padding-top:6px;">
+    nextBlockHtml = `
+      <div class="emp-week-block future-week"
+           style="display:none;margin-top:6px;border-top:1px dashed #ddd;padding-top:6px;">
         <div class="emp-week-title" style="font-weight:600;margin-bottom:4px;">
-          Next week${nextWeekName ? ` (${nextWeekName})` : ""}
+          Next week${nextWeekLabel ? ` (${nextWeekLabel})` : ""}
         </div>
         <table class="schedule-mini schedule-next">
           <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
@@ -918,7 +926,8 @@ async function openEmployeePanel(btnEl){
         <p class="live-hours"></p>
       </div>
 
-      ${nextHtml}
+      ${nextToggleHtml}
+      ${nextBlockHtml}
 
       ${isManagerRole(currentUser?.role) ? `
         <div class="emp-actions" style="margin-top:10px;">
@@ -926,7 +935,9 @@ async function openEmployeePanel(btnEl){
           <button class="btn-today">📤 Send Today</button>
           <button class="btn-tomorrow">📤 Send Tomorrow</button>
           <button class="btn-history">📚 History (5w)</button>
-          <p id="empStatusMsg-${email.replace(/[@.]/g,"_")}" class="emp-status-msg" style="margin-top:6px;font-size:.9em;"></p>
+          <p id="empStatusMsg-${email.replace(/[@.]/g,"_")}"
+             class="emp-status-msg"
+             style="margin-top:6px;font-size:.9em;"></p>
         </div>
       ` : ``}
 
@@ -956,6 +967,19 @@ async function openEmployeePanel(btnEl){
     m.querySelector(".btn-tomorrow").onclick = () => sendShiftMessage(email, "sendtomorrow");
     const hb = m.querySelector(".btn-history");
     if (hb) hb.onclick = () => openHistoryFor(email, name);
+  }
+
+  // Toggle Next week
+  const btnToggleNext = m.querySelector(".btn-toggle-next");
+  const nextBlock     = m.querySelector(".emp-week-block.future-week");
+  if (btnToggleNext && nextBlock){
+    btnToggleNext.onclick = () => {
+      const visible = nextBlock.style.display !== "none";
+      nextBlock.style.display = visible ? "none" : "block";
+      btnToggleNext.textContent = visible
+        ? `⬇️ Next week${nextWeekLabel ? ` (${nextWeekLabel})` : ""}`
+        : `⬆️ Hide next week`;
+    };
   }
 
   // Live hours solo para la semana actual
