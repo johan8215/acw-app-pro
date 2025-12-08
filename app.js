@@ -455,6 +455,15 @@ async function loadSchedule(email) {
     html += `</table><p class="total">Total Hours: <b>${(Math.round(total*10)/10).toFixed(1)}</b></p>`;
     schedDiv.innerHTML = html;
 
+    // 🔹 ACTIVAR botones personales: Next week + History (5w)
+    if (typeof initMyExtraButtons === "function") {
+      try {
+        initMyExtraButtons();
+      } catch (e) {
+        console.warn("initMyExtraButtons error:", e);
+      }
+    }
+
     // Live: usar la lista normalizada y el total calculado
     clearInterval(window.__acwLiveTick__);
     setTimeout(()=> startLiveTimer(normDays, Number(total||0)), 300);
