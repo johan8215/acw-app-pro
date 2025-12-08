@@ -354,9 +354,13 @@ async function loginUser() {
     currentUser = data; // {ok,name,email,role,week}
     localStorage.setItem("acwUser", JSON.stringify(data));
 
-    safeText(diag, "✅ Welcome, " + data.name + "!");
+        safeText(diag, "✅ Welcome, " + data.name + "!");
     await showWelcome(data.name, data.role);
     await loadSchedule(email);
+    // 🔹 Activa los botones Next week + History para este usuario
+    if (typeof initMyExtraButtons === "function") {
+      initMyExtraButtons();
+    }
   } catch (e) {
     safeText(diag, "❌ " + (e.message || "Login error"));
   } finally {
