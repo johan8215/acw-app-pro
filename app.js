@@ -1048,6 +1048,114 @@ function enableModalLiveShift(modal, days){
   }catch(e){ console.warn("modal live err:", e); }
 }
 
+/* =================== MY EXTRAS: Next week + History (5w) =================== */
+async function initMyExtraButtons(){
+  try{
+    if (!window.currentUser || !currentUser.email) return;
+
+    // 1) Crear contenedor de botones si no existe
+    let extra = document.getElementById("myExtraActions");
+    if (!extra){
+      extra = document.createElement("div");
+      extra.id = "myExtraActions";
+      extra.style.marginTop = "12px";
+
+      extra.innerHTML = `
+        <div style="margin-top:10px;">
+          <button id="btnMyNextWeek" style="margin-right:8px;">
+            ⏭️ Next week
+          </button>
+          <button id="btnMyHistory">
+            📚 History (5w)
+          </button>
+        </div>
+        <div id="myNextWeekBlock"
+             style="display:none;margin-top:8px;border-top:1px dashed #ddd;padding-top:6px;">
+        </div>
+      `;
+
+      // Lo pegamos debajo del #schedule
+      const sched = document.getElementById("schedule");
+      if (sched && sched.parentNode){
+        sched.parentNode.appendChild(extra);
+      } else {
+        // fallback: al body
+        document.body.appendChild(extra);
+      }
+    }
+
+    const nextBtn   = document.getElementById("btnMyNextWeek");
+    const histBtn   = document.getElementById("btnMyHistory");
+    const nextBlock = document.getElementById("myNextWeekBlock");
+
+    if (!nextBtn || !histBtn || !nextBlock) return;
+
+    // 2) Botón History (5w) – usa la misma función del modal
+    histBtn.onclick = () => {
+      try{
+        const name = currentUser.name || currentUser.email;
+        openHistoryFor(currentUser.email, name);
+      }catch(e){
+        console.warn("openHistoryFor error:", e);
+        alert("History is not available right now.");
+      }
+    };
+
+    // 3) Botón Next week – llama al mismo GAS (offset -1)
+    nextBtn.onclick = async () => {
+      // Toggle visible / hidden
+      const isVisible = nextBlock.style.display !== "none";
+      if (isVisible){
+        nextBlock.style.display = "none";
+        return;
+      }
+
+      nextBlock.style.display = "block";
+
+      // Si ya lo cargamos antes, no volvemos a pedir al GAS
+      if (nextBlock.dataset.loaded === "1") return;
+
+      nextBlock.innerHTML = `<p style="color:#0078ff;">Loading next week…</p>`;
+
+      try{
+        const data = await API.getSchedule(currentUser.email, -1);
+        if (!data || !data.ok || !Array.isArray(data.days) || !data.days.length){
+          nextBlock.innerHTML = `<p style="color:#777;">No next week schedule yet.</p>`;
+          nextBlock.dataset.loaded = "1";
+          return;
+        }
+
+        const label = data.week || data.weekLabel || "";
+        const rowsHtml = data.days.map(d => `
+          <tr>
+            <td>${d.name || ""}</td>
+            <td>${d.shift || "-"}</td>
+            <td>${d.hours || 0}</td>
+          </tr>
+        `).join("");
+
+        nextBlock.innerHTML = `
+          <div class="emp-week-block future-week">
+            <div class="emp-week-title">
+              Next week${label ? ` (${label})` : ""}
+            </div>
+            <table class="schedule-mini">
+              <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+              ${rowsHtml}
+            </table>
+          </div>
+        `;
+        nextBlock.dataset.loaded = "1";
+      }catch(e){
+        console.warn("Next week error:", e);
+        nextBlock.innerHTML = `<p style="color:#c00;">Error loading next week.</p>`;
+      }
+    };
+
+  }catch(e){
+    console.warn("initMyExtraButtons err:", e);
+  }
+}
 
 /* =================== MANAGER ACTIONS =================== */
 async function updateShiftFromModal(targetEmail, modalEl){
