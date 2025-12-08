@@ -540,3 +540,26 @@ footer.hud{ color:#666; font-size:13px; margin:14px 0 30px; }
 /* ---------- Shared Animations ---------- */
 @keyframes fadeIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
 @keyframes popIn{ from{opacity:0; transform:scale(.96);} to{opacity:1; transform:scale(1);} }
+
+.emp-week-block.future-week {
+  opacity: 0.9;
+  border-top: 1px dashed #ccc;
+  margin-top: 12px;
+  padding-top: 8px;
+}
+.emp-week-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.emp-week-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.emp-week-table th,
+.emp-week-table td {
+  padding: 4px 6px;
+  font-size: 13px;
+}
+.emp-week-table th {
+  border-bottom: 1px solid #ddd;
+}
