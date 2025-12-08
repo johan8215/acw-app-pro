@@ -944,6 +944,22 @@ async function openEmployeePanel(btnEl){
       <button class="emp-refresh" style="margin-top:8px;">⚙️ Check for Updates</button>
     </div>
   `;
+
+   // Dentro de la sección de botones comunes que todos ven:
+const commonButtons = `
+  <button class="btn-history">📚 History (5w)</button>
+  <button class="btn-next-week">⏭️ Next week</button>
+`;
+
+// Luego, asegúrate de agregar el listener para todos
+const nextWeekButton = m.querySelector(".btn-next-week");
+if (nextWeekButton) {
+  nextWeekButton.onclick = () => {
+    // Aquí iría la lógica para mostrar la siguiente semana
+    alert("Next week feature aquí.");
+  };
+}
+
   document.body.appendChild(m);
 
   // binds
