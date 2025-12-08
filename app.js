@@ -804,14 +804,14 @@ function renderTeamViewPage() {
   }, 60);
 }
 
-/* =================== EMPLOYEE MODAL (Next week para todos) =================== */
+/* =================== EMPLOYEE MODAL (Next week + History para todos) =================== */
 async function openEmployeePanel(btnEl){
   const tr    = btnEl.closest("tr");
   const email = tr?.dataset.email;
-  const name  = tr?.dataset.name || email;
+  const name  = tr?.dataset.name || email || "";
   const role  = tr?.dataset.role || "";
   const phone = tr?.dataset.phone || "";
-  const isManager = isManagerRole(currentUser?.role);
+  const isMgr = isManagerRole(currentUser?.role);
 
   if (!email) {
     alert("No email found for this employee.");
@@ -824,8 +824,8 @@ async function openEmployeePanel(btnEl){
   let current = null;
   let next    = null;
 
-  try {
-    // Semana actual (offset 0) + semana siguiente (offset -1)
+  try{
+    // Semana actual (offset 0) + semana siguiente (offset -1, futuro)
     const [d0, d1] = await Promise.all([
       API.getSchedule(email, 0),
       API.getSchedule(email, -1).catch(() => null)
@@ -835,7 +835,7 @@ async function openEmployeePanel(btnEl){
     next    = d1;
 
     if (!current || !current.ok) throw new Error("no_current");
-  } catch (e) {
+  }catch(e){
     console.warn("openEmployeePanel error:", e);
     alert("No schedule found for this employee.");
     return;
@@ -855,16 +855,16 @@ async function openEmployeePanel(btnEl){
   // Filas semana actual (editable solo para manager/supervisor)
   const currentRowsHtml = currentDays.map(d => `
     <tr data-day="${(d.name || "").slice(0,3)}"
-        data-original="${(d.shift || "-").toString().replace(/"/g,'&quot;')}">
+        data-original="${(d.shift || "-").replace(/"/g,'&quot;')}">
       <td>${d.name || ""}</td>
-      <td ${isManager ? 'contenteditable="true"' : ""}>
+      <td ${isMgr ? 'contenteditable="true"' : ''}>
         ${d.shift || "-"}
       </td>
-      <td>${Number(d.hours || 0)}</td>
+      <td>${d.hours || 0}</td>
     </tr>
   `).join("");
 
-  // Bloque semana siguiente (solo lectura, colapsable, para TODOS)
+  // Bloque semana siguiente (solo lectura, colapsable)
   let nextToggleHtml = "";
   let nextBlockHtml  = "";
   let nextWeekLabel  = "";
@@ -875,7 +875,7 @@ async function openEmployeePanel(btnEl){
       <tr>
         <td>${d.name || ""}</td>
         <td>${d.shift || "-"}</td>
-        <td>${Number(d.hours || 0)}</td>
+        <td>${d.hours || 0}</td>
       </tr>
     `).join("");
 
@@ -898,6 +898,23 @@ async function openEmployeePanel(btnEl){
       </div>
     `;
   }
+
+  // Bloque de acciones:
+  // - Manager/Supervisor: Update / Send Today / Send Tomorrow + History
+  // - Employee normal: SOLO History (5w)
+  const actionsHtml = `
+    <div class="emp-actions" style="margin-top:10px;">
+      ${isMgr ? `
+        <button class="btn-update">✏️ Update Shift</button>
+        <button class="btn-today">📤 Send Today</button>
+        <button class="btn-tomorrow">📤 Send Tomorrow</button>
+      ` : ``}
+      <button class="btn-history">📚 History (5w)</button>
+      <p id="empStatusMsg-${email.replace(/[@.]/g,"_")}"
+         class="emp-status-msg"
+         style="margin-top:6px;font-size:.9em;"></p>
+    </div>
+  `;
 
   const m = document.createElement("div");
   m.className = "employee-modal emp-panel";
@@ -922,9 +939,7 @@ async function openEmployeePanel(btnEl){
 
         <p class="total">
           Total Hours:
-          <b id="tot-${String(name || "").replace(/\s+/g,"_")}">
-            ${Number(current.total || 0)}
-          </b>
+          <b id="tot-${name.replace(/\s+/g,"_")}">${current.total || 0}</b>
         </p>
         <p class="live-hours"></p>
       </div>
@@ -932,17 +947,7 @@ async function openEmployeePanel(btnEl){
       ${nextToggleHtml}
       ${nextBlockHtml}
 
-      <div class="emp-actions" style="margin-top:10px;">
-        ${isManager ? `
-          <button class="btn-update">✏️ Update Shift</button>
-          <button class="btn-today">📤 Send Today</button>
-          <button class="btn-tomorrow">📤 Send Tomorrow</button>
-        ` : ""}
-        <button class="btn-history">📚 History (5w)</button>
-        <p id="empStatusMsg-${email.replace(/[@.]/g,"_")}"
-           class="emp-status-msg"
-           style="margin-top:6px;font-size:.9em;"></p>
-      </div>
+      ${actionsHtml}
 
       <button class="emp-refresh" style="margin-top:8px;">⚙️ Check for Updates</button>
     </div>
@@ -950,12 +955,9 @@ async function openEmployeePanel(btnEl){
   document.body.appendChild(m);
 
   // Cerrar modal
-  m.querySelector(".emp-close").onclick = () => {
-    clearInterval(m.__tick__);
-    m.remove();
-  };
+  m.querySelector(".emp-close").onclick = () => m.remove();
 
-  // Refresh (limpia cache y recarga app)
+  // Refresh app completo (limpiar caches + reload)
   const refBtn = m.querySelector(".emp-refresh");
   if (refBtn) {
     refBtn.onclick = () => {
@@ -969,24 +971,24 @@ async function openEmployeePanel(btnEl){
     };
   }
 
-  // Botones solo para managers/supervisores
-  if (isManager) {
-    const btnUpdate   = m.querySelector(".btn-update");
-    const btnToday    = m.querySelector(".btn-today");
-    const btnTomorrow = m.querySelector(".btn-tomorrow");
-
-    if (btnUpdate)   btnUpdate.onclick   = () => updateShiftFromModal(email, m);
-    if (btnToday)    btnToday.onclick    = () => sendShiftMessage(email, "sendtoday");
-    if (btnTomorrow) btnTomorrow.onclick = () => sendShiftMessage(email, "sendtomorrow");
+  // 🔹 History (5w) — disponible para TODOS los roles
+  const historyBtn = m.querySelector(".btn-history");
+  if (historyBtn) {
+    historyBtn.onclick = () => openHistoryFor(email, name);
   }
 
-  // History (5w) para TODOS
-  const hb = m.querySelector(".btn-history");
-  if (hb) {
-    hb.onclick = () => openHistoryFor(email, name);
+  // 🔹 Botones solo para Manager/Supervisor
+  if (isMgr) {
+    const uBtn = m.querySelector(".btn-update");
+    const tBtn = m.querySelector(".btn-today");
+    const tmBtn= m.querySelector(".btn-tomorrow");
+
+    if (uBtn)  uBtn.onclick  = () => updateShiftFromModal(email, m);
+    if (tBtn)  tBtn.onclick  = () => sendShiftMessage(email, "sendtoday");
+    if (tmBtn) tmBtn.onclick = () => sendShiftMessage(email, "sendtomorrow");
   }
 
-  // Toggle Next week (para todos)
+  // 🔹 Toggle Next week (para todos, si existe bloque future-week)
   const btnToggleNext = m.querySelector(".btn-toggle-next");
   const nextBlock     = m.querySelector(".emp-week-block.future-week");
   if (btnToggleNext && nextBlock){
@@ -1003,59 +1005,47 @@ async function openEmployeePanel(btnEl){
   enableModalLiveShift(m, currentDays);
 }
 
-/* Live-hours dentro del modal (igual que antes) */
 function enableModalLiveShift(modal, days){
   try{
     const key = Today.key;
-    const today = days.find(d => (d.name || "").slice(0,3).toLowerCase() === key);
+    const today = days.find(d=> (d.name || "").slice(0,3).toLowerCase() === key);
     if (!today?.shift || /off/i.test(today.shift)) return;
 
     const table = $(".schedule-mini", modal);
-    const row = $all("tr", table).find(
-      r => r.cells?.[0]?.textContent.slice(0,3).toLowerCase() === key
-    );
+    const row = $all("tr", table).find(r=> r.cells?.[0]?.textContent.slice(0,3).toLowerCase()===key);
     if (!row) return;
-
     const hoursCell = row.cells[2];
     const shift = today.shift.trim();
 
     const totalEl = $(".total b", modal);
-    if (totalEl && !totalEl.dataset.baseHours) {
-      totalEl.dataset.baseHours = totalEl.textContent;
-    }
+    if (totalEl && !totalEl.dataset.baseHours) totalEl.dataset.baseHours = totalEl.textContent;
 
     if (shift.endsWith(".")){
       const startTime = parseTime(shift.replace(/\.$/,"").trim());
       if (!startTime) return;
       const tick = ()=>{
-        const diff = Math.max(0,(Date.now() - startTime.getTime()) / 36e5);
+        const diff = Math.max(0,(Date.now() - startTime.getTime())/36e5);
         hoursCell.innerHTML = `⏱️ ${diff.toFixed(1)}h`;
-        hoursCell.style.color = "#33a0ff";
-        hoursCell.style.fontWeight = "600";
+        hoursCell.style.color="#33a0ff"; hoursCell.style.fontWeight="600";
         if (totalEl){
-          const base = parseFloat(totalEl.dataset.baseHours || totalEl.textContent) || 0;
-          totalEl.innerHTML =
-            `${(base+diff).toFixed(1)} <span style="color:#33a0ff;font-size:.85em;">(+${diff.toFixed(1)})</span>`;
+          const base = parseFloat(totalEl.dataset.baseHours||totalEl.textContent)||0;
+          totalEl.innerHTML = `${(base+diff).toFixed(1)} <span style="color:#33a0ff;font-size:.85em;">(+${diff.toFixed(1)})</span>`;
         }
       };
       tick();
-      clearInterval(modal.__tick__);
-      modal.__tick__ = setInterval(tick, 60000);
+      clearInterval(modal.__tick__); modal.__tick__ = setInterval(tick, 60000);
     } else {
-      const p = shift.split("-");
+      const p = shift.split("-"); 
       if (p.length === 2){
-        const a = parseTime(p[0].trim());
-        const b = parseTime(p[1].trim());
+        const a = parseTime(p[0].trim()), b = parseTime(p[1].trim());
         if (a && b){
-          const diff = Math.max(0,(b - a) / 36e5);
+          const diff = Math.max(0,(b-a)/36e5);
           hoursCell.textContent = `${diff.toFixed(1)}h`;
-          hoursCell.style.color = "#999";
+          hoursCell.style.color="#999";
         }
       }
     }
-  }catch(e){
-    console.warn("modal live err:", e);
-  }
+  }catch(e){ console.warn("modal live err:", e); }
 }
 
 
