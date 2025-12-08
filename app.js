@@ -1060,7 +1060,8 @@ function enableModalLiveShift(modal, days){
 /* =================== MY EXTRAS: Next week + History (5w) =================== */
 async function initMyExtraButtons(){
   try{
-    if (!window.currentUser || !currentUser.email) return;
+    // ✅ Corregido: usamos solo currentUser (no window.currentUser)
+    if (!currentUser || !currentUser.email) return;
 
     // 1) Crear contenedor de botones si no existe
     let extra = document.getElementById("myExtraActions");
