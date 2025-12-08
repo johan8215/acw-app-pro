@@ -1363,50 +1363,6 @@ API.getSchedule = async function(identifier, offset = 0, controller){
   return res; // ok:false
 };
 
-// Dentro del bloque de botones de acción del modal:
-
-const isManager = isManagerRole(currentUser?.role);
-
-// Botones para managers y supervisores (con send today/tomorrow)
-const managerButtons = isManager ? `
-  <button class="btn-update">✏️ Update Shift</button>
-  <button class="btn-today">📤 Send Today</button>
-  <button class="btn-tomorrow">📤 Send Tomorrow</button>
-` : '';
-
-// Botón de “History (5w)” y “Next week” para todos
-const commonButtons = `
-  <button class="btn-history">📚 History (5w)</button>
-  ${nextToggleHtml}
-`;
-
-// Luego, dentro del modal:
-m.innerHTML = `
-  <!-- ... otras partes del modal ... -->
-
-  <div class="emp-actions" style="margin-top:10px;">
-    ${managerButtons}
-    ${commonButtons}
-    <p id="empStatusMsg-${email.replace(/[@.]/g,"_")}"
-       class="emp-status-msg"
-       style="margin-top:6px;font-size:.9em;"></p>
-  </div>
-
-  <button class="emp-refresh" style="margin-top:8px;">⚙️ Check for Updates</button>
-`;
-
-// Y asegúrate de que los botones de enviar solo se enlacen si el usuario es manager
-if (isManager) {
-  m.querySelector(".btn-update").onclick   = () => updateShiftFromModal(email, m);
-  m.querySelector(".btn-today").onclick    = () => sendShiftMessage(email, "sendtoday");
-  m.querySelector(".btn-tomorrow").onclick = () => sendShiftMessage(email, "sendtomorrow");
-}
-
-// El botón de history se enlaza para todos
-const historyButton = m.querySelector(".btn-history");
-if (historyButton) {
-  historyButton.onclick = () => openHistoryFor(email, name);
-}
 
 /* =================== GLOBAL BINDS =================== */
 window.loginUser = loginUser;
