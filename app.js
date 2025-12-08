@@ -806,18 +806,88 @@ function renderTeamViewPage() {
 
 /* =================== EMPLOYEE MODAL =================== */
 async function openEmployeePanel(btnEl){
-  const tr = btnEl.closest("tr");
-  const email = tr.dataset.email, name = tr.dataset.name, role = tr.dataset.role||"", phone = tr.dataset.phone||"";
+  const tr    = btnEl.closest("tr");
+  const email = tr.dataset.email;
+  const name  = tr.dataset.name || email;
+  const role  = tr.dataset.role || "";
+  const phone = tr.dataset.phone || "";
+
+  if (!email) {
+    alert("No email found for this employee.");
+    return;
+  }
+
   const modalId = `emp-${email.replace(/[@.]/g,"_")}`;
   if (document.getElementById(modalId)) return;
 
-  let data = null;
+  let current = null;
+  let next    = null;
+
   try{
-    data = await API.getSchedule(email, 0);
-    if (!data?.ok) throw new Error();
-  }catch{
+    // Semana actual (offset 0)
+    const [d0, d1] = await Promise.all([
+      API.getSchedule(email, 0),
+      // Semana siguiente (offset -1). Si falla, la ignoramos.
+      API.getSchedule(email, -1).catch(() => null)
+    ]);
+
+    current = d0;
+    next    = d1;
+
+    if (!current || !current.ok) throw new Error("no_current");
+  }catch(e){
+    console.warn("openEmployeePanel error:", e);
     alert("No schedule found for this employee.");
     return;
+  }
+
+  function hasContent(days){
+    if (!Array.isArray(days)) return false;
+    return days.some(d => {
+      const s = (d.shift || "").toString().trim().toUpperCase();
+      return s && s !== "-" && s !== "N/A";
+    });
+  }
+
+  const currentDays = current.days || [];
+  const nextDays    = (next && next.ok && hasContent(next.days)) ? (next.days || []) : [];
+
+  // Filas semana actual (editable para manager)
+  const currentRowsHtml = currentDays.map(d => `
+    <tr data-day="${d.name.slice(0,3)}"
+        data-original="${(d.shift||"-").replace(/"/g,'&quot;')}">
+      <td>${d.name}</td>
+      <td ${isManagerRole(currentUser?.role) ? 'contenteditable="true"' : ''}>
+        ${d.shift || "-"}
+      </td>
+      <td>${d.hours || 0}</td>
+    </tr>
+  `).join("");
+
+  // Bloque semana siguiente (solo lectura)
+  let nextHtml = "";
+  if (nextDays.length){
+    const nextRowsHtml = nextDays.map(d => `
+      <tr>
+        <td>${d.name}</td>
+        <td>${d.shift || "-"}</td>
+        <td>${d.hours || 0}</td>
+      </tr>
+    `).join("");
+
+    const nextWeekName = next.week || next.weekLabel || "";
+
+    nextHtml = `
+      <div class="emp-week-block future-week" style="margin-top:10px;border-top:1px dashed #ddd;padding-top:6px;">
+        <div class="emp-week-title" style="font-weight:600;margin-bottom:4px;">
+          Next week${nextWeekName ? ` (${nextWeekName})` : ""}
+        </div>
+        <table class="schedule-mini schedule-next">
+          <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+          ${nextRowsHtml}
+        </table>
+      </div>
+    `;
   }
 
   const m = document.createElement("div");
@@ -832,18 +902,23 @@ async function openEmployeePanel(btnEl){
         <p class="emp-role">${role}</p>
       </div>
 
-      <table class="schedule-mini">
-        <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
-        ${(data.days||[]).map(d => `
-          <tr data-day="${d.name.slice(0,3)}" data-original="${(d.shift||"-").replace(/"/g,'&quot;')}">
-            <td>${d.name}</td>
-            <td ${isManagerRole(currentUser?.role) ? 'contenteditable="true"' : ''}>${d.shift||"-"}</td>
-            <td>${d.hours||0}</td>
-          </tr>`).join("")}
-      </table>
+      <div class="emp-week-block current-week">
+        <div class="emp-week-title" style="font-weight:600;margin-bottom:4px;">
+          This week${current.week ? ` (${current.week})` : ""}
+        </div>
+        <table class="schedule-mini">
+          <tr><th>Day</th><th>Shift</th><th>Hours</th></tr>
+          ${currentRowsHtml}
+        </table>
 
-      <p class="total">Total Hours: <b id="tot-${name.replace(/\s+/g,"_")}">${data.total||0}</b></p>
-      <p class="live-hours"></p>
+        <p class="total">
+          Total Hours:
+          <b id="tot-${name.replace(/\s+/g,"_")}">${current.total || 0}</b>
+        </p>
+        <p class="live-hours"></p>
+      </div>
+
+      ${nextHtml}
 
       ${isManagerRole(currentUser?.role) ? `
         <div class="emp-actions" style="margin-top:10px;">
@@ -865,7 +940,11 @@ async function openEmployeePanel(btnEl){
   const refBtn = m.querySelector(".emp-refresh");
   if (refBtn) {
     refBtn.onclick = () => {
-      try { if ("caches" in window) caches.keys().then(k => k.forEach(n => caches.delete(n))); } catch {}
+      try {
+        if ("caches" in window) {
+          caches.keys().then(keys => keys.forEach(n => caches.delete(n)));
+        }
+      } catch {}
       m.classList.add("flash");
       setTimeout(() => location.reload(), 600);
     };
@@ -879,7 +958,8 @@ async function openEmployeePanel(btnEl){
     if (hb) hb.onclick = () => openHistoryFor(email, name);
   }
 
-  enableModalLiveShift(m, data.days||[]);
+  // Live hours solo para la semana actual
+  enableModalLiveShift(m, currentDays);
 }
 
 function enableModalLiveShift(modal, days){
