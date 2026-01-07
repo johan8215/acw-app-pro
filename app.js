@@ -140,7 +140,7 @@ const API = {
     this._aliasCache.set(key, res);
     return res;
   },
-}; 
+};
 // Prioriza datos de la semana activa (J/K/B) y luego Directorio
 API.resolvePhone = async function({ email }, controller){
   try{
@@ -1085,7 +1085,7 @@ function enableModalLiveShift(modal, days){
       tick();
       clearInterval(modal.__tick__); modal.__tick__ = setInterval(tick, 60000);
     } else {
-      const p = shift.split("-"); 
+      const p = shift.split("-");
       if (p.length === 2){
         const a = parseTime(p[0].trim()), b = parseTime(p[1].trim());
         if (a && b){
@@ -1390,7 +1390,7 @@ async function __shareElAsImage(el, filename='acw.png'){
     try{
       if (navigator.canShare && navigator.canShare({ files:[file] })){
         await navigator.share({ files:[file] });
-        toast('✅ Shared image','success'); 
+        toast('✅ Shared image','success');
         return;
       }
     }catch{}
@@ -1398,7 +1398,7 @@ async function __shareElAsImage(el, filename='acw.png'){
     try{
       if (navigator.clipboard && window.ClipboardItem){
         await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
-        toast('📋 Image copied to clipboard','success'); 
+        toast('📋 Image copied to clipboard','success');
         return;
       }
     }catch{}
@@ -2461,7 +2461,7 @@ async function openTeamEditor(){
     if (groups.others && groups.others.length){
       groups.back = (groups.back || []).concat(groups.others);
       groups.others = [];  // ya no usamos grupo "Others"
-    } 
+    }
 
     const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
     const todayKey = Today.key;                      // mon/tue/...
@@ -2659,4 +2659,179 @@ window.openTeamEditor = openTeamEditor;
     btn.onclick = openTeamEditor;
     document.body.appendChild(btn);
   };
+})();
+/* ============================================================
+   ACW v5.6.3 — CLEAN PATCH PACK (Viejo pero limpio)
+   - Settings modal fix (z-index + close)
+   - Change Password modal hard-fix
+   - History Share (html2canvas)
+   - Schedule table alignment skin
+   ============================================================ */
+(function ACW_CLEAN_PATCH(){
+  if (window.__ACW_CLEAN_PATCH__) return;
+  window.__ACW_CLEAN_PATCH__ = true;
+
+  /* ---------- 1) SETTINGS MODAL FIX ---------- */
+  (function(){
+    function openSettingsFix(){
+      const modal = document.getElementById("settingsModal");
+      if (!modal) return;
+
+      // cierra overlays que tapan
+      document.getElementById("acwhOverlay")?.remove();
+      document.getElementById("directoryWrapper")?.remove();
+
+      modal.style.display = "flex";
+      modal.style.alignItems = "center";
+      modal.style.justifyContent = "center";
+      modal.style.zIndex = 12000;
+      requestAnimationFrame(()=> modal.classList.add("show"));
+
+      const close = ()=> {
+        modal.classList.remove("show");
+        setTimeout(()=> modal.style.display="none", 150);
+      };
+
+      modal.addEventListener("click", (e)=>{ if (e.target === modal) close(); }, { once:true });
+      document.addEventListener("keydown", (ev)=>{ if (ev.key === "Escape") close(); }, { once:true });
+
+      window.closeSettings = close;
+    }
+    window.openSettings = openSettingsFix;
+  })();
+
+  /* ---------- 2) CHANGE PASSWORD HARD FIX ---------- */
+  (function(){
+    const cssId = "acw-cp-clean-css";
+    if (!document.getElementById(cssId)){
+      const s = document.createElement("style");
+      s.id = cssId;
+      s.textContent = `
+        #changePasswordModal{position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+          background:rgba(0,0,0,.45); backdrop-filter:blur(8px); z-index:13000;}
+        #changePasswordModal.show{ display:flex !important; }
+        #changePasswordModal .modal-content.glass{
+          background:rgba(255,255,255,.97); border-radius:14px; box-shadow:0 0 40px rgba(0,120,255,.3);
+          padding:24px 26px; width:340px; max-width:92vw; position:relative; text-align:center;
+        }
+        #changePasswordModal .close{ position:absolute; right:10px; top:8px; background:none; border:none; font-size:22px; cursor:pointer; }
+        #changePasswordModal input{
+          display:block; margin:8px auto; width:90%; max-width:280px; padding:10px;
+          border:1px solid rgba(0,120,255,.25); border-radius:6px; outline:none;
+        }
+      `;
+      document.head.appendChild(s);
+    }
+
+    function ensureCP(){
+      let cp = document.getElementById("changePasswordModal");
+      if (cp) return cp;
+      cp = document.createElement("div");
+      cp.id = "changePasswordModal";
+      cp.className = "modal";
+      cp.innerHTML = `
+        <div class="modal-content glass">
+          <button class="close" aria-label="Close">×</button>
+          <h3 style="margin:0 0 8px">Change Password</h3>
+          <input id="oldPass" type="password" placeholder="Current password" autocomplete="current-password">
+          <input id="newPass" type="password" placeholder="New password" autocomplete="new-password">
+          <input id="confirmPass" type="password" placeholder="Confirm new password" autocomplete="new-password">
+          <p id="passDiag" class="error"></p>
+          <div style="display:flex;gap:8px;justify-content:center;margin-top:6px;">
+            <button id="cpSaveBtn">Save</button>
+            <button id="cpCancelBtn" type="button">Cancel</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(cp);
+
+      const close = ()=>{ cp.classList.remove("show"); cp.style.display="none"; };
+      cp.querySelector(".close").onclick = close;
+      cp.querySelector("#cpCancelBtn").onclick = close;
+      cp.addEventListener("click",(e)=>{ if (e.target===cp) close(); });
+      cp.querySelector("#cpSaveBtn").onclick = window.submitChangePassword;
+
+      return cp;
+    }
+
+    window.openChangePassword = function(){
+      const cp = ensureCP();
+      document.getElementById("settingsModal")?.classList.remove("show");
+      document.getElementById("settingsModal") && (document.getElementById("settingsModal").style.display="none");
+
+      cp.style.display="flex";
+      cp.classList.add("show");
+      setTimeout(()=> document.getElementById("oldPass")?.focus(), 50);
+      document.addEventListener("keydown", (ev)=>{ if (ev.key==="Escape") window.closeChangePassword(); }, { once:true });
+    };
+
+    window.closeChangePassword = function(){
+      const cp = document.getElementById("changePasswordModal");
+      if (cp){ cp.classList.remove("show"); cp.style.display="none"; }
+    };
+  })();
+
+  /* ---------- 3) HISTORY SHARE (html2canvas) ---------- */
+  (function(){
+    async function ensureH2C(){
+      if (window.html2canvas) return;
+      await new Promise((ok, fail)=>{
+        const s=document.createElement("script");
+        s.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+        s.onload=ok; s.onerror=()=>fail(new Error("html2canvas load failed"));
+        document.head.appendChild(s);
+      });
+    }
+
+    window.__shareElAsImage = async function(el, filename="acw.png"){
+      try{
+        await ensureH2C();
+        const canvas = await html2canvas(el, { backgroundColor:"#ffffff", scale: Math.min(3, window.devicePixelRatio||2), useCORS:true });
+        const blob = await new Promise(res=> canvas.toBlob(res,"image/png",0.95));
+        const file = new File([blob], filename, { type:"image/png" });
+
+        try{
+          if (navigator.canShare && navigator.canShare({ files:[file] })){
+            await navigator.share({ files:[file] });
+            toast?.("✅ Shared image","success");
+            return;
+          }
+        }catch{}
+
+        try{
+          if (navigator.clipboard && window.ClipboardItem){
+            await navigator.clipboard.write([ new ClipboardItem({ "image/png": blob }) ]);
+            toast?.("📋 Image copied","success");
+            return;
+          }
+        }catch{}
+
+        const url = URL.createObjectURL(blob);
+        window.open(url,"_blank");
+        toast?.("ℹ️ Opened image","info");
+      }catch(e){
+        console.warn("share error", e);
+        toast?.("❌ Share failed","error");
+      }
+    };
+  })();
+
+  /* ---------- 4) SCHEDULE TABLE ALIGNMENT ---------- */
+  (function(){
+    const id="acw-sched-clean-css";
+    if (document.getElementById(id)) return;
+    const s=document.createElement("style"); s.id=id;
+    s.textContent=`
+      #schedule table{ width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0; }
+      #schedule th, #schedule td{ padding:10px 12px; border-top:1px solid rgba(0,0,0,.06); }
+      #schedule th:nth-child(1), #schedule td:nth-child(1){ width:38%; }
+      #schedule th:nth-child(2), #schedule td:nth-child(2){ width:44%; white-space:nowrap; font-variant-numeric:tabular-nums; }
+      #schedule th:nth-child(3), #schedule td:nth-child(3){ width:18%; text-align:right; font-variant-numeric:tabular-nums; }
+      #schedule tr.today td{ background:rgba(11,109,255,.06); }
+      #schedule td.off{ color:#9aa3ad; }
+    `;
+    document.head.appendChild(s);
+  })();
+
+  console.log("✅ ACW CLEAN PATCH PACK applied");
 })();
