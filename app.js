@@ -12,6 +12,37 @@
 
 let currentUser = null;
 
+// =================== FOOTER VERSION (Paso 3) ===================
+async function renderFooter(){
+  const year = new Date().getFullYear();
+
+  const el1 = document.getElementById("footerLine1");
+  const el2 = document.getElementById("footerLine2");
+
+  if (el1) el1.innerHTML = `Powered by <b>JAG15</b> | Allston Car Wash © ${year}`;
+
+  // Web version (CONFIG)
+  const webVer = (window.CONFIG?.VERSION || window.CONFIG?.WEB_VERSION || "v?");
+  const edition = (window.CONFIG?.EDITION || "").trim();
+
+  // iOS native version (TestFlight) via Capacitor
+  let native = "";
+  try{
+    if (window.Capacitor?.isNativePlatform && window.Capacitor?.Plugins?.App){
+      const info = await window.Capacitor.Plugins.App.getInfo();
+      // info.version = 1.0, info.build = 3
+      native = `iOS ${info.version} (${info.build}) • `;
+    }
+  }catch{}
+
+  const line2 = `${native}${webVer}${edition ? ` — ${edition}` : ""}`.trim();
+  if (el2) el2.textContent = line2;
+}
+
+window.addEventListener("load", () => {
+  renderFooter().catch(()=>{});
+});
+
 /* =================== Utils / Core =================== */
 function $(sel, root=document){ return root.querySelector(sel); }
 function $all(sel, root=document){ return Array.from(root.querySelectorAll(sel)); }
@@ -476,13 +507,14 @@ async function loadSchedule(email) {
 
 /* =================== SESSION RESTORE =================== */
 window.addEventListener("load", () => {
+  try { renderFooter(); } catch {}
+
   try {
     const saved = localStorage.getItem("acwUser");
     if (saved) {
       currentUser = JSON.parse(saved);
       showWelcome(currentUser.name, currentUser.role);
       loadSchedule(currentUser.email).then(() => {
-        // 🔹 Activa los botones también cuando se restaura la sesión
         if (typeof initMyExtraButtons === "function") {
           initMyExtraButtons();
         }
